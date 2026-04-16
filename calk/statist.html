@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор статистики</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #222;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 30px 0 40px;
+            font-size: 24px;
+        }
+
+        
+        .calc-block {
+            background: #333;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        /* Выравнивание textarea с кнопками */
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            background: #444;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: vertical;
+            display: block;
+            margin: 0 auto; /* Центрирование и выравнивание */
+            box-sizing: border-box;
+        }
+
+        textarea::placeholder {
+            color: #aaa;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0055aa;
+        }
+
+        .btn-reset {
+            background: #dc3545;
+        }
+
+        .btn-reset:hover {
+            background: #c82333;
+        }
+
+        .btn-help {
+            background: #28a745;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-help:hover {
+            background: #218838;
+        }
+
+        .results-section {
+            background: #333;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .results-list {
+            list-style: none;
+        }
+
+        .result-item {
+            background: #444;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .result-item:hover {
+            background: #555;
+        }
+
+        .item-name {
+            font-weight: bold;
+        }
+
+        .item-total {
+            background: #0066cc;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            color: #aaa;
+            font-size: 18px;
+            padding: 40px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #aaa;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: white;
+        }
+
+        .help-images img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        @media (max-width: 480px) {
+            .back-button {
+                padding: 8px 16px;
+                font-size: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .item-total {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+   <style>
+    .navigation-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
+    }
+    .back-button {
+        padding: 12px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background-color: #008080;
+        border: 4px solid black;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .back-button:hover {
+        background-color: #00a0a0;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+        transform: scale(1.05);
+    }
+
+    /* Адаптив для мобильных */
+    @media (max-width: 480px) {
+        .navigation-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-button {
+            width: 80%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="navigation-buttons">
+    <a href="javascript:history.back()" class="back-button">← Назад</a>
+    <a href="/" class="back-button">🏠 Домой</a>
+</div>
+
+    <div class="content">
+        <h1>Калькулятор статистики</h1>
+
+        <div class="calc-block">
+            <button class="btn-help" onclick="openHelp()">❓</button>
+
+            <textarea id="inputData" placeholder="Вставьте данные из статистики хелпера"></textarea>
+
+            <div class="button-group">
+                <button onclick="processData()">Обработать данные</button>
+                <button class="btn-reset" onclick="resetData()">Сброс</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <h2>Результаты</h2>
+            <ul class="results-list" id="resultsList">
+                <li class="empty-state">Введите данные и нажмите "Обработать данные"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2 style="text-align:center; margin-bottom:20px;">Примеры данных для вставки</h2>
+            <div class="help-images">
+                <img src="https://static.wixstatic.com/media/27a41d_52db42ef851d4a46ab5feacb72f7f786~mv2.png/v1/fill/w_1095,h_321,al_c,q_85,enc_auto/1.png" alt="Пример 1">
+                <img src="https://static.wixstatic.com/media/27a41d_84aba86b83b64f0b8a9fc3a5063f2a64~mv2.png/v1/fill/w_886,h_343,al_c,q_85,enc_auto/2.png" alt="Пример 2">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Скрипт без изменений (всё работает как раньше)
+        function openHelp() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function extractMultiplierFromName(parts) {
+            let itemNameParts = [];
+            let internalMultiplier = 1;
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const match = part.match(/^(.*?)[xх](\d+)$/i);
+                if (match) {
+                    const prefix = match[1];
+                    const num = parseInt(match[2], 10);
+                    if (!isNaN(num) && num > 0) {
+                        internalMultiplier = num;
+                        if (prefix) {
+                            itemNameParts.push(prefix);
+                        }
+                        for (let j = i + 1; j < parts.length; j++) {
+                            itemNameParts.push(parts[j]);
+                        }
+                        break;
+                    } else {
+                        itemNameParts.push(part);
+                    }
+                } else {
+                    itemNameParts.push(part);
+                }
+            }
+
+            return {
+                name: itemNameParts.join(' ').trim(),
+                multiplier: internalMultiplier
+            };
+        }
+
+        function processData() {
+            const inputText = document.getElementById('inputData').value.trim();
+            const resultsList = document.getElementById('resultsList');
+            if (!inputText) {
+                resultsList.innerHTML = '<li class="empty-state">Пожалуйста, введите данные для обработки</li>';
+                return;
+            }
+
+            const lines = inputText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) {
+                resultsList.innerHTML = '<li class="empty-state">Нет данных для обработки</li>';
+                return;
+            }
+
+            const itemMap = new Map();
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+
+                const parts = trimmedLine.split(/\s+/).filter(p => p !== '');
+                if (parts.length < 2) return;
+
+                const lastPartClean = parts[parts.length - 1].replace(/[,]/g, '');
+                const finalCount = parseFloat(lastPartClean);
+                if (isNaN(finalCount)) return;
+
+                const firstPartClean = parts[0].replace(/[,]/g, '');
+                const startsWithNumber = !isNaN(parseFloat(firstPartClean)) && isFinite(firstPartClean);
+
+                let itemName, total;
+
+                if (startsWithNumber && parts.length >= 3) {
+                    const quantity = parseFloat(firstPartClean);
+                    if (isNaN(quantity)) return;
+
+                    const nameParts = parts.slice(1, -1);
+                    const extracted = extractMultiplierFromName(nameParts);
+                    itemName = extracted.name;
+                    total = quantity * finalCount * extracted.multiplier;
+                } else {
+                    const firstPart = parts[0];
+                    const prefixMatch = firstPart.match(/^(\d+)[xх](.*)$/i);
+
+                    if (prefixMatch) {
+                        const prefixCount = parseInt(prefixMatch[1], 10);
+                        const rest = prefixMatch[2];
+                        const nameParts = [rest, ...parts.slice(1, -1)].filter(p => p !== '');
+                        const extracted = extractMultiplierFromName(nameParts);
+                        itemName = extracted.name;
+                        total = prefixCount * finalCount * extracted.multiplier;
+                    } else {
+                        const nameParts = parts.slice(0, -1);
+                        const extracted = extractMultiplierFromName(nameParts);
+                        itemName = extracted.name;
+                        total = finalCount * extracted.multiplier;
+                    }
+                }
+
+                if (itemMap.has(itemName)) {
+                    itemMap.set(itemName, itemMap.get(itemName) + total);
+                } else {
+                    itemMap.set(itemName, total);
+                }
+            });
+
+            let resultsHTML = '';
+            itemMap.forEach((total, itemName) => {
+                const formattedTotal = Math.round(total).toLocaleString('ru-RU');
+                resultsHTML += `
+                    <li class="result-item">
+                        <span class="item-name">${itemName}</span>
+                        <span class="item-total">${formattedTotal}</span>
+                    </li>
+                `;
+            });
+
+            if (resultsHTML === '') {
+                resultsList.innerHTML = '<li class="empty-state">Не удалось обработать данные</li>';
+            } else {
+                resultsList.innerHTML = resultsHTML;
+            }
+        }
+
+        function resetData() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('resultsList').innerHTML = '<li class="empty-state">Введите данные и нажмите "Обработать данные"</li>';
+        }
+
+        document.getElementById('inputData').addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                processData();
+            }
+        });
+    </script>
+
+</body>
+</html>

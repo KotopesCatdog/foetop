@@ -1,0 +1,2 @@
+git config --global user.name "KotopesCatdog"
+git config --global user.email "163532389+KotopesCatdog@users.noreply.github.com"

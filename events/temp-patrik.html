@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Патрик</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #5E381A;
+            color: #EFDBA6;
+            position: relative;
+            padding-top: 60px;
+            
+            /* ВЫРАВНИВАНИЕ ВСЕГО ПО ЦЕНТРУ */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Горизонтальное центрирование */
+            justify-content: flex-start; /* Вертикальное выравнивание сверху */
+            min-height: 100vh; /* Минимальная высота = высоте экрана */
+        }
+        
+        /* Контейнер для всего контента (кроме фиксированных кнопок) */
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px; /* Максимальная ширина контента */
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #A0522D;
+        }
+        .output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            border: 2px solid #EFDBA6;
+            padding: 15px;
+            background-color: white;
+            color: black;
+            border-radius: 8px;
+            min-height: 100px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            
+            /* Центрирование самого окна вывода */
+            width: 90%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        p {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center; /* Центрирование текста заголовка */
+        }
+        /* Кнопка "Назад" */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(239, 219, 166, 0.5);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #A0522D;
+            transform: scale(1.05);
+        }
+        /* Стиль для кнопки копирования */
+        .copy-btn {
+            background-color: #2E8B57;
+            font-weight: bold;
+        }
+        .copy-btn:hover {
+            background-color: #3CB371;
+        }
+        /* Сообщение о копировании */
+        .copy-message {
+            color: #32CD32;
+            font-weight: bold;
+            margin-left: 10px;
+            display: none;
+        }
+        
+        /* Контейнер для кнопок */
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+     <!-- Кнопка "Назад" -->
+<button onclick="history.back()" style="position:fixed; top:15px; left:15px; z-index:100;">
+    ← Назад
+</button>
+
+<!-- Кнопка "Домой" -->
+<button onclick="window.location.href='/'" style="position:fixed; top:15px; left:150px; z-index:100;">
+     Домой
+</button>
+
+    <div class="content-container">
+        <p>Патрик <br>Прохождение городов и квесты</p>
+
+        <div class="buttons-container">
+            <button onclick="showText1()">1 город</button>
+            <button onclick="showText2()">2 город</button>
+            <button onclick="showText3()">3 город</button>
+            <button onclick="showText4()">Основные квесты</button>
+            <button onclick="showText5()">Ежедневные квесты</button>
+            <button onclick="copyToClipboard()" class="copy-btn">Копировать</button>
+            <span id="copyMessage" class="copy-message">Скопировано!</span>
+        </div>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        function showText1() {
+            const text1 = `---   1-ый город   ---
+Менеджеры:
+а. Выполнять тем кто НЕ торопится в лигу
+Итого: прохождение 1 города, выполнение 34 задач, трата 700 золота.`;
+            document.getElementById('output').textContent = text1;
+        }
+
+        function showText2() {
+            const text2 = `---   2-ой город   ---
+ Без цветов будет 30 задач`;
+            document.getElementById('output').textContent = text2;
+        }
+
+        function showText3() {
+            const text3 = `---  3-ий город   ---
+Менеджеры:
+ трата 680 золота.`;
+            document.getElementById('output').textContent = text3;
+        }
+      
+      function showText4() {
+            const text4 = `
+1)  игроков и потратьте 18-81 СО
+
+													`;
+            document.getElementById('output').textContent = text4;
+        }
+        
+        function showText5() {
+            const text5 = `
+36)  эпохи и соберите 20-260 товаров      
+  
+       	`;
+            document.getElementById('output').textContent = text5;
+        }
+        
+        function copyToClipboard() {
+            const outputText = document.getElementById('output').textContent;
+            
+            if (!outputText || outputText.trim() === '') {
+                alert('Сначала откройте текст для копирования!');
+                return;
+            }
+            
+            navigator.clipboard.writeText(outputText)
+                .then(() => {
+                    const message = document.getElementById('copyMessage');
+                    message.style.display = 'inline';
+                    
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Ошибка копирования: ', err);
+                    
+                    const textArea = document.createElement('textarea');
+                    textArea.value = outputText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    const message = document.getElementById('copyMessage');
+                    message.style.display = 'inline';
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 2000);
+                });
+        }
+    </script>
+</body>
+</html>

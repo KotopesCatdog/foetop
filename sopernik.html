@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Соперник</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #5E381A; /* Ваш фон */
+            color: #EFDBA6;            /* Ваш цвет текста */
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 60px 20px 20px; /* Отступ сверху для кнопки "Назад" */
+        }
+        /* Центральное "окно" с таблицей */
+        .iframe-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 95vh; /* Высота окна — 80% экрана */
+            border: 4px solid #EFDBA6;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(239, 219, 166, 0.6);
+            overflow: hidden;
+            background-color: #fff; /* Белый фон внутри iframe для читаемости таблицы */
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Кнопка "Назад" вверху слева */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(239, 219, 166, 0.5);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #A0522D;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Кнопка "Назад" — замените href на нужную ссылку -->
+    <a href="//events.html" class="back-btn">← Назад</a>
+
+    <!-- Центральное окно с таблицей -->
+   
+   <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="color: #000000;">№</th>
+      <th style="color: #000000;">Задание соперника (версия с Бета сервера)</th>
+      <th style="color: #000000;">Награда</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+  </tbody>
+</table>
+   
+   
+</div>
+</body>
+</html>

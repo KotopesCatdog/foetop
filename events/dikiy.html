@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дикая природа</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #5E381A;
+            color: #EFDBA6;
+            position: relative;
+            padding-top: 60px;
+            
+            /* ВЫРАВНИВАНИЕ ВСЕГО ПО ЦЕНТРУ */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Горизонтальное центрирование */
+            justify-content: flex-start; /* Вертикальное выравнивание сверху */
+            min-height: 100vh; /* Минимальная высота = высоте экрана */
+        }
+        
+        /* Контейнер для всего контента (кроме фиксированных кнопок) */
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px; /* Максимальная ширина контента */
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #A0522D;
+        }
+        .output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            border: 2px solid #EFDBA6;
+            padding: 15px;
+            background-color: white;
+            color: black;
+            border-radius: 8px;
+            min-height: 100px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            
+            /* Центрирование самого окна вывода */
+            width: 90%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .output:empty {
+    display: none;
+}
+        p {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center; /* Центрирование текста заголовка */
+        }
+        /* Кнопка "Назад" */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(239, 219, 166, 0.5);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #A0522D;
+            transform: scale(1.05);
+        }
+        /* Стиль для кнопки копирования */
+        .copy-btn {
+            background-color: #2E8B57;
+            font-weight: bold;
+        }
+        .copy-btn:hover {
+            background-color: #3CB371;
+        }
+        /* Сообщение о копировании */
+        .copy-message {
+            color: #32CD32;
+            font-weight: bold;
+            margin-left: 10px;
+            display: none;
+        }
+        
+        /* Контейнер для кнопок */
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+     <!-- Кнопка "Назад" -->
+<button onclick="history.back()" style="position:fixed; top:15px; left:15px; z-index:100;">
+    ← Назад
+</button>
+
+<!-- Кнопка "Домой" -->
+<button onclick="window.location.href='/'" style="position:fixed; top:15px; left:150px; z-index:100;">
+     Домой
+</button>
+
+<div class="content-container">
+        <p>Дикая природа</p>
+
+        <div class="buttons-container">
+            <button onclick="showText1()">Основные квесты</button>
+            <button onclick="showText2()">Ежедневные квесты</button>
+            <button onclick="showText3()">--</button>
+            <button onclick="showText4()">--</button>
+                        <button onclick="copyToClipboard()" class="copy-btn">Копировать</button>
+            <span id="copyMessage" class="copy-message">Скопировано!</span>
+        </div>
+
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        function showText1() {
+            const text1 = `
+1) Соберите 20-260 товаров
+2) Постройте 5/6 декораций своей/предыдущей эпохи
+3) Заплатите 2000-3517200 монет
+4) В производственном здании завершите 1 час. производство 3-20 раз
+5) Соберите 30-390 товаров ИЛИ Пожертвуйте 40-360 товаров в казну гильдии и Заплатите 1400-1680000 ресурсы
+6) Наймите 1/2 юнита своей/предыдущей эпохи и Соберите 500-1100000 ресурсов
+7) Победите 10-50 юнитов ИЛИ Завершите переговоры и Получите 230-40000 счастья
+8) В производственном здании завершить 5-мин производство 4-29 раз и Заплатите 2000-3517000 монет
+9) Постройте 3/4 культурных здания своей/предыдущей эпохи и Соберите 400-880000 ресурсы
+10) Соберите 60-780 товаров ИЛИ Пожертвуйте 60-540 товаров в казну гильдии и Дайте людям счастья
+11) Активируйте 2 усиления в таверне ИЛИ постройте 2 производственных здания своей эпохи и Соберите 2 происшествия
+12) Обменяйте 2 предмета у антиквара ИЛИ выполните любой другой квест и Оплатите 4-32 выбранных товаров своей эпохи
+13) Купите 5 СО ИЛИ Решите переговоры и Соберите 1000-1600000 монет
+14) Соберите 750 серебра ИЛИ выиграйте 2-9 битв и Завершить 4-час производство 2-13 раз в производственном здании
+15) Победите армию ИЛИ Решите переговоры и Увеличите 30-21000 населения
+16) Наймите 2 юнита своей эпохи ИЛИ Соберите 32-416 товаров
+17) Заплатите 2800-3360000 ресурсы и Заплатите 3000-5275800 монет
+18) Потратьте 10-43 СО и Соберите 1000-2200000 ресурсы
+19) Постройте 4/5 производственных здания своей/предыдущей эпохи и В производственном здании завершите 1 час. производство 3-20 раз
+20) Мотивируйте 30 зданий игроков и Заплатите 2800-3360000 ресурсы
+21) Заплатите 5000-8793000 монет и Соберите 24-312 товаров
+22) Купите 7 СО ИЛИ соберите 1000 серебра таверны
+23) Посетите 12 таверн друзей ИЛИ соберите 4 происшествия и Соберите 2500-4000000 монет
+24) Завершите 2 столкновения сражаясь ИЛИ Соберите 52-676 товаров и Завершите 2 встречи переговорами ИЛИ Купите 7 СО
+25) Соберите 6 происшествий ИЛИ Обменяйте 4 предмета у антиквара
+26) Решите переговоры ИЛИ Выиграйте 4-18 битв и Заплатите 2100-2520000 ресурсы
+27) Наймите 2/3 юнитов своей/предыдущей эпохи и Заплатите 2400-4220600 монет
+28) Постройте 1/2 товарное здание своей/предыдущей эпохи
+29) Завершите 2 встречи, не проиграв ИЛИ Завершите переговоры и Заплатите 3000-5275800 монет
+30) Обменяйте 2 предмета у антиквара ИЛИ В производственном здании завершите 4-час производство 4-26 раз и Потратьте 18-81 СО
+
+`;
+            document.getElementById('output').textContent = text1;
+        }
+
+        function showText2() {
+            const text2 = `
+31) Выиграйте 3-14 битв ИЛИ Завершите переговоры и Заплатите 2100-2520000 ресурсы
+32) Купите 10 СО и Постройте 2/3 культурных здания своей/предыдущей эпохи
+33) Мотивируйте 25 зданий игроков ИЛИ Заплатите 5-45 выбранных товаров своей эпохи и Соберите 20-260 товаров
+34) Соберите 3 происшествия ИЛИ совершите диверсию 2 секторов и Заплатите 2200-2688000 ресурсы
+35) Постройте 1/2 производственное здание своей/предыдущей эпохи и Соберите 1500-2400000 монет
+36) Соберите 36-468 товаров ИЛИ Пожертвуйте 40-400 товаров в казну и Увеличьте 45-31500 населения
+37) Потратьте 14-65 СО и Заплатите 1400-1680000 ресурсы
+38) Постройте 2 товарных здания своей эпохи ИЛИ Соберите 30-390 товаров и В производственном здании завершите 15-мин производство 3-20 раз
+39) Наймите 4/5 юнитов своей/предыдущей эпохи и Соберите 1500-2400000 монет
+40) В производственном здании завершите 1 час. производство 4-26 раз и Дайте людям счастье
+41) Победите армию ИЛИ Решите переговоры
+42) Обменяйте 2 предмета у антиквара ИЛИ победить армию и Постройте 5/6 украшений своей/предыдущей эпохи
+43) Потратьте 16–70 СО в Великие строения ИЛИ получите 460-80000 счастья и В производственном здании завершите 1 час. производство 4-26 раз
+44) Соберите 750 серебра таверны ИЛИ решить переговоры и Соберите 1000-1600000 монет
+45) Завершите 15/20 производств в производственных зданиях своей/предыдущей эпохи и Соберите 24-312 товары
+46) Оплатите 5-45/7-59 выбранных товаров своей/предыдущей эпохи и В производственном здании завершите 15-мин производство 3-20 раз
+47) Решите I уровень экспедиции ИЛИ Выиграйте 5-23 битв
+48) Соберите 6 происшествий ИЛИ Завершите 4-час производство 3-20 раз в производственном здании и Потратьте 12-54 СО
+49) Постройте 1/2 культурное здание своей/предыдущей эпохи и В производственном здании завершите 1 час. производство 2-13 раз
+50) Активируйте 2 усиления в таверне ИЛИ выиграйте 3-13 битв и Заплатите 5000-8793000 монет
+51) Захватите 3 сектора ИЛИ Победите 20-100 юнитов  
+`;
+            document.getElementById('output').textContent = text2;
+        }
+
+        function showText3() {
+            const text3 = `
+            
+  
+`;
+            document.getElementById('output').textContent = text3;
+        }
+      
+      function showText4() {
+            const text4 = `
+
+
+`;
+            document.getElementById('output').textContent = text4;
+        }
+        function copyToClipboard() {
+            const outputText = document.getElementById('output').textContent;
+            
+            if (!outputText || outputText.trim() === '') {
+                alert('Сначала откройте текст для копирования!');
+                return;
+            }
+            
+            navigator.clipboard.writeText(outputText)
+                .then(() => {
+                    const message = document.getElementById('copyMessage');
+                    message.style.display = 'inline';
+                    
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Ошибка копирования: ', err);
+                    
+                    const textArea = document.createElement('textarea');
+                    textArea.value = outputText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    const message = document.getElementById('copyMessage');
+                    message.style.display = 'inline';
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 2000);
+                });
+        }
+    </script>
+</body>
+</html>		

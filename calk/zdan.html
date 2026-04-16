@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подсчёт построек</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #222;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Основной контент теперь тоже 600px — всё строго по центру */
+        .content {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 30px 0 40px;
+            font-size: 24px;
+        }
+
+        
+
+        /* Блок ввода */
+        .input-block {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            background: #444;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        textarea::placeholder {
+            color: #aaa;
+        }
+
+        /* Кнопки */
+        .buttons {
+            margin: 20px 0 0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            min-width: 160px;
+        }
+
+        button:hover {
+            background: #0055aa;
+        }
+
+        #resetButton {
+            background: #dc3545;
+        }
+
+        #resetButton:hover {
+            background: #c82333;
+        }
+
+        #copyButton {
+            background: #28a745;
+        }
+
+        #copyButton:hover {
+            background: #218838;
+        }
+
+        /* Фильтры */
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+            font-size: 18px;
+        }
+
+        .checkbox-container label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-container input {
+            margin-right: 8px;
+            transform: scale(1.4);
+        }
+
+        /* Таблица */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        th, td {
+            border: 1px solid #555;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #444;
+            text-align: center;
+        }
+
+        td:last-child {
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .back-button {
+                padding: 8px 16px;
+                font-size: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .checkbox-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+   <style>
+    .navigation-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
+    }
+    .back-button {
+        padding: 12px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background-color: #008080;
+        border: 4px solid black;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .back-button:hover {
+        background-color: #00a0a0;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+        transform: scale(1.05);
+    }
+
+    /* Адаптив для мобильных */
+    @media (max-width: 480px) {
+        .navigation-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-button {
+            width: 80%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="navigation-buttons">
+    <a href="javascript:history.back()" class="back-button">← Назад</a>
+    <a href="/" class="back-button">🏠 Домой</a>
+</div>
+
+    <div class="content">
+        <h1>Подсчёт построек</h1>
+
+        <div class="input-block">
+            <textarea id="inputData" placeholder="Введите данные... (Пользуемся расширением для извлечения данных из Редактора города)"></textarea>
+
+            <div class="buttons">
+                <button id="countButton">Подсчитать</button>
+                <button id="resetButton">Сбросить</button>
+                <button id="copyButton">Копировать результат</button>
+            </div>
+        </div>
+
+        <h2>Фильтры результатов:</h2>
+        <div class="checkbox-container">
+            <label><input type="checkbox" id="wells"> Колодцы</label>
+            <label><input type="checkbox" id="smallWells"> Мал. колодцы</label>
+            <label><input type="checkbox" id="fountains"> Фонтаны</label>
+            <label><input type="checkbox" id="smallFountains"> Мал. фонтаны</label>
+        </div>
+
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <textarea id="copyArea" style="position: absolute; left: -9999px;"></textarea>
+
+    <script>
+        // Скрипт без изменений
+        document.getElementById('countButton').addEventListener('click', function() {
+            const inputData = document.getElementById('inputData').value;
+            const lines = inputData.split('\n').map(line => line.trim()).filter(line => line !== '');
+            const counts = {};
+
+            lines.forEach(line => {
+                const values = line.split('\t');
+                if (values.length >= 5) {
+                    const name = values[4].trim();
+                    counts[name] = (counts[name] || 0) + 1;
+                }
+            });
+
+            if (Object.keys(counts).length === 0) {
+                alert("Нет данных для подсчета.");
+                return;
+            }
+
+            const wellsChecked = document.getElementById('wells').checked;
+            const smallWellsChecked = document.getElementById('smallWells').checked;
+            const fountainsChecked = document.getElementById('fountains').checked;
+            const smallFountainsChecked = document.getElementById('smallFountains').checked;
+
+            const filteredNames = [];
+            if (wellsChecked) filteredNames.push("Колодец желаний");
+            if (smallWellsChecked) filteredNames.push("Маленький колодец желаний");
+            if (fountainsChecked) filteredNames.push("Фонтан молодости");
+            if (smallFountainsChecked) filteredNames.push("Маленький Фонтан молодости");
+
+            let results = Object.entries(counts);
+            if (filteredNames.length > 0) {
+                results = results.filter(([name]) => filteredNames.includes(name));
+            }
+
+            const sortedResults = results.sort((a, b) => b[1] - a[1]);
+
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+
+            for (const [name, count] of sortedResults) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${name}</td><td>${count}</td>`;
+                resultsBody.appendChild(row);
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', function() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('wells').checked = false;
+            document.getElementById('smallWells').checked = false;
+            document.getElementById('fountains').checked = false;
+            document.getElementById('smallFountains').checked = false;
+        });
+
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const resultsBody = document.getElementById('resultsBody');
+            if (resultsBody.innerHTML === '') {
+                alert("Нет результатов для копирования.");
+                return;
+            }
+
+            let resultText = 'Имя\tКоличество\n';
+            resultsBody.querySelectorAll('tr').forEach(row => {
+                const cells = row.querySelectorAll('td');
+                resultText += `${cells[0].innerText}\t${cells[1].innerText}\n`;
+            });
+
+            const copyArea = document.getElementById('copyArea');
+            copyArea.value = resultText;
+            copyArea.select();
+            try {
+                document.execCommand('copy');
+                alert("Результаты скопированы в буфер обмена.");
+            } catch (err) {
+                alert("Ошибка при копировании.");
+            }
+        });
+    </script>
+
+</body>
+</html>

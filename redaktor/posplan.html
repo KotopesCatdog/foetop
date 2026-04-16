@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Редактор поселения</title>
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<style>
+body { display: flex; margin: 0; font-family: Arial, sans-serif; }
+.container { display: flex; position: relative; }
+.grid { display: grid; grid-template-columns: repeat(72, 20px); grid-template-rows: repeat(72, 20px); background-color: #eee; position: relative; }
+.cell {
+width: 20px;
+height: 20px;
+background-color: #fff;
+border-right: 0.25px solid #000;
+border-bottom: 0.25px solid #000;
+box-sizing: border-box;
+}
+.thick-right { border-right: 2px solid #000; }
+.thick-bottom { border-bottom: 2px solid #000; }
+.thick-both { border-right: 2px solid #000; border-bottom: 2px solid #000; }
+.input-container { margin-left: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; width: 300px; }
+textarea { width: 100%; height: 200px; margin-bottom: 10px; }
+.button-container { display: flex; flex-direction: column; gap: 5px; }
+.button-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
+.button-row button { flex: 1; padding: 5px 10px; font-size: 14px; cursor: pointer; }
+.figure { position: absolute; background-color: rgba(0,0,0,0.5); box-sizing: border-box; cursor: grab; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; text-align: center; overflow: hidden; padding: 2px; box-shadow: inset 0 0 0 2px black; user-select: none; white-space: pre-wrap; line-height: 1.2; z-index: 10; }
+.figure.ratusha { color: black; }
+.figure.yellow { color: black; }
+.gray { background-color: #999; }
+.yellow { background-color: #ff0; }
+.blue { background-color: #00f; }
+.red { background-color: #f00; }
+.default-color { background-color: #41adfa; }
+.light-green { background-color: #90ee90; }
+.green { background-color: #008000; }
+.dark-red { background-color: #8B0000; }
+.black { background-color: #000000; }
+.overlap { animation: blink 0.5s infinite; }
+@keyframes blink {
+0% { opacity: 1; }
+50% { opacity: 0.4; }
+100% { opacity: 1; }
+}
+.tooltip { position: fixed; background-color: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; display: none; z-index: 20; }
+.space-under-buttons { width: 100%; height: 1440px; background-color: #f0f0f0; border: 1px solid #ccc; position: relative; margin-top: 10px; }
+.size-selector { display: flex; gap: 5px; align-items: center; }
+.size-selector select { padding: 5px; font-size: 14px; }
+#height-select, #width-select { width: 50px; }
+#color-select { width: 80px; }
+.boundary { background-color: rgba(0, 255, 0, 0.3); }
+.boundary-button-draw { background-color: #90ee90; }
+.boundary-button-clear { background-color: #ff6347; }
+#color-select option {
+padding-left: 20px;
+position: relative;
+}
+#color-select option::before {
+content: '';
+display: inline-block;
+width: 12px;
+height: 12px;
+margin-right: 5px;
+vertical-align: middle;
+position: absolute;
+left: 5px;
+top: 50%;
+transform: translateY(-50%);
+}
+#color-select option[value="gray"]::before { background-color: #999; }
+#color-select option[value="yellow"]::before { background-color: #ff0; }
+#color-select option[value="blue"]::before { background-color: #00f; }
+#color-select option[value="red"]::before { background-color: #f00; }
+#color-select option[value="green"]::before { background-color: #008000; }
+#color-select option[value="light-green"]::before { background-color: #90ee90; }
+#color-select option[value="default-color"]::before { background-color: #41adfa; }
+#color-select option[value="dark-red"]::before { background-color: #8B0000; }
+#color-select option[value="black"]::before { background-color: #000000; }
+.instruction-link { margin-bottom: 10px; }
+.road-result { margin-top: 10px; font-size: 14px; color: #333; }
+#figure-name-input { width: 100px; padding: 5px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="grid" id="grid"></div>
+<div class="input-container">
+<a href="//cityplanhelp.html" class="instruction-link" target="_blank">Инструкция</a>
+<textarea id="data-input"></textarea>
+<div class="button-container">
+<div class="button-row">
+<button onclick="placeFigures()">Старт</button>
+</div>
+<div class="button-row">
+<button onclick="resetFigures()">Очистить поле</button>
+<button onclick="resetInput()">Сброс данных</button>
+</div>
+<div class="button-row">
+<button id="boundaryButton" onclick="toggleBoundaryMode()">Границы</button>
+<input type="text" id="figure-name-input" placeholder="Имя фигуры">
+</div>
+<div class="button-row">
+<div class="size-selector">
+<select id="height-select">
+<option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+<option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+<option value="9">9</option><option value="10">10</option>
+</select>
+<select id="width-select">
+<option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+<option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+<option value="9">9</option><option value="10">10</option>
+</select>
+<select id="color-select">
+<option value="black">Дорога</option>
+<option value="gray">Препятствие</option>
+<option value="blue">Дипломатия</option>
+<option value="default-color">Жилые</option>
+<option value="dark-red">Производство</option>
+<option value="red">Красный</option>
+<option value="green">Зелёный</option>
+<option value="light-green">Светло-зеленый</option>
+</select>
+</div>
+<button onclick="createFigure()">Создать</button>
+</div>
+<div class="button-row">
+<button onclick="saveToFile()">Сохранить</button>
+<button onclick="document.getElementById('fileInput').click()">Загрузить</button>
+<input type="file" id="fileInput" style="display: none;" accept=".txt" onchange="loadFile(this)">
+</div>
+</div>
+<div class="road-result" id="road-result"></div>
+<div class="space-under-buttons" id="space-under-buttons"></div>
+</div>
+</div>
+<div id="tooltip" class="tooltip"></div>
+<script>
+const grid = document.getElementById('grid');
+const spaceUnderButtons = document.getElementById('space-under-buttons');
+const tooltip = document.getElementById('tooltip');
+const roadResult = document.getElementById('road-result');
+const totalCells = 72 * 72;
+const gridWidth = 72 * 20; // 1440px
+const gridHeight = 72 * 20; // 1440px
+let boundaryState = 0; // 0 - неактивно, 1 - рисование, 2 - удаление
+let isDrawing = false;
+for (let i = 0; i < totalCells; i++) {
+const cell = document.createElement('div');
+cell.classList.add('cell');
+const row = Math.floor(i / 72) + 1;
+const col = (i % 72) + 1;
+const isThickCol = col % 4 === 0 && col <= 68;
+const isThickRow = row % 4 === 0 && row <= 68;
+if (isThickCol && isThickRow) {
+cell.classList.add('thick-both');
+} else if (isThickCol) {
+cell.classList.add('thick-right');
+} else if (isThickRow) {
+cell.classList.add('thick-bottom');
+}
+grid.appendChild(cell);
+}
+function checkOverlap() {
+const figures = document.querySelectorAll('.figure');
+figures.forEach(figure => figure.classList.remove('overlap')); // Сбрасываем мигание
+for (let i = 0; i < figures.length; i++) {
+for (let j = i + 1; j < figures.length; j++) {
+const fig1 = figures[i];
+const fig2 = figures[j];
+const rect1 = {
+x: Math.round(fig1.offsetLeft / 20),
+y: Math.round(fig1.offsetTop / 20),
+width: Math.round(fig1.offsetWidth / 20),
+height: Math.round(fig1.offsetHeight / 20)
+};
+const rect2 = {
+x: Math.round(fig2.offsetLeft / 20),
+y: Math.round(fig2.offsetTop / 20),
+width: Math.round(fig2.offsetWidth / 20),
+height: Math.round(fig2.offsetHeight / 20)
+};
+// Проверяем пересечение (хотя бы на 1 клетку)
+if (rect1.x < rect2.x + rect2.width &&
+rect1.x + rect1.width > rect2.x &&
+rect1.y < rect2.y + rect2.height &&
+rect1.y + rect1.height > rect2.y) {
+fig1.classList.add('overlap');
+fig2.classList.add('overlap');
+}
+}
+}
+}
+function placeFigures() {
+document.querySelectorAll('.figure').forEach(figure => figure.remove());
+const input = document.getElementById('data-input').value.trim();
+const lines = input.split('\n').filter(line => line.trim() !== '');
+lines.forEach(line => {
+const data = line.split('\t');
+const [width, height, x, y, name] = data.slice(0, 5);
+const color = data[5] || 'default-color';
+const figure = document.createElement('div');
+figure.classList.add('figure');
+if (name === 'Ратуша') {
+figure.classList.add('ratusha');
+}
+figure.style.width = `${width * 20}px`;
+figure.style.height = `${height * 20}px`;
+figure.style.left = `${x * 20}px`;
+figure.style.top = `${y * 20}px`;
+figure.dataset.name = name;
+const colorMap = {
+'1': 'gray',
+'2': 'yellow',
+'3': 'blue',
+'4': 'red',
+'5': 'green',
+'6': 'light-green',
+'7': 'dark-red',
+'8': 'black',
+'gray': 'gray',
+'yellow': 'yellow',
+'blue': 'blue',
+'red': 'red',
+'green': 'green',
+'light-green': 'light-green',
+'default-color': 'default-color'
+};
+figure.classList.add(colorMap[color] || 'default-color');
+const text = document.createElement('div');
+const maxChars = Math.floor((width * 20) / 8);
+text.textContent = name.substring(0, maxChars);
+figure.appendChild(text);
+figure.addEventListener('click', (e) => {
+tooltip.textContent = name;
+tooltip.style.display = 'block';
+tooltip.style.left = `${e.clientX + 10}px`;
+tooltip.style.top = `${e.clientY + 10}px`;
+});
+figure.addEventListener('mouseleave', () => {
+tooltip.style.display = 'none';
+});
+grid.appendChild(figure);
+addDragHandlers(figure);
+});
+checkOverlap(); // Проверяем наложения после размещения фигур
+}
+function saveToFile() {
+const figures = document.querySelectorAll('.figure');
+if (figures.length === 0) {
+alert("На поле нет фигур для сохранения!");
+return;
+}
+const dataLines = [];
+figures.forEach(figure => {
+const width = Math.round(figure.offsetWidth / 20);
+const height = Math.round(figure.offsetHeight / 20);
+const x = Math.round(figure.offsetLeft / 20);
+const y = Math.round(figure.offsetTop / 20);
+const name = figure.dataset.name || "";
+let color = '';
+if (figure.classList.contains('gray')) color = '1';
+else if (figure.classList.contains('yellow')) color = '2';
+else if (figure.classList.contains('blue')) color = '3';
+else if (figure.classList.contains('red')) color = '4';
+else if (figure.classList.contains('green')) color = '5';
+else if (figure.classList.contains('light-green')) color = '6';
+else if (figure.classList.contains('dark-red')) color = '7';
+else if (figure.classList.contains('black')) color = '8';
+else if (figure.classList.contains('default-color')) color = '';
+const line = `${width}\t${height}\t${x}\t${y}\t${name}` + (color ? `\t${color}` : '');
+dataLines.push(line);
+});
+const data = dataLines.join('\n');
+const blob = new Blob([data], { type: 'text/plain' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'posplan.txt';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
+function loadFile(input) {
+const file = input.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(e) {
+document.getElementById('data-input').value = e.target.result;
+};
+reader.readAsText(file);
+input.value = '';
+}
+function toggleBoundaryMode() {
+const boundaryButton = document.getElementById('boundaryButton');
+boundaryState = (boundaryState + 1) % 3;
+boundaryButton.classList.remove('boundary-button-draw', 'boundary-button-clear');
+grid.removeEventListener('mousedown', startDrawing);
+grid.removeEventListener('mousemove', drawBoundary);
+grid.removeEventListener('mousemove', removeBoundary);
+grid.removeEventListener('mouseup', stopDrawing);
+if (boundaryState === 1) {
+boundaryButton.classList.add('boundary-button-draw');
+grid.addEventListener('mousedown', startDrawing);
+grid.addEventListener('mousemove', drawBoundary);
+grid.addEventListener('mouseup', stopDrawing);
+} else if (boundaryState === 2) {
+boundaryButton.classList.add('boundary-button-clear');
+grid.addEventListener('mousedown', startDrawing);
+grid.addEventListener('mousemove', removeBoundary);
+grid.addEventListener('mouseup', stopDrawing);
+}
+}
+function startDrawing(event) {
+isDrawing = true;
+if (boundaryState === 1) drawBoundary(event);
+else if (boundaryState === 2) removeBoundary(event);
+}
+function drawBoundary(event) {
+if (!isDrawing || boundaryState !== 1) return;
+const rect = grid.getBoundingClientRect();
+const x = Math.floor((event.clientX - rect.left) / 20) * 20;
+const y = Math.floor((event.clientY - rect.top) / 20) * 20;
+const cellIndex = Math.floor(y / 20) * 72 + Math.floor(x / 20);
+if (cellIndex >= 0 && cellIndex < totalCells) {
+grid.children[cellIndex].classList.add('boundary');
+}
+}
+function removeBoundary(event) {
+if (!isDrawing || boundaryState !== 2) return;
+const rect = grid.getBoundingClientRect();
+const x = Math.floor((event.clientX - rect.left) / 20) * 20;
+const y = Math.floor((event.clientY - rect.top) / 20) * 20;
+const cellIndex = Math.floor(y / 20) * 72 + Math.floor(x / 20);
+if (cellIndex >= 0 && cellIndex < totalCells) {
+grid.children[cellIndex].classList.remove('boundary');
+}
+}
+function stopDrawing() {
+isDrawing = false;
+}
+function isInGrayArea(x, y, width, height) {
+return false;
+}
+function isOutsideGrid(x, y, width, height) {
+const xEnd = x + width * 20;
+const yEnd = y + height * 20;
+return x < 0 || y < 0 || xEnd > gridWidth || yEnd > gridHeight;
+}
+function createFigure() {
+const height = parseInt(document.getElementById('height-select').value);
+const width = parseInt(document.getElementById('width-select').value);
+const color = document.getElementById('color-select').value;
+const name = document.getElementById('figure-name-input').value.trim() || "";
+const figure = document.createElement('div');
+figure.classList.add('figure', color);
+if (name === 'Ратуша') {
+figure.classList.add('ratusha');
+}
+figure.style.width = `${width * 20}px`;
+figure.style.height = `${height * 20}px`;
+figure.style.left = '20px';
+figure.style.top = '20px';
+figure.dataset.name = name;
+const text = document.createElement('div');
+const maxChars = Math.floor((width * 20) / 8);
+text.textContent = name.substring(0, maxChars);
+figure.appendChild(text);
+figure.addEventListener('click', (e) => {
+tooltip.textContent = name;
+tooltip.style.display = 'block';
+tooltip.style.left = `${e.clientX + 10}px`;
+tooltip.style.top = `${e.clientY + 10}px`;
+});
+figure.addEventListener('mouseleave', () => {
+tooltip.style.display = 'none';
+});
+grid.appendChild(figure);
+addDragHandlers(figure);
+checkOverlap(); // Проверяем наложения после создания фигуры
+}
+function addDragHandlers(figure) {
+let isDragging = false;
+let offsetX, offsetY;
+figure.addEventListener('mousedown', e => {
+isDragging = true;
+offsetX = e.clientX - figure.offsetLeft;
+offsetY = e.clientY - figure.offsetTop;
+figure.style.cursor = 'grabbing';
+e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+if (isDragging) {
+const newX = e.clientX - offsetX;
+const newY = e.clientY - offsetY;
+const maxX = grid.offsetWidth + spaceUnderButtons.offsetWidth - figure.offsetWidth;
+const maxY = Math.max(grid.offsetHeight, spaceUnderButtons.offsetHeight) - figure.offsetHeight;
+figure.style.left = `${Math.max(0, Math.min(newX, maxX))}px`;
+figure.style.top = `${Math.max(0, Math.min(newY, maxY))}px`;
+}
+});
+document.addEventListener('mouseup', () => {
+if (isDragging) {
+const snappedX = Math.round(figure.offsetLeft / 20) * 20;
+const snappedY = Math.round(figure.offsetTop / 20) * 20;
+figure.style.left = `${snappedX}px`;
+figure.style.top = `${snappedY}px`;
+checkOverlap(); // Проверяем наложения после перетаскивания
+}
+isDragging = false;
+figure.style.cursor = 'grab';
+});
+figure.addEventListener('selectstart', e => {
+e.preventDefault();
+});
+}
+function resetFigures() {
+document.querySelectorAll('.figure').forEach(figure => figure.remove());
+roadResult.textContent = '';
+}
+function resetInput() {
+document.getElementById('data-input').value = '';
+roadResult.textContent = '';
+}
+</script>
+</body>
+</html>
+

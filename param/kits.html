@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoE: Наборы выбора (Selection Kits)</title>
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<style>
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+h1 {
+    text-align: center;
+    color: #ffd700;
+    margin-bottom: 5px;
+}
+.subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.search-panel {
+    background: #252540;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+input#search {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #4a4a6a;
+    background: #2a2a3e;
+    color: white;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+input#search:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+.filter-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.filter-group {
+    display: flex;
+    gap: 8px;
+    background: #2a2a3e;
+    padding: 5px 12px;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    padding: 6px 12px;
+    background: #1a1a2e;
+    color: white;
+    border: 1px solid #4a4a6a;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.filter-btn:hover {
+    background: #3a3a5e;
+}
+.filter-btn.active {
+    background: #ffd700;
+    color: #1a1a2e;
+    border-color: #ffd700;
+}
+.stats {
+    background: #252540;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.controls button {
+    padding: 8px 16px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.controls button:hover {
+    background: #0055aa;
+}
+.kit-card {
+    background: #252540;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid #3a3a5e;
+    transition: all 0.2s;
+}
+.kit-card:hover {
+    border-color: #ffd700;
+}
+.kit-header {
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #2a2a3e;
+}
+.kit-header::before {
+    content: "▶";
+    transition: transform 0.2s;
+    color: #ffd700;
+    font-size: 12px;
+}
+.kit-card.open .kit-header::before {
+    content: "▼";
+}
+.kit-name {
+    flex: 1;
+    font-weight: bold;
+    font-size: 15px;
+    color: #4fc3f7;
+}
+.kit-id {
+    font-size: 11px;
+    color: #888;
+    font-family: monospace;
+    background: #1a1a2e;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.kit-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #1a1a2e;
+}
+.kit-badge.building { background: #2e7d32; color: #a5d6a7; }
+.kit-badge.upgrade { background: #ef6c00; color: #ffe0b2; }
+.kit-badge.selection { background: #6a1b9a; color: #ce93d8; }
+.kit-badge.mixed { background: #c62828; color: #ffcdd2; }
+.kit-content {
+    display: none;
+    padding: 15px;
+    border-top: 1px solid #3a3a5e;
+}
+.kit-card.open .kit-content {
+    display: block;
+}
+.description {
+    background: #1a1a2e;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    color: #ccc;
+    font-style: italic;
+}
+.choices-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 10px;
+}
+.choices-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.choice-item {
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 180px;
+    flex: 1 0 auto;
+    max-width: 220px;
+    border-left: 3px solid;
+}
+.choice-item.building { border-left-color: #4caf50; }
+.choice-item.upgrade_kit { border-left-color: #ff9800; }
+.choice-item.selection_kit { border-left-color: #9c27b0; }
+.choice-item.default { border-left-color: #888; }
+.choice-name {
+    font-weight: bold;
+    font-size: 13px;
+}
+.choice-type {
+    font-size: 10px;
+    color: #888;
+    margin-top: 4px;
+}
+.choice-id {
+    font-size: 9px;
+    color: #666;
+    font-family: monospace;
+    margin-top: 4px;
+    word-break: break-all;
+}
+mark {
+    background-color: #ffd700;
+    color: #1a1a2e;
+    padding: 0 2px;
+    border-radius: 3px;
+}
+.empty-state {
+    text-align: center;
+    padding: 50px;
+    color: #888;
+}
+.loading {
+    text-align: center;
+    padding: 50px;
+    color: #ffd700;
+}
+</style>
+</head>
+<body>
+
+<h1>🎁 FoE: Наборы выбора (Selection Kits)</h1>
+<div class="subtitle">Поиск по названиям наборов и предметам, которые в них входят</div>
+
+<div class="search-panel">
+    <input type="text" id="search" placeholder="🔍 Поиск... (например: лучезарных, дендрарий, октосфера, анни)">
+    
+    <div class="filter-row">
+        <div class="filter-group">
+            <span style="color:#888; font-size:12px;">📋 Тип набора:</span>
+            <button class="filter-btn" data-filter="all">Все</button>
+            <button class="filter-btn" data-filter="building">🏠 Здания</button>
+            <button class="filter-btn" data-filter="upgrade">🔧 Апгрейды</button>
+             <!-- <button class="filter-btn" data-filter="selection">🎁 Вложенные наборы</button> -->
+            <button class="filter-btn" data-filter="mixed">🔄 Смешанные</button>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <button id="toggle-all-btn">📂 Развернуть все</button>
+</div>
+
+<div class="stats" id="stats"></div>
+<div id="results">
+    <div class="loading">⏳ Загрузка данных из selection_kits.json...</div>
+</div>
+
+<script>
+let kitsData = null;
+let allExpanded = false;
+let currentFilter = 'all';
+
+// Определяем тип набора по его содержимому
+function getKitType(kit) {
+    const types = kit.choices.map(c => c.type);
+    const hasBuilding = types.includes('building');
+    const hasUpgrade = types.includes('upgrade_kit');
+    const hasSelection = types.includes('selection_kit');
+    
+    if (hasBuilding && !hasUpgrade && !hasSelection && kit.choices.length === types.filter(t => t === 'building').length) {
+        return 'building';
+    }
+    if (hasUpgrade && !hasBuilding && !hasSelection && kit.choices.length === types.filter(t => t === 'upgrade_kit').length) {
+        return 'upgrade';
+    }
+    if (hasSelection) {
+        return 'selection';
+    }
+    if ((hasBuilding && hasUpgrade) || kit.choices.length > 1) {
+        return 'mixed';
+    }
+    return 'other';
+}
+
+// Фильтрация наборов
+function filterKits(kits, searchQuery, filterType) {
+    const query = searchQuery.toLowerCase().trim();
+    
+    return Object.entries(kits).filter(([id, kit]) => {
+        // Фильтр по типу набора
+        const kitType = getKitType(kit);
+        if (filterType !== 'all' && kitType !== filterType) return false;
+        
+        // Поиск по тексту
+        if (!query) return true;
+        
+        // Поиск в названии набора
+        if (kit.name?.toLowerCase().includes(query)) return true;
+        if (id.toLowerCase().includes(query)) return true;
+        
+        // Поиск в описании
+        if (kit.description?.toLowerCase().includes(query)) return true;
+        
+        // Поиск в вариантах выбора
+        for (const choice of kit.choices) {
+            if (choice.name?.toLowerCase().includes(query)) return true;
+            if (choice.id?.toLowerCase().includes(query)) return true;
+        }
+        
+        return false;
+    });
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    return String(text).replace(regex, '<mark>$1</mark>');
+}
+
+function render() {
+    if (!kitsData) return;
+    
+    const searchInput = document.getElementById('search');
+    const query = searchInput?.value || '';
+    const statsDiv = document.getElementById('stats');
+    const resultsDiv = document.getElementById('results');
+    
+    const filtered = filterKits(kitsData.selectionKits, query, currentFilter);
+    const filteredKits = Object.fromEntries(filtered);
+    
+    // Статистика
+    const total = Object.keys(kitsData.selectionKits).length;
+    const shown = filtered.length;
+    
+    const typeCounts = {
+        building: 0,
+        upgrade: 0,
+        selection: 0,
+        mixed: 0,
+        other: 0
+    };
+    
+    for (const kit of Object.values(kitsData.selectionKits)) {
+        typeCounts[getKitType(kit)]++;
+    }
+    
+    statsDiv.innerHTML = `
+        <span>📊 Всего наборов: ${total}</span>
+        <span>🔍 Показано: ${shown}</span>
+        <span>🏠 Здания: ${typeCounts.building}</span>
+        <span>🔧 Апгрейды: ${typeCounts.upgrade}</span>
+        <span>🎁 Вложенные: ${typeCounts.selection}</span>
+        <span>🔄 Смешанные: ${typeCounts.mixed}</span>
+    `;
+    
+    if (shown === 0) {
+        resultsDiv.innerHTML = '<div class="empty-state">🔍 Ничего не найдено. Попробуйте другой запрос.</div>';
+        return;
+    }
+    
+    let html = '';
+    
+    for (const [kitId, kit] of Object.entries(filteredKits)) {
+        const kitType = getKitType(kit);
+        const typeLabel = {
+            building: '🏠 Здания',
+            upgrade: '🔧 Апгрейды',
+            selection: '🎁 Вложенные наборы',
+            mixed: '🔄 Смешанный',
+            other: '📦 Другое'
+        }[kitType];
+        
+        const highlightedName = highlightText(kit.name, query);
+        const highlightedDesc = kit.description ? highlightText(kit.description, query) : '';
+        
+        html += `<div class="kit-card" data-kit-id="${kitId}">`;
+        html += `<div class="kit-header">`;
+        html += `<span class="kit-name">${highlightedName}</span>`;
+        html += `<span class="kit-id">${kitId}</span>`;
+        html += `<span class="kit-badge ${kitType}">${typeLabel}</span>`;
+        html += `</div>`;
+        html += `<div class="kit-content">`;
+        
+        if (kit.description) {
+            html += `<div class="description">📝 ${highlightedDesc}</div>`;
+        }
+        
+        html += `<div class="choices-title">📋 Варианты выбора (${kit.choices.length}):</div>`;
+        html += `<div class="choices-grid">`;
+        
+        for (const choice of kit.choices) {
+            const choiceTypeLabel = {
+                'building': '🏠 Здание',
+                'upgrade_kit': '🔧 Апгрейд',
+                'selection_kit': '🎁 Набор выбора'
+            }[choice.type] || choice.type;
+            
+            const highlightedChoiceName = highlightText(choice.name, query);
+            
+            html += `<div class="choice-item ${choice.type}">`;
+            html += `<div class="choice-name">${highlightedChoiceName}</div>`;
+            html += `<div class="choice-type">${choiceTypeLabel} ${choice.amount > 1 ? `×${choice.amount}` : ''}</div>`;
+            html += `<div class="choice-id">${choice.id}</div>`;
+            html += `</div>`;
+        }
+        
+        html += `</div></div></div>`;
+    }
+    
+    resultsDiv.innerHTML = html;
+    
+    // Добавляем обработчики кликов
+    document.querySelectorAll('.kit-card').forEach(card => {
+        const header = card.querySelector('.kit-header');
+        header.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.classList.toggle('open');
+        });
+    });
+    
+    if (allExpanded) {
+        document.querySelectorAll('.kit-card').forEach(card => card.classList.add('open'));
+    }
+}
+
+// Загрузка данных
+async function loadData() {
+    const resultsDiv = document.getElementById('results');
+    
+    try {
+        // Пробуем загрузить JSON файл
+        const response = await fetch('kits.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        kitsData = await response.json();
+        console.log('✅ Загружено наборов:', Object.keys(kitsData.selectionKits).length);
+        render();
+        
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        
+        // Если файл не найден, показываем инструкцию
+        resultsDiv.innerHTML = `
+            <div class="empty-state">
+                <h3>⚠️ Файл selection_kits.json не найден</h3>
+                <p>Пожалуйста, выполните экспорт данных из игры и сохраните результат как <strong>selection_kits.json</strong></p>
+                <p style="margin-top:20px; font-size:12px; color:#888;">Инструкция:<br>
+                1. Откройте консоль разработчика (F12) в игре FoE<br>
+                2. Вставьте скрипт экспорта selection kits<br>
+                3. Скопируйте результат в файл selection_kits.json<br>
+                4. Обновите эту страницу</p>
+            </div>
+        `;
+    }
+}
+
+// Обработчики событий
+document.getElementById('search').addEventListener('input', render);
+
+
+// Одна кнопка для разворачивания/сворачивания
+document.getElementById('toggle-all-btn').addEventListener('click', () => {
+    const cards = document.querySelectorAll('.kit-card');
+    const anyCollapsed = Array.from(cards).some(card => !card.classList.contains('open'));
+    
+    if (anyCollapsed) {
+        // Разворачиваем все
+        cards.forEach(card => card.classList.add('open'));
+        document.getElementById('toggle-all-btn').innerHTML = '📁 Свернуть все';
+    } else {
+        // Сворачиваем все
+        cards.forEach(card => card.classList.remove('open'));
+        document.getElementById('toggle-all-btn').innerHTML = '📂 Развернуть все';
+    }
+});
+
+
+// Фильтры
+document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        render();
+    });
+});
+
+// Загружаем данные
+loadData();
+</script>
+</body>
+</html>

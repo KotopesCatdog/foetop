@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoE: Инвентарь — Наборы и предметы</title>
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<style>
+* { box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+h1 { text-align: center; color: #ffd700; margin-bottom: 5px; }
+.subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 14px; }
+
+/* ── JSON input panel ── */
+.json-panel {
+    background: #1e1e38;
+    border: 1px solid #3a3a5e;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.json-panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 15px; cursor: pointer;
+    background: #252540; user-select: none;
+}
+.json-panel-header:hover { background: #2a2a4a; }
+.json-panel-title { flex: 1; font-size: 14px; font-weight: bold; color: #ffd700; }
+.json-panel-hint  { font-size: 12px; color: #888; }
+.json-panel-arrow { color: #ffd700; font-size: 11px; transition: transform 0.2s; }
+.json-panel.open .json-panel-arrow { transform: rotate(90deg); }
+.json-panel-body  { display: none; padding: 12px 15px; }
+.json-panel.open .json-panel-body { display: block; }
+.json-textarea {
+    width: 100%; height: 140px;
+    background: #12122a; color: #c8f5c8;
+    border: 1px solid #3a3a5e; border-radius: 8px;
+    padding: 10px; font-family: monospace; font-size: 12px; resize: vertical;
+}
+.json-textarea:focus { outline: none; border-color: #ffd700; }
+.btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.btn-apply {
+    padding: 7px 18px; background: #1d6b2e; color: #a5d6a7;
+    border: 1px solid #2e7d32; border-radius: 6px;
+    cursor: pointer; font-size: 13px; font-weight: bold;
+}
+.btn-apply:hover { background: #256636; }
+.btn-clear {
+    padding: 7px 14px; background: #3a1a1a; color: #ef9a9a;
+    border: 1px solid #6a2a2a; border-radius: 6px;
+    cursor: pointer; font-size: 13px;
+}
+.btn-clear:hover { background: #4a2020; }
+.json-status { font-size: 12px; color: #888; flex: 1; text-align: right; }
+.json-status.ok  { color: #66bb6a; }
+.json-status.err { color: #ef5350; }
+
+/* ── Welcome ── */
+.welcome { text-align: center; padding: 60px 20px; color: #888; }
+.welcome h3 { color: #ffd700; margin-bottom: 12px; }
+.welcome p  { font-size: 14px; line-height: 1.7; }
+.welcome code {
+    background: #252540; color: #c8f5c8;
+    padding: 2px 6px; border-radius: 4px; font-size: 13px;
+}
+
+/* ── Search ── */
+.search-panel { background: #252540; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+input#search {
+    width: 100%; padding: 12px; border-radius: 8px;
+    border: 1px solid #4a4a6a; background: #2a2a3e; color: white; font-size: 16px;
+}
+input#search:focus { outline: none; border-color: #ffd700; }
+.filter-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.filter-group {
+    display: flex; gap: 8px; background: #2a2a3e;
+    padding: 5px 12px; border-radius: 8px; flex-wrap: wrap; align-items: center;
+}
+.filter-btn {
+    padding: 6px 12px; background: #1a1a2e; color: white;
+    border: 1px solid #4a4a6a; border-radius: 6px;
+    cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.filter-btn:hover { background: #3a3a5e; }
+.filter-btn.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
+.filter-inv-btn {
+    padding: 6px 12px; background: #1a1a2e; color: #aaa;
+    border: 1px solid #4a4a6a; border-radius: 6px;
+    cursor: pointer; font-size: 13px; transition: all 0.2s;
+    display: flex; align-items: center; gap: 5px;
+}
+.filter-inv-btn:hover { background: #2a2a3e; }
+.filter-inv-btn.active { background: #1d4520; color: #66bb6a; border-color: #2e7d32; }
+.inv-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; }
+.filter-inv-btn.active .inv-dot { background: #66bb6a; }
+
+.stats {
+    background: #252540; padding: 10px 15px; border-radius: 8px;
+    margin-bottom: 15px; font-size: 13px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+.controls { display: flex; gap: 10px; margin-bottom: 15px; }
+.controls button {
+    padding: 8px 16px; background: #0066cc; color: white;
+    border: none; border-radius: 6px; cursor: pointer;
+}
+.controls button:hover { background: #0055aa; }
+
+/* ── Table layout ── */
+.inv-table {
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+}
+.inv-table thead th {
+    background: #1e1e38; padding: 8px 12px; font-size: 12px;
+    color: #888; font-weight: 600; border-bottom: 1px solid #3a3a5e;
+    text-align: left; user-select: none; white-space: nowrap;
+}
+.inv-table thead th.sortable { cursor: pointer; }
+.inv-table thead th.sortable:hover { color: #ffd700; }
+.inv-table thead th.sort-asc::after  { content: ' ▲'; color: #ffd700; }
+.inv-table thead th.sort-desc::after { content: ' ▼'; color: #ffd700; }
+.col-arrow { width: 28px; }
+.col-name  { width: 35%; }
+.col-id    { width: 28%; }
+.col-stock { width: 100px; text-align: center !important; }
+.col-badge { width: 130px; text-align: center !important; }
+.col-type  { width: 130px; }
+
+/* ── Cards ── */
+.kit-card {
+    background: #252540;
+    border-bottom: 1px solid #2a2a3e;
+    transition: background 0.15s;
+}
+.kit-card:hover { background: #2a2a40; }
+.kit-card.has-stock td:first-child { border-left: 3px solid #2e7d32; }
+.kit-header {
+    padding: 10px 12px; cursor: pointer;
+    display: contents;
+}
+.kit-header-cell {
+    padding: 10px 12px; cursor: pointer;
+    background: #252540; transition: background 0.15s;
+    vertical-align: middle;
+}
+.kit-card:hover .kit-header-cell { background: #2a2a40; }
+.kit-header-cell:first-child::before { content: "▶"; color: #ffd700; font-size: 11px; margin-right: 6px; }
+.kit-card.open .kit-header-cell:first-child::before { content: "▼"; }
+.kit-name { font-weight: bold; font-size: 14px; color: #4fc3f7; }
+.kit-name .frag-prefix { color: #90caf9; font-weight: normal; font-size: 12px; }
+.kit-id {
+    font-size: 11px; color: #888; font-family: monospace;
+    background: #1a1a2e; padding: 2px 6px; border-radius: 4px;
+    display: inline-block; word-break: break-all;
+}
+.kit-id-center { font-size: 11px; color: #888; font-family: monospace; }
+.kit-content-row { display: none; }
+.kit-content-row.open { display: table-row; }
+.kit-content-cell {
+    padding: 12px 15px 15px 40px;
+    background: #1e1e38;
+    border-bottom: 2px solid #3a3a5e;
+}
+.kit-stock-badge {
+    display: none; align-items: center; gap: 4px;
+    background: #1d4520; border: 1px solid #2e7d32;
+    color: #a5d6a7; font-size: 12px; font-weight: bold;
+    padding: 2px 9px; border-radius: 20px; white-space: nowrap;
+}
+.kit-stock-badge.visible { display: flex; }
+.kit-assemble-badge { display: flex; align-items: center; background: #1a3a2a; border: 1px solid #4caf50; color: #81c784; font-size: 12px; font-weight: bold; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+.kit-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #1a1a2e; }
+.kit-badge.building  { background: #2e7d32; color: #a5d6a7; }
+.kit-badge.upgrade   { background: #ef6c00; color: #ffe0b2; }
+.kit-badge.selection { background: #6a1b9a; color: #ce93d8; }
+.kit-badge.fragment  { background: #1a4a6a; color: #90caf9; }
+.kit-badge.other     { background: #444; color: #ccc; }
+.kit-content { display: none; padding: 15px; border-top: 1px solid #3a3a5e; }
+.kit-card.open .kit-content { display: block; }
+
+/* ── Choice items ── */
+.choices-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice-item {
+    background: #1a1a2e; border-radius: 8px; padding: 10px 12px;
+    min-width: 200px; flex: 1 0 auto; max-width: 280px;
+    border-left: 3px solid #444; position: relative;
+}
+.choice-item.building      { border-left-color: #4caf50; }
+.choice-item.upgrade_kit   { border-left-color: #ff9800; }
+.choice-item.selection_kit { border-left-color: #9c27b0; }
+.choice-item.fragment      { border-left-color: #2196f3; }
+.choice-item.owned         { background: #142214; border-left-color: #66bb6a !important; }
+.choice-name { font-weight: bold; font-size: 13px; padding-right: 56px; }
+.choice-meta { font-size: 10px; color: #888; margin-top: 3px; }
+.choice-id   { font-size: 9px; color: #555; font-family: monospace; margin-top: 3px; word-break: break-all; }
+
+.choice-stock {
+    position: absolute; top: 8px; right: 8px;
+    font-size: 11px; font-weight: bold; padding: 2px 7px; border-radius: 12px;
+    white-space: nowrap; background: #1d4520; border: 1px solid #2e7d32; color: #a5d6a7;
+}
+.choice-stock.zero { background: #2a2a3e; border-color: #4a4a6a; color: #555; }
+
+.frag-bar {
+    margin-top: 8px; font-size: 11px;
+    background: #0d1a2e; border: 1px solid #1e3a5a; border-radius: 6px;
+    padding: 5px 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+}
+.frag-owned    { color: #ffd700; font-weight: bold; }
+.frag-sep      { color: #555; }
+.frag-req      { color: #888; }
+.frag-ok       { color: #66bb6a; font-weight: bold; }
+.frag-no       { color: #555; }
+.frag-rem      { color: #ffd700; font-weight: bold; }
+
+mark { background-color: #ffd700; color: #1a1a2e; padding: 0 2px; border-radius: 3px; }
+.empty-state { text-align: center; padding: 50px; color: #888; }
+</style>
+</head>
+<body>
+
+<div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
+    <h1 style="margin: 0; font-size: 28px;">🎁 FoE: Инвентарь — Наборы и предметы</h1>
+    
+    <a href="https://drive.google.com/file/d/1XnisrSqyyeA2rlb8gn6DUETtZd73pbNi/view?usp=sharing" 
+       id="download-ext-btn" 
+       target="_blank"
+       style="
+        display: inline-flex; 
+        align-items: center; 
+        gap: 8px;
+        padding: 8px 20px;
+        background: #1d6b2e; 
+        color: #a5d6a7;
+        border: 1px solid #2e7d32; 
+        border-radius: 8px;
+        font-size: 13px; 
+        font-weight: bold;
+        text-decoration: none; 
+        transition: all 0.2s;
+        white-space: nowrap;
+        margin-top: 4px;
+    " 
+       onmouseover="this.style.background='#256636'; this.style.borderColor='#4caf50';"
+       onmouseout="this.style.background='#1d6b2e'; this.style.borderColor='#2e7d32';">
+        ⬇️ Скачать расширение
+    </a>
+</div>
+
+
+
+<div class="subtitle">Вставьте JSON из консоли браузера для отображения инвентаря</div>
+
+<!-- ── JSON input ── -->
+<div class="json-panel open" id="json-panel">
+    <div class="json-panel-header" onclick="togglePanel()">
+        <span class="json-panel-title">📋 Вставить JSON инвентаря</span>
+        <span class="json-panel-hint" id="panel-hint">ожидание данных...</span>
+        <span class="json-panel-arrow">▶</span>
+    </div>
+    <div class="json-panel-body">
+        <textarea class="json-textarea" id="json-input"
+            placeholder='Вставьте сюда содержимое window.lastInventoryJSON из консоли браузера&#10;&#10;Ожидаемая структура:&#10;{&#10;  "inventory": [ { "id": "...", "name": "...", "type": "...", "inStock": N }, ... ],&#10;  "fragments": [ { "assembled_id": "...", "name": "...", "fragments_owned": N, "required_per_item": N, "can_assemble": N }, ... ]&#10;}'></textarea>
+        <div class="btn-row">
+            <button class="btn-apply" onclick="applyJSON()">✓ Применить</button>
+            <button class="btn-clear" onclick="clearJSON()">✕ Сбросить</button>
+            <span class="json-status" id="json-status"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ── Main UI (hidden until data loaded) ── -->
+<div id="main-ui" style="display:none">
+    <div class="search-panel">
+        <input type="text" id="search" placeholder="🔍 Поиск по названию или ID...">
+        <div class="filter-row">
+            <div class="filter-group">
+                <span style="color:#888;font-size:12px;">Тип:</span>
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="building">🏠 Здания</button>
+                <button class="filter-btn" data-filter="upgrade_kit">🔧 Апгрейды</button>
+                <button class="filter-btn" data-filter="selection_kit">🎁 Наборы выбора</button>
+                <button class="filter-btn" data-filter="fragment">🧩 Фрагменты</button>
+                <button class="filter-btn" data-filter="other">📄 Прочее</button>
+            </div>
+            <div class="filter-group">
+                <button class="filter-inv-btn" id="inv-only-btn" onclick="toggleInvFilter()">
+                    <span class="inv-dot"></span> Только в наличии
+                </button>
+                <button class="filter-inv-btn active" id="frag-badge-btn" data-mode="0" onclick="toggleFragBadgeMode()">🧩+✓ Фрагм. и целые</button>
+            </div>
+        </div>
+    </div>
+    <div class="controls">
+        <button id="toggle-all-btn">📂 Развернуть все</button>
+    </div>
+    <div class="stats" id="stats"></div>
+</div>
+
+<div id="results">
+    <div class="welcome">
+        <h3>📦 Инвентарь не загружен</h3>
+        <p>Запустите скрипт в консоли браузера FoE,<br>
+           затем вставьте содержимое в поле выше<br>
+           и нажмите <strong>Применить</strong>.</p>
+    </div>
+</div>
+
+<script>
+let inventory     = [];
+let fragments     = [];
+let currentFilter = 'all';
+let invOnly       = false;
+let sortDir       = 0; // 0=по умолчанию, 1=А-Я, 2=Я-А
+let fragBadgeMode = 0; // 0=оба, 1=только фрагменты, 2=только целые
+let allExpanded   = false;
+
+function togglePanel() {
+    document.getElementById('json-panel').classList.toggle('open');
+}
+
+function applyJSON() {
+    const raw    = document.getElementById('json-input').value.trim();
+    const status = document.getElementById('json-status');
+    if (!raw) {
+        status.textContent = 'Поле пустое';
+        status.className = 'json-status err';
+        return;
+    }
+
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch(e) {
+        status.textContent = 'Ошибка JSON: ' + e.message;
+        status.className = 'json-status err';
+        return;
+    }
+
+    inventory = Array.isArray(parsed) ? parsed : (parsed.inventory || []);
+    fragments = parsed.fragments || [];
+
+    if (!inventory.length && !fragments.length) {
+        status.textContent = 'Данные не найдены — проверьте структуру JSON';
+        status.className = 'json-status err';
+        return;
+    }
+
+    const byType = inventory.reduce((a,x) => { a[x.type]=(a[x.type]||0)+1; return a; }, {});
+    status.textContent = `✓ ${inventory.length} предм. · ${fragments.length} фрагм.`
+        + (byType.building      ? ` · 🏠${byType.building}`      : '')
+        + (byType.selection_kit ? ` · 🎁${byType.selection_kit}` : '')
+        + (byType.upgrade_kit   ? ` · 🔧${byType.upgrade_kit}`   : '');
+    status.className = 'json-status ok';
+
+    document.getElementById('panel-hint').textContent = `${inventory.length} предм., ${fragments.length} фрагм.`;
+    document.getElementById('json-panel').classList.remove('open');
+    document.getElementById('main-ui').style.display = 'block';
+    render();
+}
+
+function clearJSON() {
+    inventory = []; fragments = [];
+    document.getElementById('json-input').value = '';
+    document.getElementById('json-status').textContent = '';
+    document.getElementById('panel-hint').textContent = 'ожидание данных...';
+    document.getElementById('main-ui').style.display = 'none';
+    invOnly = false;
+    document.getElementById('inv-only-btn').classList.remove('active');
+    document.getElementById('results').innerHTML = `
+        <div class="welcome">
+            <h3>📦 Инвентарь не загружен</h3>
+            <p>Запустите скрипт в консоли браузера FoE,<br>
+               затем вставьте содержимое <code>window.lastInventoryJSON</code> в поле выше.</p>
+        </div>`;
+}
+
+function toggleInvFilter() {
+    invOnly = !invOnly;
+    document.getElementById('inv-only-btn').classList.toggle('active', invOnly);
+    render();
+}
+
+const fragBadgeModes = [
+    { label: '🧩+✓ Фрагм. и целые', tip: 'Показаны: фрагменты и целые' },
+    { label: '🧩 Только фрагменты', tip: 'Показаны: только фрагменты' },
+    { label: '✓ Только целые',      tip: 'Показаны: только целые' }
+];
+
+function toggleFragBadgeMode() {
+    fragBadgeMode = (fragBadgeMode + 1) % 3;
+    const btn = document.getElementById("frag-badge-btn");
+    btn.textContent = fragBadgeModes[fragBadgeMode].label;
+    btn.dataset.mode = fragBadgeMode;
+    render();
+}
+
+function hl(text, q) {
+    if (!q || !text) return text || '';
+    return String(text).replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<mark>$1</mark>');
+}
+
+function normalizeFrag(item) {
+    const f           = item.fragment || {};
+    const assembledId = f.assembled_id || item.id;
+    const name        = f.assembled_name || item.name || assembledId;
+    const assembledType = f.assembled_type || '—';
+    const owned       = item.inStock || 0;
+    const required    = f.required ?? f.per_item ?? 1;
+    const canAssemble = f.can_assemble ?? Math.floor(owned / required);
+    const remainder   = owned - canAssemble * required;
+    return { assembledId, name, assembledType, owned, required, canAssemble, remainder };
+}
+
+function getList() {
+    const q = (document.getElementById('search')?.value || '').toLowerCase().trim();
+
+    // Фрагменты из inventory[]
+    const invFrags = inventory
+        .filter(x => x.type === 'fragment')
+        .map(x => ({ ...x, _frag: normalizeFrag(x) }));
+
+    // Фрагменты из отдельного массива fragments[]
+    const extraFrags = fragments.map(f => {
+        const assembledId   = f.assembled_id || f.id?.replace('fragment#','');
+        const name          = f.name || assembledId;
+        const assembledType = f.assembled_type || '—';
+        const owned         = f.fragments_owned ?? f.inStock ?? 0;
+        const required      = f.required_per_item ?? f.required ?? 1;
+        const canAssemble   = f.can_assemble ?? Math.floor(owned / required);
+        const remainder     = owned - canAssemble * required;
+        return {
+            id: 'fragment#' + assembledId,
+            name,
+            type: 'fragment',
+            inStock: owned,
+            asset: null,
+            _frag: { assembledId, name, assembledType, owned, required, canAssemble, remainder }
+        };
+    });
+
+    let list = [...inventory.filter(x => x.type !== 'fragment'), ...invFrags, ...extraFrags];
+
+    // Фильтр по типу
+    if (currentFilter !== 'all') {
+        list = list.filter(x => x.type === currentFilter);
+    }
+
+    // Только в наличии
+    if (invOnly) {
+        list = list.filter(x => (x.inStock || 0) > 0);
+    }
+
+    // === ИСПРАВЛЕННЫЙ ФИЛЬТР ПО РЕЖИМУ ФРАГМЕНТОВ ===
+    if (fragBadgeMode === 1) {
+        // Только фрагменты
+        list = list.filter(x => x.type === 'fragment');
+    } else if (fragBadgeMode === 2) {
+        // Только целые предметы (исключаем все фрагменты)
+        list = list.filter(x => x.type !== 'fragment');
+    }
+    // fragBadgeMode === 0 — показываем всё
+
+    // Поиск
+    if (q) {
+        list = list.filter(x =>
+            (x.name && x.name.toLowerCase().includes(q)) ||
+            (x.id && x.id.toLowerCase().includes(q)) ||
+            (x._frag && x._frag.name && x._frag.name.toLowerCase().includes(q))
+        );
+    }
+
+    return { list, q };
+}
+
+function render() {
+    const { list, q } = getList();
+    const statsEl = document.getElementById('stats');
+    const resEl   = document.getElementById('results');
+
+    const fragCount = inventory.filter(x => x.type === 'fragment').length + fragments.length;
+    const byType = inventory.reduce((a,x) => { a[x.type]=(a[x.type]||0)+1; return a; }, {});
+
+    statsEl.innerHTML =
+        `<span>📦 Предметов: ${inventory.length - fragCount}</span>` +
+        `<span>🧩 Фрагментов: ${fragCount}</span>` +
+        (byType.building      ? `<span>🏠 ${byType.building}</span>` : '') +
+        (byType.selection_kit ? `<span>🎁 ${byType.selection_kit}</span>` : '') +
+        (byType.upgrade_kit   ? `<span>🔧 ${byType.upgrade_kit}</span>` : '') +
+        `<span>🔍 Показано: ${list.length}</span>`;
+
+    if (!list.length) {
+        resEl.innerHTML = '<div class="empty-state">🔍 Ничего не найдено.</div>';
+        return;
+    }
+
+    // Сортировка
+    if (sortDir === 1) list.sort((a,b) => displayName(a).localeCompare(displayName(b)));
+    else if (sortDir === 2) list.sort((a,b) => displayName(b).localeCompare(displayName(a)));
+
+    const typeLabel = {
+        building:      '🏠 Здание',
+        upgrade_kit:   '🔧 Апгрейд',
+        selection_kit: '🎁 Набор выбора',
+        fragment:      '🧩 Фрагменты',
+        other:         '📄 Прочее'
+    };
+
+    const badgeClass = {
+        building:      'building',
+        upgrade_kit:   'upgrade',
+        selection_kit: 'selection',
+        fragment:      'fragment'
+    };
+
+    let html = `<table class="inv-table">
+<thead><tr>
+  <th class="col-arrow"></th>
+  <th class="col-name sortable ${sortDir===1?'sort-asc':sortDir===2?'sort-desc':''}" id="sort-name-th" onclick="cycleSortDir()">Название</th>
+  <th class="col-id">Источник (ID)</th>
+  <th class="col-stock" style="text-align:center">Кол-во</th>
+  <th class="col-badge" style="text-align:center">Целых</th>
+  <th class="col-type">Тип</th>
+</tr></thead><tbody>`;
+
+    for (const item of list) {
+        const isFrag  = item.type === 'fragment';
+        const frag    = item._frag;
+        const inStock = item.inStock || 0;
+        const label   = typeLabel[item.type] || item.type;
+        const badge   = badgeClass[item.type] || 'other';
+        const dName   = displayName(item);
+        const srcId   = isFrag ? (frag?.assembledId || item.id) : item.id;
+
+        let stockCell = '';
+        let assembleCell = '';
+
+        if (isFrag) {
+            // Фрагменты
+            if (fragBadgeMode === 0 || fragBadgeMode === 1) {
+                stockCell = inStock > 0 
+                    ? `<span class="kit-stock-badge visible">${inStock} фрагм.</span>`
+                    : `<span style="color:#555">—</span>`;
+            }
+
+            if (fragBadgeMode === 0 || fragBadgeMode === 2) {
+                if (frag && frag.canAssemble > 0) {
+                    assembleCell = `<span class="kit-assemble-badge">= ${frag.canAssemble} цел.</span>`;
+                } else {
+                    assembleCell = `<span style="color:#555">—</span>`;
+                }
+            }
+        } else {
+            // Обычные предметы
+            stockCell = inStock > 0 
+                ? `<span class="kit-stock-badge visible">${inStock} шт.</span>`
+                : `<span style="color:#555">—</span>`;
+        }
+
+        html += `<tr class="kit-card ${inStock > 0 ? 'has-stock' : ''}">`;
+        html += `<td class="kit-header-cell col-arrow"></td>`;
+        html += `<td class="kit-header-cell col-name"><span class="kit-name">${hl(dName, q)}</span></td>`;
+        html += `<td class="kit-header-cell col-id"><span class="kit-id">${srcId}</span></td>`;
+        html += `<td class="kit-header-cell col-stock" style="text-align:center">${stockCell}</td>`;
+        html += `<td class="kit-header-cell col-badge" style="text-align:center">${assembleCell}</td>`;
+        html += `<td class="kit-header-cell col-type"><span class="kit-badge ${badge}">${label}</span></td>`;
+        html += `</tr>`;
+
+        // Детальная строка
+        html += `<tr class="kit-content-row"><td class="kit-content-cell" colspan="6">`;
+        if (isFrag && frag) {
+            const canBadge = frag.canAssemble > 0
+                ? `<span class="frag-ok">✓ ${frag.canAssemble} шт.</span>`
+                : `<span class="frag-no">— не хватает</span>`;
+            const remText = frag.canAssemble > 0
+                ? `, остаток: <span class="frag-rem">${frag.remainder}</span>`
+                : `, нужно ещё: <span class="frag-no">${frag.required - frag.owned}</span>`;
+
+            html += `<div class="choice-item fragment ${inStock>0?'owned':''}" style="max-width:480px">`;
+            html += `<span class="choice-stock ${inStock>0?'visible':'zero'}">${inStock} фрагм.</span>`;
+            html += `<div class="choice-name">🧩 Фрагмент: ${hl(frag.name, q)}</div>`;
+            html += `<div class="choice-meta">Тип: ${frag.assembledType}</div>`;
+            html += `<div class="choice-id">${frag.assembledId}</div>`;
+            html += `<div class="frag-bar">`;
+            html += `<span class="frag-owned">${frag.owned}</span>`;
+            html += `<span class="frag-sep">/</span>`;
+            html += `<span class="frag-req">${frag.required} на 1 предм.</span>`;
+            html += `<span> → собрать: </span>${canBadge}${remText}`;
+            html += `</div></div>`;
+        } else {
+            html += `<div class="choice-item ${item.type || 'default'} ${inStock>0?'owned':''}" style="max-width:480px">`;
+            html += `<span class="choice-stock ${inStock>0?'visible':'zero'}">${inStock} шт.</span>`;
+            html += `<div class="choice-name">${hl(dName, q)}</div>`;
+            html += `<div class="choice-meta">${label}</div>`;
+            html += `<div class="choice-id">${item.id}</div>`;
+            if (item.asset && item.asset !== item.id)
+                html += `<div class="choice-id" style="color:#444">asset: ${item.asset}</div>`;
+            html += `</div>`;
+        }
+        html += `</td></tr>`;
+    }
+
+    html += '</tbody></table>';
+    resEl.innerHTML = html;
+
+    // Обработчики клика для раскрытия
+    resEl.querySelectorAll('.kit-card').forEach(row => {
+        row.querySelectorAll('.kit-header-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                row.classList.toggle('open');
+                const contentRow = row.nextElementSibling;
+                if (contentRow && contentRow.classList.contains('kit-content-row')) {
+                    contentRow.classList.toggle('open');
+                }
+            });
+        });
+    });
+
+    if (allExpanded) {
+        resEl.querySelectorAll('.kit-card').forEach(row => {
+            row.classList.add('open');
+            const contentRow = row.nextElementSibling;
+            if (contentRow) contentRow.classList.add('open');
+        });
+    }
+}
+
+function displayName(item) {
+    return item.type === 'fragment'
+        ? 'Фрагмент: ' + (item._frag?.name || item.name || '')
+        : (item.name || '');
+}
+
+function cycleSortDir() {
+    sortDir = (sortDir + 1) % 3;
+    render();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('search').addEventListener('input', render);
+
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            render();
+        });
+    });
+
+    document.getElementById('toggle-all-btn').addEventListener('click', () => {
+        const cards = document.querySelectorAll('.kit-card');
+        const anyCollapsed = Array.from(cards).some(c => !c.classList.contains('open'));
+        allExpanded = anyCollapsed;
+        cards.forEach(row => {
+            row.classList.toggle('open', anyCollapsed);
+            const contentRow = row.nextElementSibling;
+            if (contentRow && contentRow.classList.contains('kit-content-row'))
+                contentRow.classList.toggle('open', anyCollapsed);
+        });
+        document.getElementById('toggle-all-btn').textContent =
+            anyCollapsed ? '📁 Свернуть все' : '📂 Развернуть все';
+    });
+
+    // Ctrl+V — открыть панель
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'v' &&
+            !['TEXTAREA','INPUT'].includes(document.activeElement.tagName)) {
+            document.getElementById('json-panel').classList.add('open');
+            setTimeout(() => document.getElementById('json-input').focus(), 50);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
