@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умный Генератор Уровней v3</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-color: #16213e;
+            --accent-color: #e94560;
+            --text-color: #e2e2e2;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1300px;
+            width: 100%;
+        }
+        .controls {
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 10px;
+            flex: 1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .preview {
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 10px;
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        h1, h2 { margin-top: 0; color: var(--accent-color); }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(13, 35px);
+            grid-template-rows: repeat(8, 25px);
+            gap: 2px;
+            background: #333;
+            padding: 5px;
+            border: 2px solid #555;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 35px;
+            height: 25px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px black;
+            box-sizing: border-box;
+        }
+        .block-0 { background: transparent; border: 1px dashed #444; }
+        
+        .control-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input, button {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            background: #0f3460;
+            color: white;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            background: var(--accent-color);
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #0f3460;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            resize: vertical;
+            font-size: 12px;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 20px; height: 15px; border-radius: 2px; border: 1px solid #000; }
+        .row-flex { display: flex; gap: 10px; }
+        .row-flex > div { flex: 1; }
+    </style>
+</head>
+<body>
+    <h1>Умный Генератор Уровней v3</h1>
+    <div class="container">
+        <div class="controls">
+            <h2>Настройки</h2>
+            <div class="control-group">
+                <label>Начальный номер уровня:</label>
+                <input type="number" id="levelNumber" value="55">
+            </div>
+            <div class="control-group">
+                <label>Тип симметрии:</label>
+                <select id="symmetry">
+                    <option value="horizontal">Горизонтальная (Зеркало)</option>
+                    <option value="vertical">Вертикальная</option>
+                    <option value="central">Центральная</option>
+                    <option value="none">Без симметрии</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Стиль фигуры:</label>
+                <select id="pattern">
+                    <option value="diamond">Ромб / Сердце</option>
+                    <option value="pyramid">Пирамида</option>
+                    <option value="frame">Рамка</option>
+                    <option value="random_blobs">Случайные фигуры</option>
+                    <option value="rows">Полосы</option>
+                </select>
+            </div>
+            <div class="row-flex">
+                <div class="control-group">
+                    <label>Движение (movement):</label>
+                    <select id="movement">
+                        <option value="none">none</option>
+                        <option value="horizontal">horizontal</option>
+                        <option value="vertical">vertical</option>
+                        <option value="both" selected>both</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Скорость (speed):</label>
+                    <input type="number" id="movementSpeed" step="0.1" value="0.8">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Плотность блоков (0-1):</label>
+                <input type="range" id="density" min="0.3" max="0.9" step="0.1" value="0.7">
+            </div>
+            <div class="control-group">
+                <label>Сложность (спец. блоки):</label>
+                <input type="range" id="complexity" min="0" max="0.5" step="0.1" value="0.2">
+            </div>
+            <button onclick="generateLevel()">Сгенерировать и добавить в список</button>
+            <button style="background: #555;" onclick="clearOutput()">Очистить список</button>
+            
+            <div id="legend" class="legend"></div>
+        </div>
+        
+        <div class="preview">
+            <h2>Предпросмотр (последний сгенерированный)</h2>
+            <div id="grid" class="grid"></div>
+            <textarea id="output" placeholder="Здесь будет накапливаться код уровней..."></textarea>
+            <div class="row-flex" style="width: 100%; margin-top: 10px;">
+                <button style="background:#4ecca3" onclick="copyToClipboard()">Копировать весь код</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 8;
+        const COLS = 13;
+        
+        const STANDARD_COLORS = {
+            1:  { main: "#006666", light: "#44AAAA", dark: "#003333", name: "Тёмно-зелёный (2х)" },
+            2:  { main: "#006666", light: "#44AAAA", dark: "#003333", name: "Тёмно-зелёный (3х)" },
+            3:  { main: "#FF4488", light: "#FF88BB", dark: "#AA2255", name: "Розовый" },
+            4:  { main: "#FF4488", light: "#FF88BB", dark: "#AA2255", name: "Розовый" },
+            5:  { main: "#FFEE44", light: "#FFFF88", dark: "#AA9922", name: "Жёлтый" },
+            6:  { main: "#44FF88", light: "#88FFBB", dark: "#22AA55", name: "Зелёный" },
+            7:  { main: "#FF8844", light: "#FFBB77", dark: "#AA5522", name: "Оранжевый" },
+            8:  { main: "#BB44FF", light: "#DD88FF", dark: "#7722AA", name: "Фиолетовый" },
+            9:  { main: "#006666", light: "#44AAAA", dark: "#003333", name: "Непробиваемый" },
+            10: { main: "#FF4444", light: "#FF8888", dark: "#AA2222", name: "Красный" },
+            11: { main: "#4488FF", light: "#88AAFF", dark: "#2255AA", name: "Синий" },
+            12: { main: "#EEEEEE", light: "#FFFFFF", dark: "#AAAAAA", name: "Белый" },
+            13: { main: "#006666", light: "#44AAAA", dark: "#003333", name: "Движущийся" }
+        };
+
+        const SIMPLE_IDS = [3, 4, 5, 6, 7, 8, 10, 11, 12];
+
+        function initLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+            [1, 2, 9, 13, 3, 5, 6, 7, 8, 10, 11, 12].forEach(id => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                const box = document.createElement('div');
+                box.className = 'legend-box';
+                box.style.backgroundColor = STANDARD_COLORS[id].main;
+                box.style.borderTop = `2px solid ${STANDARD_COLORS[id].light}`;
+                box.style.borderBottom = `2px solid ${STANDARD_COLORS[id].dark}`;
+                const text = document.createElement('span');
+                text.textContent = `${id}: ${STANDARD_COLORS[id].name}`;
+                item.appendChild(box);
+                item.appendChild(text);
+                legend.appendChild(item);
+            });
+        }
+
+        function generateLevel() {
+            const levelNumInput = document.getElementById('levelNumber');
+            const levelNum = parseInt(levelNumInput.value);
+            const levelName = `Level ${levelNum}`;
+            
+            const symmetry = document.getElementById('symmetry').value;
+            const pattern = document.getElementById('pattern').value;
+            const density = parseFloat(document.getElementById('density').value);
+            const complexity = parseFloat(document.getElementById('complexity').value);
+            const movement = document.getElementById('movement').value;
+            const movementSpeed = parseFloat(document.getElementById('movementSpeed').value);
+
+            let layout = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+
+            generatePatternMask(layout, pattern, density);
+            applySymmetry(layout, symmetry);
+            fillBlockTypes(layout, complexity);
+            fixEnclosedBlocks(layout);
+
+            renderGrid(layout);
+            appendToOutput(levelNum, levelName, layout, movement, movementSpeed);
+            
+            // Увеличиваем номер уровня для следующей генерации
+            levelNumInput.value = levelNum + 1;
+        }
+
+        function generatePatternMask(layout, pattern, density) {
+            const midC = Math.floor(COLS / 2);
+            const midR = Math.floor(ROWS / 2);
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let shouldFill = false;
+                    if (pattern === 'diamond') {
+                        const dist = Math.abs(r - midR) + Math.abs(c - midC);
+                        shouldFill = dist <= 4 && r > 0;
+                    } else if (pattern === 'pyramid') {
+                        shouldFill = r >= 2 && Math.abs(c - midC) <= (r - 1);
+                    } else if (pattern === 'frame') {
+                        shouldFill = (r === 1 || r === ROWS - 2 || c === 1 || c === COLS - 2) && r > 0;
+                    } else if (pattern === 'rows') {
+                        shouldFill = r % 2 === 1 && r > 0;
+                    } else if (pattern === 'random_blobs') {
+                        shouldFill = Math.sin(r * 0.5) + Math.cos(c * 0.5) > (1.5 - density * 2);
+                    }
+                    if (shouldFill && Math.random() < density) {
+                        layout[r][c] = 1; 
+                    }
+                }
+            }
+        }
+
+        function applySymmetry(layout, type) {
+            if (type === 'horizontal') {
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < Math.floor(COLS / 2); c++) {
+                        layout[r][COLS - 1 - c] = layout[r][c];
+                    }
+                }
+            } else if (type === 'vertical') {
+                for (let r = 0; r < Math.floor(ROWS / 2); r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        layout[ROWS - 1 - r][c] = layout[r][c];
+                    }
+                }
+            } else if (type === 'central') {
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < Math.floor(COLS / 2); c++) {
+                        layout[ROWS - 1 - r][COLS - 1 - c] = layout[r][c];
+                    }
+                }
+            }
+        }
+
+        function fillBlockTypes(layout, complexity) {
+            const symmetry = document.getElementById('symmetry').value;
+            const colorMap = new Map();
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (layout[r][c] === 0) continue;
+                    const symKey = getSymmetryKey(r, c, symmetry);
+                    if (!colorMap.has(symKey)) {
+                        let type;
+                        const rand = Math.random();
+                        if (rand < complexity * 0.2) type = 9; 
+                        else if (rand < complexity * 0.5) type = 13;
+                        else if (rand < complexity * 0.7) type = 2;
+                        else if (rand < complexity * 0.9) type = 1;
+                        else {
+                            const colorIdx = (r + Math.floor(c/2)) % SIMPLE_IDS.length;
+                            type = SIMPLE_IDS[colorIdx];
+                        }
+                        colorMap.set(symKey, type);
+                    }
+                }
+            }
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (layout[r][c] === 0) continue;
+                    const symKey = getSymmetryKey(r, c, symmetry);
+                    layout[r][c] = colorMap.get(symKey);
+                }
+            }
+        }
+
+        function getSymmetryKey(r, c, type) {
+            if (type === 'horizontal') return `${r}-${Math.min(c, COLS - 1 - c)}`;
+            if (type === 'vertical') return `${Math.min(r, ROWS - 1 - r)}-${c}`;
+            if (type === 'central') {
+                const idx1 = r * COLS + c;
+                const idx2 = (ROWS - 1 - r) * COLS + (COLS - 1 - c);
+                return Math.min(idx1, idx2).toString();
+            }
+            return `${r}-${c}`;
+        }
+
+        function fixEnclosedBlocks(layout) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (layout[r][c] === 9) {
+                        if (c === 0 || c === COLS - 1 || r === 0) {
+                            layout[r][c] = SIMPLE_IDS[0];
+                        }
+                    }
+                }
+            }
+        }
+
+        function renderGrid(layout) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const val = layout[r][c];
+                    const cell = document.createElement('div');
+                    cell.className = `cell block-${val}`;
+                    if (val > 0) {
+                        const colors = STANDARD_COLORS[val];
+                        cell.style.backgroundColor = colors.main;
+                        cell.style.borderTop = `2px solid ${colors.light}`;
+                        cell.style.borderLeft = `2px solid ${colors.light}`;
+                        cell.style.borderBottom = `2px solid ${colors.dark}`;
+                        cell.style.borderRight = `2px solid ${colors.dark}`;
+                        cell.textContent = val;
+                        if (val === 13) cell.textContent = '↔';
+                    } else {
+                        cell.className = 'cell block-0';
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function appendToOutput(num, name, layout, movement, speed) {
+            const output = document.getElementById('output');
+            const jsonLayout = JSON.stringify(layout, null, 8)
+                .replace(/\[\s+/g, '[')
+                .replace(/\s+\]/g, ']')
+                .replace(/,\s+/g, ', ');
+            
+            const code = `// Уровень ${num}: ${name}
+{
+    name: "${name}",
+    layout: ${jsonLayout},
+    movement: "${movement}",
+    movementSpeed: ${speed}
+},
+`;
+            output.value += code;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            if (confirm('Очистить весь накопленный код уровней?')) {
+                document.getElementById('output').value = '';
+            }
+        }
+
+        function copyToClipboard() {
+            const textarea = document.getElementById('output');
+            if (!textarea.value) {
+                alert('Список пуст!');
+                return;
+            }
+            textarea.select();
+            document.execCommand('copy');
+            alert('Весь код скопирован!');
+        }
+
+        initLegend();
+        // Не генерируем сразу, чтобы пользователь мог настроить первый уровень
+    </script>
+</body>
+</html>

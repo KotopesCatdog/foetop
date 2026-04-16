@@ -1,0 +1,898 @@
+[
+  {
+    "category": "Жилые",
+    "name": "Многоэтажный дом",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 70,
+      "coin_cost": 10000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 12500,
+      "chrono_production": 10,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Каркасный дом",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 110,
+      "coin_cost": 10000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "coin_production": 25000,
+      "chrono_production": 75,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Дом с гонтовой кр.",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 150,
+      "coin_cost": 210000,
+      "hammer_cost": 200000,
+      "chrono_cost": 1000,
+      "coin_production": 130000,
+      "chrono_production": 250,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Особняк",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 60,
+      "coin_cost": 14000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 7500,
+      "chrono_production": 10,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Дом из песчаника",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 90,
+      "coin_cost": 42000,
+      "hammer_cost": 60000,
+      "chrono_cost": 200,
+      "coin_production": 15000,
+      "chrono_production": 75,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Городской особняк",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 130,
+      "coin_cost": 294000,
+      "hammer_cost": 240000,
+      "chrono_cost": 1000,
+      "coin_production": 78000,
+      "chrono_production": 250,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Усадьба",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 50,
+      "coin_cost": 16000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 3750,
+      "chrono_production": 10,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Жилые",
+    "name": "Многоквартирный дом",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 80,
+      "coin_cost": 48000,
+      "hammer_cost": 70000,
+      "chrono_cost": 200,
+      "coin_production": 7500,
+      "chrono_production": 75,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Жилые",
+    "name": "Манор",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 110,
+      "coin_cost": 336000,
+      "hammer_cost": 280000,
+      "chrono_cost": 1000,
+      "coin_production": 39000,
+      "chrono_production": 250,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Кожевня",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 12000,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 12000,
+      "chrono_production": 10,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Обувная мастерская",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 36000,
+      "hammer_cost": 50000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 24000,
+      "chrono_production": 75,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Пекарня",
+    "size": "4x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 84000,
+      "hammer_cost": 100000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 60000,
+      "chrono_production": 250,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Ферма",
+    "size": "4x5",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 16800,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 7200,
+      "chrono_production": 10,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Лаборатория алхимика",
+    "size": "3x2",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 50400,
+      "hammer_cost": 60000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 14400,
+      "chrono_production": 75,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Ветряная мельница",
+    "size": "3x4",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 117600,
+      "hammer_cost": 120000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 36000,
+      "chrono_production": 250,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Пивоварня",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 19200,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 4800,
+      "chrono_production": 10,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Лавка специй",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 57600,
+      "hammer_cost": 70000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 9600,
+      "chrono_production": 75,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Бондарня",
+    "size": "3x4",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 134400,
+      "hammer_cost": 140000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 24000,
+      "chrono_production": 250,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Товар",
+    "name": "Пасека",
+    "size": "3x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Медь",
+    "size": "4x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+        "chrono_cost": 200
+    },
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Кирпичный цех",
+    "size": "4x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+        "chrono_cost": 200
+    },
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Канатная мастерская",
+    "size": "3x2",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+        "chrono_cost": 200
+    },
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Порох",
+    "size": "3x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+       "chrono_cost": 200
+    },
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Общест.",
+    "name": "Торговая площадь",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 12000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 125,
+      "od_production": 0,
+      "od_chas": 50
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Виселица",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 36000,
+      "hammer_cost": 36000,
+      "chrono_cost": 100,
+      "happiness_production": 250,
+      "od_production": 0,
+      "od_chas": 60
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Позорный столб",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 120000,
+      "hammer_cost": 120000,
+      "chrono_cost": 500,
+      "happiness_production": 750,
+      "od_production": 0,
+      "od_chas": 120
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Церковь",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 16800,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 160,
+      "od_production": 500,
+      "od_chas": 50
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Типография",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50400,
+      "hammer_cost": 43200,
+      "chrono_cost": 100,
+      "happiness_production": 375,
+      "od_production": 500,
+      "od_chas": 130
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дом лекаря",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 168000,
+      "hammer_cost": 144000,
+      "chrono_cost": 500,
+      "happiness_production": 1125,
+      "od_production": 1000,
+      "od_chas": 260
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дворец",
+    "size": "4x4",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 19200,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 225,
+      "od_production": 1250,
+      "od_chas": 90
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Общест.",
+    "name": "Библиотека",
+    "size": "4x4",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 57600,
+      "hammer_cost": 50400,
+      "chrono_cost": 100,
+      "happiness_production": 500,
+      "od_production": 2500,
+      "od_chas": 200
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дом картографа",
+    "size": "3x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 192000,
+      "hammer_cost": 168000,
+      "chrono_cost": 500,
+      "happiness_production": 900,
+      "od_production": 750,
+      "od_chas": 180
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Кипарис",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 10,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Цветочная изгородь",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 10
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Пруд",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 200000,
+      "hammer_cost": 200000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 25,
+      "blue_stats": 25
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Указательный столб",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 62500,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 15,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Горгулья",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 62500,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 15
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Флаг",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 300000,
+      "hammer_cost": 250000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 20,
+      "blue_stats": 20
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Разрушенная башня",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 100000,
+      "hammer_cost": 75000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 45,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Группа деревьев",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 100000,
+      "hammer_cost": 75000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 45
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Морская скульптура",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 400000,
+      "hammer_cost": 300000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 30,
+      "blue_stats": 30
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конный лучник",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Бронированная пехота",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Мастерская катапульт",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Казармы наёмников",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Тяжелая кавалерия",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Арбалетчик",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Тяжёлая пехота",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Требушеты",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Берсерки",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конюшня рыцарей",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Длиннолучник",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Королевский стражник",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Пушка",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Двуручный меч",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конюшня тяж рыцаря",
+    "size": "4x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Расширения",
+    "name": "Расш",
+    "size": "4x4",
+    "color": "white",
+    "bonuses": {},
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Системные",
+    "name": "Ратуша",
+    "size": "7x6",
+    "color": "yellow",
+    "bonuses": {
+      "coin_production": 50000,
+      "chrono_production": 15,
+      "hammer_production": 50000
+    },
+    "symbol": "",
+    "symbol_color": ""
+  }
+]

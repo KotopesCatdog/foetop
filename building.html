@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoE Building DB</title>
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<style>
+:root { --bg-color: #1a1a1d; --text-color: #c5c6c7; --accent-color: #66fcf1; --box-bg: #2d2d34; --border-color: #45454b; --tooltip-bg: rgba(20, 20, 25, 0.98); --tooltip-border: #66fcf1; --hover-bg: rgba(102, 252, 241, 0.1); --close-btn-color: #ff4500; --basket-color: #ffd700; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+h1 { 
+    color: var(--accent-color); 
+    margin-bottom: 20px; 
+    text-align: center; 
+    margin: 0;
+    flex: 1;
+}
+
+
+/* === ШАПКА С КОРЗИНОЙ === */
+.header-container { 
+    position: relative;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    width: 100%; 
+    max-width: 1400px; 
+    margin-bottom: 20px; 
+}
+.basket-btn {
+    position: absolute;
+    right: 0;
+    background: var(--box-bg); 
+    border: 2px solid var(--basket-color); 
+    color: var(--basket-color);
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: bold;
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.basket-btn:hover { 
+    background: var(--basket-color); 
+    color: #000; 
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); 
+}
+.basket-count { 
+    background: #ff4500; 
+    color: white; 
+    border-radius: 50%; 
+    width: 24px; 
+    height: 24px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 14px; 
+}
+/* === ПОДСКАЗКА К КОРЗИНЕ === */
+.basket-btn-container {
+    position: relative;
+    display: inline-block;
+}
+.basket-tooltip {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;           /* Появляется СНИЗУ кнопки */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.95);
+    color: #fff;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+    border: 1px solid var(--basket-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    margin-top: 50px;     /* Отступ от кнопки */
+    pointer-events: none; /* Чтобы не мешала кликам */
+}
+.basket-tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;        /* Стрелка смотрит ВВЕРХ к кнопке */
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent var(--basket-color) transparent;
+}
+.basket-btn-container:hover .basket-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* === ПОИСК И КНОПКА === */
+.search-container { width: 100%; max-width: 800px; margin-bottom: 30px; }
+.search-wrapper { position: relative; width: 100%; }
+input#searchInput {
+    width: 100%; padding: 15px 45px 15px 15px; font-size: 18px; background-color: var(--box-bg);
+    border: 2px solid var(--border-color); color: white; border-radius: 8px; outline: none; box-sizing: border-box;
+}
+input#searchInput:focus { border-color: var(--accent-color); }
+input#searchInput:disabled { opacity: 0.6; cursor: wait; }
+#clearBtn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #ff4500; color: white;
+    border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; cursor: pointer; z-index: 10; display: none; padding: 0; line-height: 1;
+}
+#clearBtn:hover { background: #ff6b6b; }
+
+/* === ЧЕКБОКСЫ === */
+.filter-options { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 12px; justify-content: center; }
+.filter-option { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-size: 14px; color: var(--text-color); }
+.filter-option input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color); }
+.filter-option:hover { color: var(--accent-color); }
+
+/* === РЕЗУЛЬТАТЫ === */
+.status-msg { text-align: center; margin: 10px 0 15px 0; font-style: italic; color: #888; height: 20px; font-size: 14px; }
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; width: 100%; max-width: 1400px; position: relative; z-index: 1; }
+.building-card {
+    background-color: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px;
+    cursor: pointer; transition: all 0.2s ease; position: relative; overflow: visible; display: flex; flex-direction: column;
+    justify-content: space-between; user-select: none; z-index: 2;
+}
+/* === ПОДСВЕТКА КОРЗИНЫ === */
+.building-card.in-basket {
+    border-color: var(--basket-color) !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3) !important;
+}
+
+.building-card.in-basket:hover {
+    border-color: var(--basket-color) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5) !important;
+    transform: translateY(-5px);
+}
+.building-card.in-basket .card-header {
+    background: rgba(255, 215, 0, 0.15);
+    border-radius: 4px;
+    padding: 5px;
+    margin: -15px -15px 8px -15px;
+}
+.building-card.in-basket .card-title::after {
+    content: " ✓";
+    color: var(--basket-color);
+    font-weight: bold;
+}
+.building-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(102, 252, 241, 0.15); border-color: var(--accent-color); z-index: 10; }
+.building-card.active { border-color: #fff; box-shadow: 0 0 20px rgba(102, 252, 241, 0.4); background-color: var(--hover-bg); z-index: 20; }
+.building-card.added { animation: flashGreen 0.5s ease; border-color: #4ecdc4; }
+@keyframes flashGreen { 0% { box-shadow: 0 0 0 rgba(78, 205, 196, 0); } 50% { box-shadow: 0 0 20px rgba(78, 205, 196, 0.6); } 100% { box-shadow: 0 0 0 rgba(78, 205, 196, 0); } }
+
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.card-title { font-weight: bold; font-size: 15px; color: #fff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 5px; }
+.card-stats { font-size: 13px; display: flex; justify-content: space-between; color: #ccc; margin-top: auto; padding-top: 10px; border-top: 1px solid #444; }
+
+/* === ТУЛТИП === */
+.tooltip-box {
+    position: absolute; top: 100%; left: 50%; margin-top: 10px; transform: translateX(-50%) translateY(0);
+    width: 420px; max-height: 85vh; overflow-y: auto; background-color: var(--tooltip-bg); border: 1px solid var(--tooltip-border);
+    border-radius: 4px; padding: 0; z-index: 1000; display: none; box-shadow: 0 0 25px rgba(0,0,0,0.9);
+    pointer-events: auto; font-size: 13px; line-height: 1.4; opacity: 0; transition: opacity 0.2s, transform 0.2s;
+}
+.building-card:hover .tooltip-box, .building-card.active .tooltip-box { display: block; opacity: 1; transform: translateX(-50%) translateY(0); }
+.tt-header { font-weight: bold; color: #fff; font-size: 16px; border-bottom: 1px solid #555; padding: 10px 12px; margin: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; background: rgba(255,255,255,0.05); border-radius: 4px 4px 0 0; user-select: none; }
+.tt-close-btn { color: var(--close-btn-color); font-size: 24px; font-weight: bold; line-height: 0.8; cursor: pointer; padding: 0 5px; transition: color 0.2s; margin-left: auto; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; }
+.tt-close-btn:hover { color: #ff6b6b; text-shadow: 0 0 5px var(--close-btn-color); }
+.era-select-wrapper { width: 100%; margin-top: 5px; display: flex; justify-content: flex-end; }
+select.era-selector { background: #333; border: 1px solid var(--accent-color); color: #fff; padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; outline: none; max-width: 200px; font-family: inherit; }
+select.era-selector option { background: #222; color: #fff; }
+.tt-body { padding: 12px; }
+.tt-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.tt-label { color: #aaa; }
+.tt-value { color: #fff; font-weight: 600; text-align: right; }
+.tt-value.positive { color: #4ecdc4; }
+.tt-value.negative { color: #ff6b6b; }
+.tt-value.neutral { color: #ffd700; }
+.tt-section { margin-top: 10px; border-top: 1px dashed #555; padding-top: 8px; }
+.tt-section-title { color: var(--accent-color); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: bold; }
+.prod-option { background: rgba(255,255,255,0.05); padding: 5px; border-radius: 4px; margin-bottom: 5px; border-left: 2px solid var(--accent-color); }
+.prod-option.chain { border-left-color: #ffd700 !important; }
+.prod-option.chain-boost { border-left-color: #ff6b6b !important; }
+.res-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; padding-left: 5px; align-items: center; }
+.chance-bar { height: 4px; background: #444; border-radius: 2px; width: 60px; margin-left: 5px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.chance-fill { height: 100%; background: var(--accent-color); }
+.no-results { grid-column: 1 / -1; text-align: center; padding: 40px; color: #666; font-size: 18px; }
+.icon-sm { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+.bonus-icon-img { width: 16px; height: 16px; margin-right: 6px; vertical-align: middle; flex-shrink: 0; object-fit: contain; display: inline-block; }
+.tt-section .bonus-icon-img { width: 24px; height: 24px; margin-right: 8px; }
+.tt-section .res-item { font-size: 14px; margin-bottom: 6px; padding: 4px 0; }
+.bg-money { background: #ffd700; } .bg-supplies { background: #cd7f32; } .bg-pop { background: #ff6b6b; } .bg-happy { background: #4ecdc4; } .bg-goods { background: #a020f0; } .bg-unit { background: #ff4500; } .bg-fp { background: #4a90e2; } .bg-meet { background: #e91e63; } .bg-boost { background: #00bcd4; } .bg-generic { background: #999; } .bg-fragment { background: #e91e63; border: 1px solid #fff; } .bg-blueprint { background: #2196f3; }
+.bg-ally-military { background: #ff4500; } .bg-ally-goods { background: #a020f0; } .bg-ally-money { background: #ffd700; } .bg-ally-supplies { background: #cd7f32; } .bg-ally-all { background: #66fcf1; }
+.tooltip-box::-webkit-scrollbar { width: 6px; } .tooltip-box::-webkit-scrollbar-track { background: #222; } .tooltip-box::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+/* === МОДАЛЬНОЕ ОКНО КОРЗИНЫ === */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+    z-index: 2000; display: none; justify-content: center; align-items: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+    background: var(--box-bg); border: 2px solid var(--basket-color); border-radius: 10px;
+    width: 90%; max-width: 1200px; max-height: 90vh; overflow-y: auto; padding: 20px;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+.modal-title { font-size: 20px; color: var(--basket-color); font-weight: bold; }
+.modal-close { background: none; border: none; color: #ff4500; font-size: 28px; cursor: pointer; }
+.modal-close:hover { color: #ff6b6b; }
+.basket-controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; align-items: center; }
+.basket-era-select { display: flex; align-items: center; gap: 10px; }
+.basket-era-select label { color: #aaa; font-size: 14px; }
+.basket-era-select select {
+    background: #333; border: 1px solid var(--basket-color); color: #fff;
+    padding: 8px 12px; font-size: 14px; border-radius: 5px; cursor: pointer; outline: none;
+}
+.basket-actions { display: flex; gap: 10px; margin-left: auto; }
+.btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; }
+.btn-export { background: #4ecdc4; color: #000; } .btn-export:hover { background: #45b7aa; }
+.btn-clear { background: #ff4500; color: white; } .btn-clear:hover { background: #ff6b6b; }
+.basket-table-container { overflow-x: auto; }
+.basket-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.basket-table th, .basket-table td { border: 1px solid #444; padding: 8px; text-align: left; }
+.basket-table th { background: rgba(255, 215, 0, 0.1); color: var(--basket-color); cursor: pointer; user-select: none; white-space: nowrap; }
+.basket-table th:hover { background: rgba(255, 215, 0, 0.2); }
+.basket-table th.sorted-asc::after { content: " ▲"; }
+.basket-table th.sorted-desc::after { content: " ▼"; }
+.basket-table tr:hover { background: rgba(255,255,255,0.05); }
+.basket-table .col-action { width: 40px; text-align: center; }
+.basket-table .btn-remove { background: #ff4500; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+.basket-table .btn-remove:hover { background: #ff6b6b; }
+.toast-notification {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #4ecdc4; color: #000; padding: 12px 24px; border-radius: 8px; font-weight: bold;
+    z-index: 3000; transition: transform 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.toast-notification.show { transform: translateX(-50%) translateY(0); }
+.toast-notification.error { background: #ff4500; color: white; }
+</style>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="header-container">
+    <h1>База Зданий FoE</h1>
+    <div class="basket-btn-container">
+        <button class="basket-btn" onclick="openBasketModal()">
+            🛒 Корзина <span class="basket-count" id="basketCount">0</span>
+        </button>
+        <span class="basket-tooltip">Для добавления держи ЛКМ на здании 1 сек.</span>
+    </div>
+</div>
+
+
+<div style="text-align:center; color:#888; font-size:12px; margin-top:-15px; margin-bottom:20px;">(С) foehelp.ru База 21.03.2026</div>
+
+<div id="statusMsg" class="status-msg">Загрузка...</div>
+<div class="search-container">
+    <div class="search-wrapper">
+        <input type="text" id="searchInput" placeholder="Введите минимум 2 символа..." disabled>
+        <button id="clearBtn">✕</button>
+    </div>
+    <div class="filter-options">
+        <label class="filter-option"><input type="checkbox" id="filterName" checked><span>Имя</span></label>
+        <label class="filter-option"><input type="checkbox" id="filterType" checked><span>Тип</span></label>
+        <label class="filter-option"><input type="checkbox" id="filterSource" checked><span>Источник</span></label>
+    </div>
+</div>
+<div id="resultsGrid" class="results-grid"></div>
+
+<!-- === МОДАЛЬНОЕ ОКНО КОРЗИНЫ === -->
+<div class="modal-overlay" id="basketModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">🛒 Корзина зданий</span> (сортировка - клик по колонке)
+            <button class="modal-close" onclick="closeBasketModal()">&times;</button>
+        </div>
+        
+        <div class="basket-controls">
+            <div class="basket-era-select">
+                <label>📅 Эпоха для всех зданий:</label>
+                <select id="basketEraSelect" onchange="onBasketEraChange()"></select>
+            </div>
+            <div class="basket-actions">
+                <button class="btn btn-export" onclick="exportBasketXLSX()">📥 Экспорт Excel</button>
+                <button class="btn btn-clear" onclick="clearBasket()">🗑 Очистить</button>
+            </div>
+        </div>
+        
+        <div class="basket-table-container">
+            <table class="basket-table" id="basketTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- === УВЕДОМЛЕНИЕ === -->
+<div class="toast-notification" id="toastNotification"></div>
+
+<script>
+const JSON_URL = 'https://foehelp.ru/building.json';
+let allBuildings = [];
+let activeBuildingId = null;
+let activeEraOverride = null;
+let basket = [];
+let basketSort = { column: null, direction: 'asc' };
+let basketConfig = null;
+let basketEra = 'ContemporaryEra'; // Эпоха для всей корзины
+
+// === ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ===
+const searchInput = document.getElementById('searchInput');
+const resultsGrid = document.getElementById('resultsGrid');
+const statusMsg = document.getElementById('statusMsg');
+const clearBtn = document.getElementById('clearBtn');
+const filterName = document.getElementById('filterName');
+const filterType = document.getElementById('filterType');
+const filterSource = document.getElementById('filterSource');
+
+// ==========================
+window.InnoEras = {
+"NoEra": 0, "BronzeAge": 1, "IronAge": 2, "EarlyMiddleAge": 3, "HighMiddleAge": 4,
+"LateMiddleAge": 5, "ColonialAge": 6, "IndustrialAge": 7, "ProgressiveEra": 8,
+"ModernEra": 9, "PostModernEra": 10, "ContemporaryEra": 11, "TomorrowEra": 12,
+"FutureEra": 13, "ArcticFuture": 14, "OceanicFuture": 15, "VirtualFuture": 16,
+"SpaceAgeMars": 17, "SpaceAgeAsteroidBelt": 18, "SpaceAgeVenus": 19,
+"SpaceAgeJupiterMoon": 20, "SpaceAgeTitan": 21,
+"SpaceAgeSpaceHub": 22
+};
+window.EraNames = {
+"NoEra": "Без эпохи",
+"BronzeAge": "Бронзовый век",
+"IronAge": "Железный век",
+"EarlyMiddleAge": "Раннее средневековье",
+"HighMiddleAge": "Высокое средневековье",
+"LateMiddleAge": "Позднее средневековье",
+"ColonialAge": "Колониальная эпоха",
+"IndustrialAge": "Индустриальная эпоха",
+"ProgressiveEra": "Эпоха прогресса",
+"ModernEra": "Модерн",
+"PostModernEra": "Постмодерн",
+"ContemporaryEra": "Новейшее",
+"TomorrowEra": "Завтра",
+"FutureEra": "Будущее",
+"ArcticFuture": "Арктическое будущее",
+"OceanicFuture": "Океаническое будущее",
+"VirtualFuture": "Виртуальное будущее",
+"SpaceAgeMars": "Космическая эра: Марс",
+"SpaceAgeAsteroidBelt": "Пояс",
+"SpaceAgeVenus": "Венера",
+"SpaceAgeJupiterMoon": "Юпитер",
+"SpaceAgeTitan": "Титан",
+"SpaceAgeSpaceHub": "Хаб"
+};
+window.EraList = Object.keys(window.InnoEras).filter(era => era !== "NoEra").sort((a, b) => window.InnoEras[a] - window.InnoEras[b]);
+window.BoostsMapper = {
+"attack": ["attack"], "defense": ["defense"], "campaign": ["campaign"],
+"goods_production": ["goods_production"], "money_production": ["money_production"],
+"supplies_production": ["supplies_production"], "population": ["population"],
+"happiness": ["happiness"], "clan_power": ["clan_power"], "all": ["all"],
+"att_boost_attacker": ["attack"], "def_boost_defender": ["defense"]
+};
+window.BonusIcons = {
+"guild_raids_action_points_collection": "https://foehelp.ru/icons/guild_raids_action_points_collection.jpg",
+"attack": "https://foehelp.ru/icons/attack.png",
+"att_boost_defender": "https://foehelp.ru/icons/att_boost_defender.png",
+"att_def_boost_attacker": "https://foehelp.ru/icons/att_def_boost_attacker.png",
+"att_def_boost_defender": "https://foehelp.ru/icons/att_def_boost_defender.png",
+"att_def_boost_attacker_defender": "https://foehelp.ru/icons/att_def_boost_attacker_defender.png",
+"defense": "https://foehelp.ru/icons/def_boost_defender.png",
+"def_boost_attacker": "https://foehelp.ru/icons/def_boost_attacker.png",
+"goods_production": "https://foehelp.ru/icons/goods.png",
+"money_production": "https://foehelp.ru/icons/money.png",
+"supplies_production": "https://foehelp.ru/icons/supplies.png",
+"happiness": "https://foehelp.ru/icons/happiness.png",
+"population": "https://foehelp.ru/icons/population.png",
+"clan_power": "https://foehelp.ru/icons/clan_power.png",
+"campaign": "https://foehelp.ru/icons/campaign.png",
+"default": "https://foehelp.ru/icons/boost_generic.png"
+};
+window.AllyRoomTypes = {
+"military": "Военная",
+"goods": "Товары",
+"money": "Монеты",
+"supplies": "Молотки",
+"all": "Все типы",
+"random": "Случайная"
+};
+window.FeatureNames = {
+"all": "Все",
+"guild_expedition": "Экспедиция",
+"battleground": "Поля",
+"guild_raids": "Кванты",
+"campaign": "Кампания",
+"arcade": "Аркада",
+"event": "Событие",
+"pvp": "PvP",
+"neighbor": "Соседи",
+"set": "Сет",
+"age": "Эпоха"
+};
+window.AssetIdTranslations = {
+"ArcheologyBonus19": "Археология 19",
+"ArcheologyBonus20": "Археология 20",
+"ArcheologyBonus21": "Археология 21",
+"ArcheologyBonus22": "Археология 22",
+"ANNI22": "Юбилейный 22",
+"ANNI23": "Юбилейный 23",
+"ANNI24": "Юбилейный 24",
+"ANNI25": "Юбилейный 25",
+"ANNI26": "Юбилейный 26",
+"SUM13": "Летний 13",
+"SUM14": "Летний 14",
+"SUM15": "Летний 15",
+"SUM16": "Летний 16",
+"SUM17": "Летний 17",
+"SUM18": "Летний 18",
+"SUM19": "Летний 19",
+"SUM20": "Летний 20",
+"SUM21": "Летний 21",
+"SUM22": "Летний 22",
+"SUM23": "Летний 23",
+"SUM24": "Летний 24",
+"SUM25": "Летний 25",
+"WIN12": "Зимний 12",
+"WIN13": "Зимний 13",
+"WIN14": "Зимний 14",
+"WIN15": "Зимний 15",
+"WIN16": "Зимний 16",
+"WIN17": "Зимний 17",
+"WIN18": "Зимний 18",
+"WIN19": "Зимний 19",
+"WIN20": "Зимний 20",
+"WIN21": "Зимний 21",
+"WIN22": "Зимний 22",
+"WIN23": "Зимний 23",
+"WIN24": "Зимний 24",
+"WIN25": "Зимний 25",
+"FELL23": "Осенний 23",
+"FELL25": "Осенний 25",
+"FELL24": "Осенний 24",
+"SPR25": "Весенний 25",
+"SUM25": "Летний 25",
+"HAL25": "Хэллоуин 25",
+"CHR25": "Рождество 25",
+"STPAT": "Св. Патрик",
+"EASTER": "Пасха",
+"GBG": "Битва Гильдий"
+};
+window.CurrentEra = "ContemporaryEra";
+
+// === ЗАГРУЗКА КОНФИГУРАЦИИ КОРЗИНЫ ===
+async function loadBasketConfig() {
+    try {
+        const response = await fetch('basket.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        basketConfig = await response.json();
+        console.log('✅ Конфигурация корзины загружена');
+    } catch (error) {
+        console.warn('⚠️ Не удалось загрузить basket.json, используем значения по умолчанию:', error);
+        basketConfig = {
+            resources: {
+                strategy_points: { label: "СО", iconClass: "bg-fp" },
+                money: { label: "Монеты", iconClass: "bg-money" },
+                supplies: { label: "Молотки", iconClass: "bg-supplies" },
+                goods: { label: "Товары", iconClass: "bg-goods" },
+                clan_power: { label: "Сила гильдии", iconClass: "bg-meet" },
+                medals: { label: "Медали", iconClass: "bg-fp" }
+            },
+            boosts: {},
+            features: window.FeatureNames || {},
+            settings: { maxBasketSize: 10, longPressDuration: 1500 }
+        };
+    }
+}
+
+// === ЗАГРУЗКА КОРЗИНЫ ИЗ LOCALSTORAGE ===
+function loadBasket() {
+    const saved = localStorage.getItem('foeBuildingBasket');
+    const savedEra = localStorage.getItem('foeBuildingBasketEra');
+    if (saved) {
+        try {
+            basket = JSON.parse(saved);
+            updateBasketCount();
+        } catch(e) { console.warn("Basket load error:", e); basket = []; }
+    }
+    if (savedEra) {
+        basketEra = savedEra;
+    }
+}
+function saveBasket() {
+    localStorage.setItem('foeBuildingBasket', JSON.stringify(basket));
+    localStorage.setItem('foeBuildingBasketEra', basketEra);
+    updateBasketCount();
+}
+function updateBasketCount() {
+    document.getElementById('basketCount').textContent = basket.length;
+}
+
+// === УВЕДОМЛЕНИЯ ===
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toastNotification');
+    toast.textContent = message;
+    toast.className = 'toast-notification show' + (isError ? ' error' : '');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// === УПРАВЛЕНИЕ КОРЗИНОЙ ===
+function addToBasket(building) {
+    const maxSize = basketConfig?.settings?.maxBasketSize || 10;
+    
+    if (basket.length >= maxSize) {
+        showToast(`Максимум ${maxSize} зданий в корзине!`, true);
+        return;
+    }
+    if (basket.find(b => b.id === building.id)) {
+        showToast('Уже в корзине', true);
+        return;
+    }
+    
+    basket.push({
+        id: building.id,
+        name: building.name,
+        baseEra: building.baseEra,
+        availableEras: building.availableEras,
+        size: building.size,
+        rawMeta: building.rawMeta,
+        rawData: building.rawData,
+        addedAt: Date.now()
+    });
+    
+    saveBasket();
+    
+    // ✅ Обновляем индикаторы на всех карточках
+    updateBasketCardIndicators();
+}
+
+function highlightBasketCard(buildingId) {
+    const card = document.querySelector(`.building-card[data-id="${buildingId}"]`);
+    if (card) {
+        card.classList.add('in-basket');
+        setTimeout(() => card.classList.remove('in-basket'), 1000);
+    }
+}
+
+function removeFromBasket(buildingId) {
+    basket = basket.filter(b => b.id !== buildingId);
+    saveBasket();
+    renderBasketTable();
+}
+
+function clearBasket() {
+    if (confirm('Очистить всю корзину?')) {
+        basket = [];
+        saveBasket();
+        renderBasketTable();
+    }
+}
+
+// === МОДАЛЬНОЕ ОКНО ===
+function openBasketModal() {
+    document.getElementById('basketModal').classList.add('active');
+    initBasketEraSelect();
+    renderBasketTable();
+    updateBasketCardIndicators();
+}
+function closeBasketModal() {
+    document.getElementById('basketModal').classList.remove('active');
+    updateBasketCardIndicators();
+}
+function updateBasketCardIndicators() {
+    document.querySelectorAll('.building-card').forEach(card => {
+        const buildingId = card.dataset.id;
+        const isInBasket = basket.some(item => item.id === buildingId);
+        if (isInBasket) {
+            card.classList.add('in-basket');
+        } else {
+            card.classList.remove('in-basket');
+        }
+    });
+}
+// === ИНИЦИАЛИЗАЦИЯ ВЫБОРА ЭПОХИ ===
+function initBasketEraSelect() {
+    const select = document.getElementById('basketEraSelect');
+    select.innerHTML = '';
+    window.EraList.forEach(era => {
+        const option = document.createElement('option');
+        option.value = era;
+        option.textContent = window.EraNames[era] || era;
+        if (era === basketEra) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
+function onBasketEraChange() {
+    basketEra = document.getElementById('basketEraSelect').value;
+    saveBasket();
+    renderBasketTable();
+}
+
+// === ОТРИСОВКА ТАБЛИЦЫ КОРЗИНЫ ===
+function renderBasketTable() {
+    const table = document.getElementById('basketTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    // === СБОР УНИКАЛЬНЫХ ТИПОВ БОНУСОВ И ПРОИЗВОДСТВА ===
+    const uniqueBoosts = new Map();
+    const uniqueProds = new Map();
+    
+    // Получаем данные для каждого здания с текущей эпохой корзины
+    const basketData = basket.map(b => {
+        const building = allBuildings.find(ab => ab.id === b.id);
+        if (!building) return null;
+        
+        const data = getBuildingDataForEra(building, basketEra);
+        return {
+            id: b.id,
+            name: b.name,
+            size: b.size,
+            population: data.population,
+            happiness: data.happiness,
+            production: data.production,
+            boosts: data.boosts
+        };
+    }).filter(b => b !== null);
+    
+    basketData.forEach(b => {
+        // Бонусы
+        if (b.boosts && Array.isArray(b.boosts)) {
+            b.boosts.forEach(boost => {
+                const types = Array.isArray(boost.type) ? boost.type : [boost.type];
+                types.forEach(t => {
+                    const feature = boost.feature || boost.targetedFeature || 'all';
+                    const key = `${t}|${feature}`;
+                    if (!uniqueBoosts.has(key)) {
+                        const boostCfg = basketConfig?.boosts?.[t] || {};
+                        const iconUrl = boostCfg.iconUrl || window.BonusIcons[t] || window.BonusIcons['default'];
+                        const featureLabel = basketConfig?.features?.[feature] || window.FeatureNames?.[feature] || feature.replace(/_/g, ' ');
+                        const typeLabel = boostCfg.label || t.replace(/_/g, ' ');
+                        uniqueBoosts.set(key, { type: t, feature, icon: iconUrl, label: `(${featureLabel})` });
+                    }
+                });
+            });
+        }
+        
+        // Производство
+        if (b.production && Array.isArray(b.production)) {
+            b.production.filter(p => p.type !== 'random').forEach(p => {
+                if (p.resources && typeof p.resources === 'object' && !Array.isArray(p.resources)) {
+                    Object.keys(p.resources).forEach(resKey => {
+                        // === ФИЛЬТРАЦИЯ ТЕХНИЧЕСКИХ ПОЛЕЙ ===
+                const technicalFields = ['id', 'name', 'type', 'subType', 'amount', 'dropChance', 'iconClass'];
+                if (technicalFields.includes(resKey)) return;
+                // ====================================
+                        if (!uniqueProds.has(resKey)) {
+                            const resCfg = basketConfig?.resources?.[resKey] || {};
+                            let iconClass = resCfg.iconClass || 'bg-money';
+                            let label = resCfg.label || resKey;
+                            
+                            if (!resCfg.label) {
+                                if (resKey.includes('strategy')) { iconClass = 'bg-fp'; label = 'СО'; }
+                                else if (resKey.includes('goods')) { iconClass = 'bg-goods'; label = 'Товары'; }
+                                else if (resKey.includes('money')) { iconClass = 'bg-money'; label = 'Монеты'; }
+                                else if (resKey.includes('suppl')) { iconClass = 'bg-supplies'; label = 'Молотки'; }
+                                else if (resKey.includes('clan_power')) { iconClass = 'bg-meet'; label = 'Сила гильдии'; }
+                                else if (resKey.includes('medal')) { iconClass = 'bg-fp'; label = 'Медали'; }
+                            }
+                            
+                            uniqueProds.set(resKey, { key: resKey, iconClass, label });
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    // === ЗАГОЛОВОК ТАБЛИЦЫ ===
+    let headerHtml = '<tr><th class="col-action">✕</th><th>Название</th>';
+    headerHtml += `<th data-sort="size">Размер</th>`;
+    headerHtml += `<th data-sort="population">Население</th>`;
+    headerHtml += `<th data-sort="happiness">Счастье</th>`;
+    
+    // Динамические колонки производства
+    uniqueProds.forEach(prod => {
+        headerHtml += `<th class="col-prod" data-sort="prod:${prod.key}"><span class="icon-sm ${prod.iconClass}"></span>${prod.label}</th>`;
+    });
+    
+    // Динамические колонки бонусов
+    uniqueBoosts.forEach(boost => {
+        headerHtml += `<th class="col-boost" data-sort="boost:${boost.type}|${boost.feature}" style="text-align:center;"><img src="${boost.icon}" class="bonus-icon-img" style="margin-right:0;"> ${boost.label}</th>`;
+    });
+    
+    headerHtml += '</tr>';
+    thead.innerHTML = headerHtml;
+    
+    // === СОРТИРОВКА ===
+    let sortedData = [...basketData];
+    if (basketSort.column) {
+        sortedData.sort((a, b) => {
+            let valA, valB;
+            const [sortType, sortKey] = basketSort.column.split(':');
+            
+            if (sortType === 'prod') {
+                valA = getProdValue(a.production, sortKey);
+                valB = getProdValue(b.production, sortKey);
+            } else if (sortType === 'boost') {
+                valA = getBoostValue(a.boosts, sortKey);
+                valB = getBoostValue(b.boosts, sortKey);
+            } else {
+                valA = a[sortType];
+                valB = b[sortType];
+                if (sortType === 'size') {
+                    valA = a.size.width * a.size.length;
+                    valB = b.size.width * b.size.length;
+                }
+            }
+            
+            if (valA === valB) return 0;
+            if (valA == null) return 1;
+            if (valB == null) return -1;
+            
+            const result = (valA < valB) ? -1 : 1;
+            return basketSort.direction === 'asc' ? result : -result;
+        });
+    }
+    
+    function getProdValue(productions, resKey) {
+        if (!productions) return null;
+        const prodItem = productions.find(p => p.resources && p.resources[resKey] !== undefined);
+        return prodItem && prodItem.resources[resKey] !== undefined ? prodItem.resources[resKey] : null;
+    }
+    
+    function getBoostValue(boosts, boostKey) {
+        if (!boosts) return null;
+        const [type, feature] = boostKey.split('|');
+        const boostItem = boosts.find(bt => {
+            const btTypes = Array.isArray(bt.type) ? bt.type : [bt.type];
+            return btTypes.includes(type) && (bt.feature || bt.targetedFeature || 'all') === feature;
+        });
+        return boostItem ? boostItem.value : null;
+    }
+    
+    // === СТРОКИ ТАБЛИЦЫ ===
+    let bodyHtml = '';
+    
+    sortedData.forEach(b => {
+        let rowHtml = `<tr><td class="col-action"><button class="btn-remove" onclick="removeFromBasket('${b.id}')">✕</button></td><td><strong>${b.name}</strong></td>`;
+        rowHtml += `<td>${b.size.width}x${b.size.length}</td>`;
+        rowHtml += `<td class="${b.population > 0 ? 'tt-value positive' : 'tt-value negative'}">${b.population > 0 ? '+' : ''}${b.population}</td>`;
+        rowHtml += `<td class="tt-value positive">+${b.happiness}</td>`;
+        
+        // Производство
+        uniqueProds.forEach(prod => {
+            let val = '';
+            if (b.production) {
+                const prodItem = b.production.find(p => p.resources && p.resources[prod.key] !== undefined);
+                if (prodItem && prodItem.resources[prod.key] !== undefined) {
+                    val = Math.round(prodItem.resources[prod.key]);
+                }
+            }
+            rowHtml += `<td style="text-align:center; font-weight:bold;">${val || '—'}</td>`;
+        });
+        
+        // Бонусы
+        uniqueBoosts.forEach(boost => {
+            let val = '';
+            if (b.boosts) {
+                const boostItem = b.boosts.find(bt => {
+                    const btTypes = Array.isArray(bt.type) ? bt.type : [bt.type];
+                    return btTypes.includes(boost.type) && (bt.feature || bt.targetedFeature || 'all') === boost.feature;
+                });
+                if (boostItem) val = `+${boostItem.value}%`;
+            }
+            rowHtml += `<td style="text-align:center; font-weight:bold; color:#4ecdc4;">${val || '—'}</td>`;
+        });
+        
+        rowHtml += '</tr>';
+        bodyHtml += rowHtml;
+    });
+    
+    tbody.innerHTML = bodyHtml || '<tr><td colspan="20" style="text-align:center; padding:20px; color:#888;">Корзина пуста</td></tr>';
+    
+    // === ОБРАБОТЧИКИ СОРТИРОВКИ ===
+    thead.querySelectorAll('th[data-sort]').forEach(th => {
+        th.onclick = () => {
+            const col = th.dataset.sort;
+            if (basketSort.column === col) {
+                basketSort.direction = basketSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                basketSort.column = col;
+                basketSort.direction = 'asc';
+            }
+            thead.querySelectorAll('th').forEach(h => {
+                h.classList.remove('sorted-asc', 'sorted-desc');
+            });
+            th.classList.add(basketSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            renderBasketTable();
+        };
+    });
+}
+
+
+// === ЭКСПОРТ CSV ===
+// === ЭКСПОРТ XLSX ===
+// === ЭКСПОРТ XLSX ===
+function exportBasketXLSX() {
+    if (basket.length === 0) { showToast('Корзина пуста', true); return; }
+    if (typeof XLSX === 'undefined') { 
+        showToast('Библиотека SheetJS не загружена!', true); 
+        return; 
+    }
+    
+    const uniqueBoosts = new Map();
+    const uniqueProds = new Map();
+    
+    // === МАППИНГ НАЗВАНИЙ БОНУСОВ ===
+    const boostTypeNames = {
+        "attack": "Атака",
+        "defense": "Оборона",
+        "def_boost_attacker": "Защита (атак.)",
+        "def_boost_defender": "Защита (защ.)",
+        "att_boost_attacker": "Атака (атак.)",
+        "att_boost_defender": "Атака (защ.)",
+        "att_def_boost_attacker": "Атака+Защита (атак.)",
+        "att_def_boost_defender": "Атака+Защита (защ.)",
+        "att_def_boost_attacker_defender": "Атака+Защита",
+        "goods_production": "Товары",
+        "money_production": "Монеты",
+        "supplies_production": "Молотки",
+        "happiness": "Счастье",
+        "population": "Население",
+        "clan_power": "Сила гильдии",
+        "campaign": "Кампания",
+        "guild_raids_action_points_collection": "Кванты"
+    };
+    
+    // === ФИЛЬТР ТЕХНИЧЕСКИХ ПОЛЕЙ ===
+    const technicalFields = ['id', 'name', 'type', 'subType', 'amount', 'dropChance', 'iconClass'];
+    
+    // === СОЗДАЁМ МАССИВ ДАННЫХ ===
+    const basketData = basket.map(b => {
+        const building = allBuildings.find(ab => ab.id === b.id);
+        if (!building) return null;
+        const data = getBuildingDataForEra(building, basketEra);
+        return {
+            id: b.id,
+            name: b.name,
+            size: b.size,
+            population: data.population,
+            happiness: data.happiness,
+            production: data.production,
+            boosts: data.boosts
+        };
+    }).filter(b => b !== null);
+    
+    // === СБОР УНИКАЛЬНЫХ ТИПОВ ===
+    basketData.forEach(b => {
+        // Бонусы
+        if (b.boosts && Array.isArray(b.boosts)) {
+            b.boosts.forEach(boost => {
+                const types = Array.isArray(boost.type) ? boost.type : [boost.type];
+                types.forEach(t => {
+                    const feature = boost.feature || boost.targetedFeature || 'all';
+                    const key = `${t}|${feature}`;
+                    if (!uniqueBoosts.has(key)) {
+                        const boostCfg = basketConfig?.boosts?.[t] || {};
+                        const featureLabel = basketConfig?.features?.[feature] || window.FeatureNames?.[feature] || feature.replace(/_/g, ' ');
+                        const typeName = boostTypeNames[t] || t.replace(/_/g, ' ');
+                        uniqueBoosts.set(key, { 
+                            label: `${typeName} (${featureLabel})`, 
+                            icon: boostCfg.iconUrl || window.BonusIcons[t] || window.BonusIcons['default'],
+                            type: t, 
+                            feature 
+                        });
+                    }
+                });
+            });
+        }
+        
+        // Производство (с фильтрацией технических полей)
+        if (b.production && Array.isArray(b.production)) {
+            b.production.filter(p => p.type !== 'random').forEach(p => {
+                if (p.resources && typeof p.resources === 'object' && !Array.isArray(p.resources)) {
+                    Object.keys(p.resources).forEach(resKey => {
+                        if (technicalFields.includes(resKey)) return;
+                        if (!uniqueProds.has(resKey)) {
+                            const resCfg = basketConfig?.resources?.[resKey] || {};
+                            let label = resCfg.label || resKey;
+                            if (!resCfg.label) {
+                                if (resKey.includes('strategy')) label = 'СО';
+                                else if (resKey.includes('goods')) label = 'Товары';
+                                else if (resKey.includes('money')) label = 'Монеты';
+                                else if (resKey.includes('suppl')) label = 'Молотки';
+                                else if (resKey.includes('clan_power')) label = 'Сила гильдии';
+                                else if (resKey.includes('medal')) label = 'Медали';
+                            }
+                            uniqueProds.set(resKey, { label, key: resKey });
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    // === СОЗДАЁМ ДАННЫЕ ДЛЯ EXCEL ===
+    const excelData = basketData.map(b => {
+        const row = {
+            'Название': b.name,
+            'Размер': `${b.size.width}x${b.size.length}`,
+            'Население': b.population,
+            'Счастье': `+${b.happiness}`
+        };
+        
+        // Производство
+        uniqueProds.forEach(prod => {
+            let val = '';
+            if (b.production) {
+                const prodItem = b.production.find(p => p.resources && p.resources[prod.key] !== undefined);
+                if (prodItem && prodItem.resources[prod.key] !== undefined) {
+                    val = Math.round(prodItem.resources[prod.key]);
+                }
+            }
+            row[prod.label] = val;
+        });
+        
+        // Бонусы
+        uniqueBoosts.forEach(boost => {
+            let val = '';
+            if (b.boosts) {
+                const boostItem = b.boosts.find(bt => {
+                    const btTypes = Array.isArray(bt.type) ? bt.type : [bt.type];
+                    return btTypes.includes(boost.type) && (bt.feature || bt.targetedFeature || 'all') === boost.feature;
+                });
+                if (boostItem) val = `+${boostItem.value}%`;
+            }
+            row[boost.label] = val;
+        });
+        
+        return row;
+    });
+    
+    // === СОЗДАЁМ WORKBOOK ===
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Автоширина колонок (опционально)
+    const colWidths = [
+        { wch: 25 }, // Название
+        { wch: 10 }, // Размер
+        { wch: 12 }, // Население
+        { wch: 10 }, // Счастье
+    ];
+    // Добавляем ширину для динамических колонок
+    uniqueProds.forEach(() => colWidths.push({ wch: 12 }));
+    uniqueBoosts.forEach(() => colWidths.push({ wch: 20 }));
+    ws['!cols'] = colWidths;
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Здания");
+    
+    // === СОХРАНЯЕМ ФАЙЛ ===
+    const fileName = `foe_basket_${basketEra}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    showToast(`✅ ${fileName}`);
+}
+
+// === ДАННЫЕ ЦЕПОЧКИ ===
+function getChainData(building, era) {
+    try {
+        if (!building.rawMeta || !building.rawMeta.components) return null;
+        let chainData = null;
+        if (building.rawMeta.components[era] && building.rawMeta.components[era].chain) {
+            chainData = building.rawMeta.components[era].chain;
+        } else if (building.rawMeta.components.AllAge && building.rawMeta.components.AllAge.chain) {
+            chainData = building.rawMeta.components.AllAge.chain;
+        }
+        if (!chainData || chainData.type !== 'chain') return null;
+        let chainProductions = [], chainBoosts = [];
+        if (chainData.config && chainData.config.bonuses && Array.isArray(chainData.config.bonuses)) {
+            chainData.config.bonuses.forEach(bonus => {
+                if (bonus.productions && Array.isArray(bonus.productions)) {
+                    bonus.productions.forEach(prod => {
+                        if (prod.type === 'resources' && prod.playerResources && prod.playerResources.resources) {
+                            chainProductions.push({ resources: prod.playerResources.resources, level: bonus.level || 1 });
+                        }
+                    });
+                }
+                if (bonus.boosts && Array.isArray(bonus.boosts)) {
+                    bonus.boosts.forEach(boost => {
+                        chainBoosts.push({ type: boost.type || 'unknown', value: boost.value || 0, targetedFeature: boost.targetedFeature || 'all', level: bonus.level || 1 });
+                    });
+                }
+            });
+        }
+        return { chainId: chainData.chainId || 'unknown', description: chainData.description || '', productions: chainProductions, boosts: chainBoosts };
+    } catch (e) { console.warn("getChainData error:", e); return null; }
+}
+
+window.CityBuildings = {
+setAllyRooms: (metaData) => {
+    try {
+        let allyRooms = [];
+        if (metaData.components && metaData.components.AllAge && metaData.components.AllAge.ally) {
+            const allyData = metaData.components.AllAge.ally;
+            if (allyData.rooms && Array.isArray(allyData.rooms)) {
+                allyData.rooms.forEach(room => { if (room.allyType) allyRooms.push({ type: room.allyType, name: window.AllyRoomTypes[room.allyType] || room.allyType }); });
+            }
+        }
+        for (let eraName in window.InnoEras) {
+            if (metaData.components && metaData.components[eraName] && metaData.components[eraName].ally) {
+                const allyData = metaData.components[eraName].ally;
+                if (allyData.rooms && Array.isArray(allyData.rooms)) {
+                    allyData.rooms.forEach(room => { if (room.allyType && !allyRooms.find(r => r.type === room.allyType)) allyRooms.push({ type: room.allyType, name: window.AllyRoomTypes[room.allyType] || room.allyType }); });
+                }
+            }
+        }
+        return allyRooms.length > 0 ? allyRooms : null;
+    } catch (e) { console.warn("setAllyRooms error:", e, metaData?.name); return null; }
+},
+setPopulation: (metaData, data, era) => {
+    try {
+        let population = 0, eraId = window.InnoEras[era] || 0;
+        if (metaData.__class__ !== "GenericCityEntity") {
+            if (metaData.entity_levels && metaData.entity_levels.length > 0) {
+                if (metaData.entity_levels[eraId] && metaData.entity_levels[eraId].required_population) return metaData.entity_levels[eraId].required_population * -1;
+                else if (metaData.entity_levels[eraId] && metaData.entity_levels[eraId].provided_population) return metaData.entity_levels[eraId].provided_population;
+            }
+            else if (metaData.requirements && metaData.requirements.cost) {
+                if (metaData.type === "decoration") return 0;
+                else if (metaData.type === "greatbuilding" && data.bonus && data.bonus.type === "population") return data.bonus.value;
+                if (metaData.requirements.cost.resources && metaData.requirements.cost.resources.population) return metaData.requirements.cost.resources.population * -1;
+            }
+            if (metaData.components && metaData.components[era]) {
+                let staticResources = metaData.components[era].staticResources;
+                if (staticResources && staticResources.resources && staticResources.resources.resources) { population = staticResources.resources.resources.population; if (population) return population; }
+            }
+            if (metaData.components && metaData.components.AllAge) {
+                let staticResources = metaData.components.AllAge.staticResources;
+                if (staticResources && staticResources.resources && staticResources.resources.resources) { population = staticResources.resources.resources.population; if (population) return population; }
+            }
+        } else {
+            if (metaData.components && metaData.components[era]) {
+                let staticResources = metaData.components[era].staticResources;
+                if (staticResources && staticResources.resources && staticResources.resources.resources) { population = staticResources.resources.resources.population; return population || 0; }
+            }
+        }
+        return population;
+    } catch (e) { console.warn("setPopulation error:", e, metaData?.name); return 0; }
+},
+setHappiness: (metaData, data, era) => {
+    try {
+        let happiness = 0, eraId = window.InnoEras[era] || 0;
+        if (metaData.__class__ !== "GenericCityEntity") {
+            if (metaData.entity_levels && metaData.entity_levels.length > 0) {
+                if (metaData.entity_levels[eraId] && metaData.entity_levels[eraId].provided_happiness) return metaData.entity_levels[eraId].provided_happiness;
+            }
+            else if (data.bonus && data.bonus.type === "happiness") return data.bonus.value;
+            else if (metaData.provided_happiness) return metaData.provided_happiness;
+            if (metaData.components && metaData.components[era]) {
+                let bHappiness = metaData.components[era].happiness;
+                if (bHappiness && bHappiness.provided) { happiness = bHappiness.provided; if (happiness) return happiness; }
+            }
+            if (metaData.components && metaData.components.AllAge) {
+                let bHappiness = metaData.components.AllAge.happiness;
+                if (bHappiness && bHappiness.provided) { happiness = bHappiness.provided; if (happiness) return happiness; }
+            }
+        } else {
+            if (metaData.components && metaData.components[era]) {
+                let bHappiness = metaData.components[era].happiness;
+                if (bHappiness && bHappiness.provided) return bHappiness.provided;
+            }
+            if (metaData.components && metaData.components.AllAge) {
+                let bHappiness = metaData.components.AllAge.happiness;
+                if (bHappiness && bHappiness.provided) return bHappiness.provided;
+            }
+        }
+        return happiness;
+    } catch (e) { console.warn("setHappiness error:", e, metaData?.name); return 0; }
+},
+setSize: (metaData) => {
+    try {
+        let size = { width: 0, length: 0 };
+        if (metaData.width && metaData.length) size = { width: metaData.width, length: metaData.length };
+        else if (metaData.components && metaData.components.AllAge && metaData.components.AllAge.placement && metaData.components.AllAge.placement.size) {
+            size.width = metaData.components.AllAge.placement.size.x; size.length = metaData.components.AllAge.placement.size.y;
+        }
+        return size;
+    } catch (e) { console.warn("setSize error:", e); return { width: 0, length: 0 }; }
+},
+needsStreet: (metaData) => {
+    try {
+        let needsStreet = 0;
+        if (metaData.requirements && metaData.requirements.street_connection_level) needsStreet = metaData.requirements.street_connection_level;
+        else {
+            if (metaData.abilities) { metaData.abilities.forEach(ability => { if (ability.__class__ === "StreetConnectionRequirementComponent") needsStreet = 1; }); }
+            if (metaData.components && metaData.components.AllAge && metaData.components.AllAge.streetConnectionRequirement) needsStreet = metaData.components.AllAge.streetConnectionRequirement.requiredLevel;
+        }
+        return needsStreet || 0;
+    } catch (e) { console.warn("needsStreet error:", e); return 0; }
+},
+setBuildingBoosts: (metaData, data, era) => {
+    try {
+        let eraName = (era === 'AllAge' ? 'BronzeAge' : era), boosts = [];
+        const mapType = (t) => window.BoostsMapper[t] || [t];
+        if (metaData.components && metaData.components[eraName] && metaData.components[eraName].boosts) {
+            const bList = metaData.components[eraName].boosts.boosts;
+            if (Array.isArray(bList)) bList.forEach(b => { boosts.push({ feature: b.targetedFeature || "all", type: mapType(b.type), value: b.value }); });
+        }
+        if (metaData.components && metaData.components.AllAge && metaData.components.AllAge.boosts) {
+            const bList = metaData.components.AllAge.boosts.boosts;
+            if (Array.isArray(bList)) bList.forEach(b => { boosts.push({ feature: b.targetedFeature || "all", type: mapType(b.type), value: b.value }); });
+        }
+        if (boosts.length === 0 && metaData.__class__ !== "GenericCityEntity") {
+            if (metaData.abilities) {
+                metaData.abilities.forEach(ability => {
+                    if (ability.boostHints) { ability.boostHints.forEach(abilityBoost => { let boostData = abilityBoost.boostHintEraMap[eraName] || abilityBoost.boostHintEraMap.AllAge; if (boostData) boosts.push({ feature: boostData.targetedFeature || "all", type: mapType(boostData.type), value: boostData.value }); }); }
+                    if (ability.bonuses) { ability.bonuses.forEach(bonus => { let bData = bonus.boost[eraName] || bonus.boost.AllAge; if (bData) boosts.push({ feature: bData.targetedFeature || "all", type: mapType(bData.type), value: bData.value, condition: "Set/Chain" }); }); }
+                });
+            }
+            if (metaData.type === "greatbuilding" && data.bonus && data.bonus.type) {
+                if (data.bonus.type !== "happiness" && data.bonus.type !== "population") boosts.push({ feature: "all", type: mapType(data.bonus.type), value: data.bonus.value });
+            }
+        }
+        return boosts.length > 0 ? boosts : null;
+    } catch (e) { console.warn("setBuildingBoosts error:", e); return null; }
+},
+setAllProductions: (metaData, data, era) => {
+    try {
+        let productions = [], eraId = window.InnoEras[era] || 0, eraName = (era === 'AllAge' ? 'BronzeAge' : era);
+        const isGeneric = (metaData.__class__ === "GenericCityEntity");
+        let productionComp = null;
+        if (metaData.components && metaData.components[eraName] && metaData.components[eraName].production) productionComp = metaData.components[eraName].production;
+        if (!productionComp && metaData.components && metaData.components.AllAge && metaData.components.AllAge.production) productionComp = metaData.components.AllAge.production;
+        if (productionComp && productionComp.options && Array.isArray(productionComp.options)) {
+            productionComp.options.forEach(opt => {
+                if (!opt.products || !Array.isArray(opt.products)) return;
+                opt.products.forEach(prod => {
+                    let resource = { type: prod.type, needsMotivation: (prod.onlyWhenMotivated === true), doubleWhenMotivated: (prod.onlyWhenMotivated !== true), resources: {}, time: opt.time, dropChance: prod.dropChance };
+                    if (prod.type === "resources" && prod.playerResources && prod.playerResources.resources) resource.resources = prod.playerResources.resources;
+                    else if (prod.type === "guildResources" && prod.guildResources && prod.guildResources.resources) resource.resources = prod.guildResources.resources;
+                    else if (prod.type === "unit") resource.resources = { [prod.unitTypeId || 'random']: prod.amount || 1 };
+                    else if (prod.type === "random" && prod.products && Array.isArray(prod.products)) {
+                        let randomRewards = [];
+                        prod.products.forEach(rProd => {
+                            if (rProd.product && rProd.product.playerResources && rProd.product.playerResources.resources) randomRewards.push({ type: "resources", resources: rProd.product.playerResources.resources, dropChance: rProd.dropChance });
+                            else if (rProd.product && (rProd.product.type === "genericReward" || rProd.product.type === "blueprint") && rProd.product.reward) {
+                                const parsedReward = window.CityBuildings.setGenericReward(rProd.product, metaData, era);
+                                randomRewards.push({ type: parsedReward.type, resources: parsedReward, dropChance: rProd.dropChance });
+                            }
+                        });
+                        if (randomRewards.length > 0) { resource.resources = randomRewards; resource.type = "random"; }
+                    }
+                    else if ((prod.type === "genericReward" || prod.type === "blueprint") && prod.reward) {
+                        const parsedReward = window.CityBuildings.setGenericReward(prod, metaData, era);
+                        resource.resources = parsedReward; resource.type = parsedReward.type;
+                        if (prod.dropChance) resource.dropChance = prod.dropChance;
+                    }
+                    if (Object.keys(resource.resources).length > 0 || resource.type === "random") productions.push(resource);
+                });
+            });
+        }
+        if (productions.length > 0) return productions;
+        if (!isGeneric && metaData.type !== "greatbuilding") {
+            if (metaData.available_products && Array.isArray(metaData.available_products)) {
+                metaData.available_products.forEach(product => {
+                    if (product.name === "clan_goods" || product.asset_name === "clan_goods") productions.push({ type: "guildResources", needsMotivation: false, resources: { clan_goods_current_era: 1 }, time: product.production_time || 86400, name: "Товары гильдии" });
+                    else if (product.product && product.product.resources) productions.push({ type: "resources", needsMotivation: false, resources: product.product.resources, time: product.production_time || 0 });
+                });
+            }
+            if (metaData.entity_levels && metaData.entity_levels[eraId]) {
+                let money = metaData.entity_levels[eraId].produced_money;
+                if (money) productions.push({ type: 'resources', needsMotivation: false, resources: { money: money }, source: "entity_levels" });
+                let power = metaData.entity_levels[eraId].clan_power;
+                if (power) productions.push({ type: 'guildResources', needsMotivation: false, resources: { clan_power: power }, source: "entity_levels" });
+            }
+            if (metaData.abilities) {
+                metaData.abilities.forEach(ability => {
+                    if (ability.additionalResources) {
+                        let resObj = ability.additionalResources[era] || ability.additionalResources.AllAge;
+                        if (resObj && resObj.resources) {
+                            let type = "resources";
+                            if (ability.__class__ === "AddResourcesToGuildTreasuryAbility") type = "guildResources";
+                            else if (ability.__class__ === "RandomUnitOfAgeWhenMotivatedAbility") { type = "unit"; resObj.resources = { random: ability.amount }; }
+                            productions.push({ type: type, needsMotivation: (ability.__class__.includes("WhenMotivated")), resources: resObj.resources, source: "ability" });
+                        }
+                    }
+                    else if (ability.__class__ === "RandomChestRewardAbility" && ability.rewards) {
+                        let rewards = ability.rewards[era] || ability.rewards.AllAge;
+                        if (rewards && rewards.possible_rewards) {
+                            let randomRewards = [];
+                            rewards.possible_rewards.forEach(reward => {
+                                if (reward.reward && reward.reward.type === "good") randomRewards.push({ type: "resources", resources: { all_goods_of_age: reward.reward.totalAmount }, dropChance: reward.drop_chance / 100 });
+                                else if (reward.reward && reward.reward.type === "guild_goods") randomRewards.push({ type: "guildResources", resources: { guild_goods: reward.reward.totalAmount }, dropChance: reward.drop_chance / 100 });
+                            });
+                            if (randomRewards.length > 0) productions.push({ type: "random", needsMotivation: false, resources: randomRewards, source: "ability" });
+                        }
+                    }
+                    else if (ability.__class__ === "ChainLinkAbility" && ability.bonuses) {
+                        ability.bonuses.forEach(bonus => {
+                            if (bonus.revenue && bonus.revenue[eraId]) productions.push({ type: "resources", needsMotivation: false, resources: bonus.revenue[eraId].resources, source: "chain" });
+                            else if (bonus.revenue && bonus.revenue.AllAge) productions.push({ type: "resources", needsMotivation: false, resources: bonus.revenue.AllAge.resources, source: "chain" });
+                        });
+                    }
+                });
+            }
+        }
+        if (productions.length > 0) return productions;
+        if (metaData.type === 'greatbuilding') {
+            if (data.bonus && data.bonus.type === "strategy_points") productions.push({ type: "resources", resources: { strategy_points: data.bonus.value }, time: 0 });
+            if (data.state && data.state.current_product) {
+                let cp = data.state.current_product;
+                if (cp.goods && Array.isArray(cp.goods)) { let res = {}; cp.goods.forEach(g => { res[g.good_id] = g.value; }); productions.push({ type: "guildResources", resources: res, time: 0 }); }
+                if (cp.product && cp.product.resources) productions.push({ type: "resources", resources: cp.product.resources, time: 0 });
+            }
+        }
+        return productions.length > 0 ? productions : null;
+    } catch (e) { console.warn("setAllProductions error:", e, metaData?.name); return null; }
+},
+setGenericReward: (product, metaData, era) => {
+    try {
+        let rewardData = { id: product.reward.id, name: 'Награда', type: 'consumable', subType: '', amount: product.reward.amount || product.reward.totalAmount || 1, dropChance: product.dropChance || null, iconClass: 'bg-generic' };
+        const lookupData = window.CityBuildings.findRewardInLookup(product.reward.id, metaData, era);
+        if (lookupData) {
+            if (lookupData.subType === 'fragment') { rewardData.name = lookupData.assembledReward ? lookupData.assembledReward.name : 'Фрагмент'; rewardData.iconClass = 'bg-fragment'; rewardData.type = 'fragment'; rewardData.amount = lookupData.amount || 1; }
+            else if (lookupData.type === 'blueprint' || lookupData.subType === 'reward_item') { rewardData.name = lookupData.name; rewardData.iconClass = 'bg-blueprint'; rewardData.type = 'blueprint'; rewardData.amount = lookupData.amount || 1; }
+            else if (lookupData.name) { if (lookupData.subType !== 'reward_item') rewardData.name = lookupData.name.replace(/^\+?\d+\s*/, ''); else rewardData.name = lookupData.name; }
+            if (lookupData.type === 'unit' || lookupData.icon === 'military') { rewardData.type = 'unit'; rewardData.iconClass = 'bg-unit'; }
+            else if (lookupData.type === 'good') { rewardData.type = 'goods'; rewardData.iconClass = 'bg-goods'; }
+            else if (lookupData.subType === 'speedup_item' || lookupData.type === 'boost_item') { rewardData.type = 'boost'; rewardData.iconClass = 'bg-fp'; }
+            if (lookupData.subType === 'reward_item' && lookupData.name.includes('чертеж')) rewardData.iconClass = 'bg-blueprint';
+        } else {
+            if (product.reward.id.includes('fragment')) { rewardData.name = 'Фрагмент (' + product.reward.id + ')'; rewardData.iconClass = 'bg-fragment'; rewardData.type = 'fragment'; }
+            else if (product.reward.id.includes('blueprint')) { const match = product.reward.id.match(/box_(\d+)_item/); if (match) rewardData.name = `${match[1]} чертежа`; else rewardData.name = 'Чертеж'; rewardData.iconClass = 'bg-blueprint'; rewardData.type = 'blueprint'; }
+            else if (product.reward.id.includes('unit_')) { rewardData.name = 'Юнит'; rewardData.iconClass = 'bg-unit'; rewardData.type = 'unit'; }
+        }
+        return rewardData;
+    } catch (e) { console.warn("setGenericReward error:", e); return { name: 'Ошибка награды', type: 'unknown', amount: 0 }; }
+},
+findRewardInLookup: (rewardId, metaData, era) => {
+    try {
+        if (!metaData.components) return null;
+        const erasToCheck = [era, 'AllAge'];
+        for (const e of erasToCheck) {
+            if (metaData.components[e] && metaData.components[e].lookup && metaData.components[e].lookup.rewards) {
+                const rewards = metaData.components[e].lookup.rewards;
+                if (rewards[rewardId]) return rewards[rewardId];
+                for (const key in rewards) {
+                    const item = rewards[key];
+                    if (item.type === 'chest' && item.possible_rewards) { for (const possible of item.possible_rewards) { if (possible.reward && possible.reward.id === rewardId) return possible.reward; } }
+                }
+            }
+        }
+        return null;
+    } catch (e) { console.warn("findRewardInLookup error:", e); return null; }
+},
+createBuilding: (metaData, era, data) => {
+    try {
+        if (!metaData) { console.warn("createBuilding: metaData is null"); return null; }
+        if (!window.InnoEras) { console.error("createBuilding: window.InnoEras is undefined!"); return null; }
+        if (!era) { const parts = metaData.id.split('_'); if (parts[1] && window.InnoEras[parts[1]] !== undefined) era = parts[1]; else era = window.CurrentEra; }
+        let availableEras = [];
+        if (metaData.entity_levels && metaData.entity_levels.length > 0) {
+            for (let eName in window.InnoEras) {
+                let eId = window.InnoEras[eName];
+                if (metaData.entity_levels[eId] && (metaData.entity_levels[eId].produced_money || metaData.entity_levels[eId].provided_population || metaData.entity_levels[eId].provided_happiness)) availableEras.push(eName);
+            }
+        }
+        if (availableEras.length === 0) {
+            for (let eName in window.InnoEras) {
+                if (metaData.components && metaData.components[eName]) {
+                    if (metaData.components[eName].production || metaData.components[eName].staticResources || metaData.components[eName].boosts || metaData.components[eName].happiness) {
+                        if (!availableEras.includes(eName)) availableEras.push(eName);
+                    }
+                }
+            }
+        }
+        if (availableEras.length > 1) availableEras.sort((a, b) => window.InnoEras[a] - window.InnoEras[b]);
+        return { id: data.id || metaData.id, entityId: data.cityentity_id || metaData.id, name: metaData.name, type: metaData.type, baseEra: era, availableEras: availableEras, size: window.CityBuildings.setSize(metaData), allyRooms: window.CityBuildings.setAllyRooms(metaData), rawMeta: metaData, rawData: data };
+    } catch (e) { console.error("createBuilding error:", e, metaData?.id); return null; }
+}
+};
+
+async function loadData() {
+    console.log("🚀 Начало загрузки данных...");
+    statusMsg.textContent = "Загрузка конфигурации...";
+    
+    await loadBasketConfig();
+    
+    statusMsg.textContent = "Подключение к серверу...";
+    try {
+        const response = await fetch(JSON_URL);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const rawData = await response.json();
+        console.log("✅ JSON получен. Тип:", Array.isArray(rawData) ? "Массив" : "Объект");
+        statusMsg.textContent = "Анализ данных...";
+        setTimeout(() => {
+            try {
+                const entities = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                allBuildings = [];
+                let errorCount = 0, successCount = 0, buildingsWithAllyRooms = 0;
+                console.log("⚙️ Обработка зданий...");
+                entities.forEach((metaData, index) => {
+                    if (!metaData || !metaData.id || !metaData.name) return;
+                    try {
+                        let mockData = { id: 0, cityentity_id: metaData.id, state: {}, bonus: metaData.bonus || null };
+                        let era = null;
+                        const building = window.CityBuildings.createBuilding(metaData, era, mockData);
+                        if (building) { allBuildings.push(building); successCount++; if (building.allyRooms) buildingsWithAllyRooms++; }
+                        else { errorCount++; }
+                        if (index < 3) console.log(`🏢 #${index}:`, metaData.name, "-> Эпоха:", building ? building.baseEra : "FAIL");
+                    } catch (buildError) { console.error("❌ Ошибка здания:", metaData.id, buildError); errorCount++; }
+                });
+                console.log(`✅ Готово. Успешно: ${successCount}, Ошибок: ${errorCount}, С комнатами союзников: ${buildingsWithAllyRooms}`);
+                if (allBuildings.length === 0) {
+                    statusMsg.textContent = `Ошибка: Найдено 0 зданий.`;
+                    statusMsg.style.color = '#ff6b6b';
+                    resultsGrid.innerHTML = '<div class="no-results" style="color:#ff6b6b">Здания не загружены. См. консоль (F12).</div>';
+                } else {
+                    statusMsg.textContent = `Готово. Найдено: ${allBuildings.length}. `;
+                    searchInput.disabled = false;
+                    searchInput.focus();
+                    resultsGrid.innerHTML = '';
+                    loadBasket();
+                }
+            } catch (parseError) { console.error("💥 Критическая ошибка:", parseError); statusMsg.textContent = `Ошибка обработки.`; statusMsg.style.color = '#ff6b6b'; }
+        }, 50);
+    } catch (error) { console.error('🔥 Ошибка загрузки:', error); statusMsg.textContent = `Ошибка загрузки JSON.`; statusMsg.style.color = '#ff6b6b'; }
+}
+
+function getBuildingDataForEra(building, era) {
+    return {
+        population: window.CityBuildings.setPopulation(building.rawMeta, building.rawData, era),
+        happiness: window.CityBuildings.setHappiness(building.rawMeta, building.rawData, era),
+        boosts: window.CityBuildings.setBuildingBoosts(building.rawMeta, building.rawData, era),
+        production: window.CityBuildings.setAllProductions(building.rawMeta, building.rawData, era)
+    };
+}
+
+function updateTooltipContent(card, building) {
+    const tooltip = card.querySelector('.tooltip-box');
+    if (!tooltip) return;
+    let currentEra;
+    if (activeBuildingId === building.id && activeEraOverride && building.availableEras.includes(activeEraOverride)) currentEra = activeEraOverride;
+    else { currentEra = building.availableEras && building.availableEras.length > 0 ? building.availableEras[0] : building.baseEra; if (activeBuildingId !== building.id) activeEraOverride = null; }
+    const data = getBuildingDataForEra(building, currentEra);
+    if (building.type === 'greatbuilding') { data.production = null; data.boosts = null; data.population = 0; data.happiness = 0; }
+    const popClass = data.population > 0 ? 'positive' : (data.population < 0 ? 'negative' : 'neutral');
+    const popSign = data.population > 0 ? '+' : '';
+    const happySign = data.happiness > 0 ? '+' : '';
+    const closeBtnHtml = `<span class="tt-close-btn" onclick="closeTooltipManually(event, '${building.id}')">&times;</span>`;
+    if (building.type === 'greatbuilding') {
+        let ttContent = `<div class="tt-header"><span>${building.name}</span>${closeBtnHtml}</div><div class="tt-body"><div class="tt-row"><span class="tt-label">Эпоха:</span><span class="tt-value">${window.EraNames[currentEra] || currentEra}</span></div><div class="tt-row"><span class="tt-label">Тип:</span><span class="tt-value">${translateType(building.type)}</span></div></div>`;
+        tooltip.innerHTML = ttContent; return;
+    }
+    let eraSelectorHtml = `<div class="era-select-wrapper"><select class="era-selector" onchange="switchEra(event, '${building.id}', this.value)">`;
+    const erasToShow = building.availableEras && building.availableEras.length > 0 ? building.availableEras : window.EraList;
+    erasToShow.forEach(e => { const isSelected = e === currentEra ? 'selected' : ''; eraSelectorHtml += `<option value="${e}" ${isSelected}>${window.EraNames[e] || e}</option>`; });
+    eraSelectorHtml += `</select></div>`;
+    let ttContent = `<div class="tt-header"><span>${building.name}</span>${closeBtnHtml}</div><div class="tt-body">${eraSelectorHtml}<div class="tt-row" style="margin-top:5px;"><span class="tt-label">Эпоха:</span><span class="tt-value">${window.EraNames[currentEra] || currentEra}</span></div><div class="tt-row"><span class="tt-label">Тип:</span><span class="tt-value">${translateType(building.type)}</span></div><div class="tt-row"><span class="tt-label">Население:</span><span class="tt-value ${popClass}">${popSign}${data.population}</span></div><div class="tt-row"><span class="tt-label">Счастье:</span><span class="tt-value ${data.happiness >= 0 ? 'positive' : 'negative'}">${happySign}${data.happiness}</span></div>${window.CityBuildings.needsStreet(building.rawMeta) > 0 ? '<div class="tt-row"><span class="tt-label">Дорога:</span><span class="tt-value neutral">' + window.CityBuildings.needsStreet(building.rawMeta) + '-пол</span></div>' : ''}${building.rawMeta && building.rawMeta.asset_id ? `<div class="tt-row"><span class="tt-label">Источник:</span><span class="tt-value" style="font-size:11px; word-break:break-all;" title="${building.rawMeta.asset_id}">${translateAssetId(building.rawMeta.asset_id)}</span></div>` : ''}`;
+    if (building.allyRooms && building.allyRooms.length > 0) {
+        ttContent += `<div class="tt-row"><span class="tt-label">Комнаты союзников:</span><span class="tt-value">`;
+        building.allyRooms.forEach((room, idx) => {
+            let iconClass = 'bg-ally-all';
+            if (room.type === 'military') iconClass = 'bg-ally-military';
+            else if (room.type === 'goods') iconClass = 'bg-ally-goods';
+            else if (room.type === 'money') iconClass = 'bg-ally-money';
+            else if (room.type === 'supplies') iconClass = 'bg-ally-supplies';
+            ttContent += `<span class="icon-sm ${iconClass}" title="${room.name}"></span>${room.name}${idx < building.allyRooms.length - 1 ? ', ' : ''}`;
+        });
+        ttContent += `</span></div>`;
+    }
+    const chainData = getChainData(building, currentEra);
+    if (chainData && (chainData.productions.length > 0 || chainData.boosts.length > 0)) {
+        ttContent += `<div class="tt-section"><div class="tt-section-title" style="color:#ffd700;">⛓️ Цепочка: ${chainData.chainId.replace(/_/g, ' ')}</div>`;
+        if (chainData.description) ttContent += `<div style="font-size:12px; color:#aaa; margin-bottom:8px; font-style:italic;">${chainData.description}</div>`;
+        if (chainData.productions.length > 0) {
+            chainData.productions.forEach(prod => {
+                let itemsHtml = '';
+                for (const [key, val] of Object.entries(prod.resources)) {
+                    let iconClass = 'bg-fp', label = key;
+                    if (key.includes('strategy')) { iconClass = 'bg-fp'; label = 'СО'; }
+                    else if (key.includes('goods')) { iconClass = 'bg-goods'; label = 'Товары'; }
+                    else if (key.includes('money')) { iconClass = 'bg-money'; label = 'Монеты'; }
+                    else if (key.includes('suppl')) { iconClass = 'bg-supplies'; label = 'Молотки'; }
+                    itemsHtml += `<div class="res-item"><span class="icon-sm ${iconClass}"></span>${label}: <b>${Math.round(val)}</b></div>`;
+                }
+                ttContent += `<div class="prod-option chain">${itemsHtml}<div style="text-align:right; font-size:11px; color:#ffd700; margin-top:2px;">Уровень ${prod.level}</div></div>`;
+            });
+        }
+        if (chainData.boosts.length > 0) {
+            chainData.boosts.forEach(boost => {
+                let iconUrl = window.BonusIcons[boost.type] || window.BonusIcons['default'];
+                let boostLabel = boost.type.replace(/_/g, ' ');
+                let featureLabel = boost.targetedFeature;
+                if (window.FeatureNames && window.FeatureNames[boost.targetedFeature]) featureLabel = window.FeatureNames[boost.targetedFeature];
+                ttContent += `<div class="prod-option chain-boost"><div class="res-item" style="justify-content: flex-start; align-items: center; gap: 8px;"><img src="${iconUrl}" class="bonus-icon-img" alt="${boost.type}"><span style="font-weight:bold; color:#fff; min-width: 60px; text-align: center;">+${boost.value}%</span><span style="color:#ccc;">${boostLabel}</span><span style="color:#aaa; font-size:11px;">(${featureLabel})</span></div><div style="text-align:right; font-size:11px; color:#ff6b6b; margin-top:2px;">Уровень ${boost.level}</div></div>`;
+            });
+        }
+        ttContent += `</div>`;
+    }
+    const hasData = (data.population !== 0 || data.happiness !== 0 || data.production || data.boosts);
+    if (!hasData && !data.production && !data.boosts && !building.allyRooms) { ttContent += `<div class="tt-section" style="text-align:center; color:#ff6b6b; padding: 20px;">⛄</div>`; }
+    else {
+        if (data.production) {
+            const fixedProductions = data.production.filter(p => p.type !== 'random');
+            const randomProductions = data.production.filter(p => p.type === 'random');
+            if (fixedProductions.length > 0) {
+                ttContent += `<div class="tt-section"><div class="tt-section-title">Производство</div>`;
+                fixedProductions.forEach(p => {
+                    let itemsHtml = '';
+                    if (p.type === 'fragment' || p.type === 'blueprint' || (p.resources && p.resources.type === 'fragment')) {
+                        const r = p.resources;
+                        const chanceStr = p.dropChance ? `<span style="color:#aaa; font-size:11px;">(${Math.round(p.dropChance*100)}%)</span>` : '';
+                        itemsHtml = `<div class="res-item"><div style="display:flex; align-items:center;"><span class="icon-sm ${r.iconClass || 'bg-fragment'}"></span><span>${r.name || 'Награда'}</span>${chanceStr}</div><span style="font-weight:bold;">${r.amount || 1}</span></div>`;
+                    } else {
+                        const resObj = (p.type === 'fragment' || p.type === 'blueprint') ? p.resources : p.resources;
+                        if (typeof resObj === 'object' && !Array.isArray(resObj) && !resObj.type) {
+                            for (const [key, val] of Object.entries(resObj)) {
+                                let iconClass = 'bg-money', label = key;
+                                const isGuildProduction = (p.type === 'guildResources');
+                                if (isGuildProduction) { iconClass = 'bg-meet'; if (key.includes('previous_age')) label = 'Товары прошлой эпохи в гильдию'; else if (key.includes('next_age')) label = 'Товары следующей эпохи в гильдию'; else if (key.includes('all_goods_of_age') || key.includes('random_good_of_age')) label = 'Товары своей эпохи в гильдию'; else if (key.includes('random_good')) label = 'Случайные товары в гильдию'; else label = 'Товары в гильдию'; }
+                                else if (key === 'medals' || key.includes('medal')) { iconClass = 'bg-fp'; label = 'Медали'; }
+                                else if (key.includes('previous_age')) { iconClass = 'bg-goods'; label = 'Товары прошлой эпохи'; }
+                                else if (key.includes('next_age')) { iconClass = 'bg-goods'; label = 'Товары следующей эпохи'; }
+                                else if (key.includes('all_goods_of_age') || key.includes('random_good_of_age')) { iconClass = 'bg-goods'; label = 'Товары своей эпохи'; }
+                                else if (key.includes('good')) { iconClass = 'bg-goods'; label = 'Товары'; }
+                                else if (key.includes('suppl')) { iconClass = 'bg-supplies'; label = 'Молотки'; }
+                                else if (key.includes('money')) { iconClass = 'bg-money'; label = 'Монеты'; }
+                                else if (key.includes('unit') || key.includes('random')) { iconClass = 'bg-unit'; label = 'Юниты'; }
+                                else if (key.includes('strategy')) { iconClass = 'bg-fp'; label = 'СО'; }
+                                else if (key.includes('clan_power')) { iconClass = 'bg-meet'; label = 'Сила гильдии'; }
+                                itemsHtml += `<div class="res-item"><span class="icon-sm ${iconClass}"></span>${label}: <b>${Math.round(val)}</b></div>`;
+                            }
+                        } else if (resObj && resObj.name) { itemsHtml = `<div class="res-item"><span class="icon-sm ${resObj.iconClass}"></span>${resObj.name}: <b>${resObj.amount}</b></div>`; }
+                    }
+                    const timeStr = p.time ? ` (${formatTime(p.time)})` : '';
+                    const motStr = p.needsMotivation ? ' ⭐' : '';
+                    if (fixedProductions.length > 1 || randomProductions.length > 0) { ttContent += `<div class="prod-option">${itemsHtml}<div style="text-align:right; font-size:11px; color:#777; margin-top:2px;">Время:${timeStr}${motStr}</div></div>`; }
+                    else { ttContent += `<div style="margin-bottom:6px;">${itemsHtml}<div style="text-align:right; font-size:11px; color:#777;">Время:${timeStr}${motStr}</div></div>`; }
+                });
+                ttContent += `</div>`;
+            }
+            if (randomProductions.length > 0) {
+                ttContent += `<div class="tt-section"><div class="tt-section-title" style="color:#ffd700;">Случайная продукция</div>`;
+                randomProductions.forEach(p => {
+                    if (p.type === 'random' && Array.isArray(p.resources)) {
+                        p.resources.forEach(r => {
+                            const chancePercent = Math.round((r.dropChance || 0) * 100);
+                            let resItemsHtml = '';
+                            if (r.type === 'resources' && r.resources) {
+                                for (const [key, val] of Object.entries(r.resources)) {
+                                    let label = key, iconClass = 'bg-goods';
+                                    if (key.includes('previous_age')) { label = 'Товары прошлой эпохи'; }
+                                    else if (key.includes('next_age')) { label = 'Товары следующей эпохи'; }
+                                    else if (key.includes('all_goods_of_age') || key.includes('random_good_of_age')) { label = 'Товары своей эпохи'; }
+                                    else if (key.includes('good')) { label = 'Товары'; }
+                                    else if (key.includes('suppl')) { label = 'Молотки'; iconClass = 'bg-supplies'; }
+                                    else if (key.includes('money')) { label = 'Монеты'; iconClass = 'bg-money'; }
+                                    else if (key.includes('strategy')) { label = 'СО'; iconClass = 'bg-fp'; }
+                                    else if (key.includes('medals')) { label = 'Медали'; iconClass = 'bg-fp'; }
+                                    resItemsHtml += `<div class="res-item"><span class="icon-sm ${iconClass}"></span>${label}: <b>${Math.round(val)}</b></div>`;
+                                }
+                            }
+                            else if (r.type === 'fragment' || r.type === 'blueprint' || r.type === 'consumable' || (r.resources && r.resources.type)) {
+                                const reward = r.resources;
+                                if (reward && reward.name) {
+                                    const chanceStr = r.dropChance ? `<span style="color:#aaa; font-size:11px;">(${Math.round(r.dropChance*100)}%)</span>` : '';
+                                    const iconClass = reward.iconClass || 'bg-generic';
+                                    resItemsHtml += `<div class="res-item" style="justify-content: space-between;"><div style="display:flex; align-items:center; flex:1;"><span class="icon-sm ${iconClass}"></span><span style="margin-right: 8px;">${reward.name}</span></div><div style="display:flex; align-items:center; gap: 8px;"><span style="font-weight:bold; color:#fff;">x${reward.amount || 1}</span>${chanceStr}</div></div>`;
+                                }
+                            }
+                            if (resItemsHtml) { ttContent += `<div class="res-item" style="flex-direction:column; align-items:flex-start; border-bottom:1px solid #333; padding-bottom:4px; margin-bottom:4px;">${resItemsHtml}<div style="display:flex; align-items:center; width:100%; justify-content:flex-end; font-size:11px; color:#aaa; margin-top:2px;">Шанс: <div class="chance-bar" style="margin:0 5px;"><div class="chance-fill" style="width:${chancePercent}%"></div></div>${chancePercent}%</div></div>`; }
+                        });
+                    }
+                });
+                ttContent += `</div>`;
+            }
+        }
+        if (data.boosts) {
+            ttContent += `<div class="tt-section"><div class="tt-section-title">Бонусы города</div>`;
+            data.boosts.forEach(boost => {
+                const types = Array.isArray(boost.type) ? boost.type : [boost.type];
+                const feature = boost.feature || "all";
+                let iconsHtml = '';
+                types.forEach(type => {
+                    const combinedKey = `${type}|${feature}`;
+                    let iconUrl = window.BonusIcons[combinedKey];
+                    if (!iconUrl) iconUrl = window.BonusIcons[type];
+                    if (!iconUrl) iconUrl = window.BonusIcons['default'];
+                    iconsHtml += `<img src="${iconUrl}" class="bonus-icon-img" title="${type} (${feature})" alt="${type}">`;
+                });
+                let featureLabel = feature;
+                if (window.FeatureNames && window.FeatureNames[feature]) featureLabel = window.FeatureNames[feature];
+                else featureLabel = feature.replace(/_/g, ' ');
+                const featureText = feature ? ` <span style="color:#aaa; font-size:11px;">(${featureLabel})</span>` : '';
+                ttContent += `<div class="res-item" style="justify-content: flex-start; align-items: center; gap: 8px;"><div style="display: flex; align-items: center;">${iconsHtml}</div><span style="font-weight:bold; color:#fff; min-width: 50px; text-align: center;">+${boost.value}%</span>${featureText}</div>`;
+            });
+            ttContent += `</div>`;
+        }
+    }
+    ttContent += `</div>`;
+    tooltip.innerHTML = ttContent;
+    const tooltipElement = card.querySelector('.tooltip-box');
+    if (tooltipElement && tooltipElement.style.display !== 'none') {
+        setTimeout(() => {
+            const tooltipHeight = tooltipElement.offsetHeight;
+            const cardRect = card.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - cardRect.bottom;
+            if (spaceBelow < tooltipHeight + 20) {
+                const neededSpace = (tooltipHeight + 20) - spaceBelow;
+                const currentMinHeight = parseInt(window.getComputedStyle(document.body).minHeight) || window.innerHeight;
+                document.body.style.minHeight = `${currentMinHeight + neededSpace}px`;
+            }
+        }, 50);
+    }
+}
+
+window.closeTooltipManually = function(event, buildingId) { event.stopPropagation(); activeBuildingId = null; activeEraOverride = null; const card = document.querySelector(`.building-card[data-id="${buildingId}"]`); if (card) card.classList.remove('active'); };
+window.switchEra = function(event, buildingId, era) { event.stopPropagation(); activeBuildingId = buildingId; activeEraOverride = era; const card = document.querySelector(`.building-card[data-id="${buildingId}"]`); if (card) { const building = allBuildings.find(b => b.id === buildingId); if (building) { updateTooltipContent(card, building); if (!card.classList.contains('active')) card.classList.add('active'); } } };
+
+function renderResults(buildings) {
+    resultsGrid.innerHTML = '';
+    if (buildings.length === 0) { resultsGrid.innerHTML = '<div class="no-results">Ничего не найдено</div>'; return; }
+    const uniqueBuildingsMap = new Map();
+    buildings.forEach(b => { if (!uniqueBuildingsMap.has(b.name)) uniqueBuildingsMap.set(b.name, b); });
+    const uniqueBuildings = Array.from(uniqueBuildingsMap.values());
+    const limit = 50;
+    const toRender = uniqueBuildings.length > limit ? uniqueBuildings.slice(0, limit) : uniqueBuildings;
+    const longPressDuration = basketConfig?.settings?.longPressDuration || 1500;
+    
+    toRender.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'building-card';
+            const isInBasket = basket.some(item => item.id === b.id);
+    if (isInBasket) card.classList.add('in-basket');
+        card.dataset.id = b.id;
+        const baseData = getBuildingDataForEra(b, b.baseEra);
+        const popClass = baseData.population > 0 ? 'positive' : (baseData.population < 0 ? 'negative' : 'neutral');
+        const popSign = baseData.population > 0 ? '+' : '';
+        card.innerHTML = `<div class="card-header" style="margin-bottom: 5px;"><div class="card-title" style="flex: 1; margin-right: 0;" title="${b.name}">${b.name}</div></div><div class="card-stats"><span>📏 ${b.size.width}x${b.size.length}</span></div><div class="tooltip-box"></div>`;
+        
+        let pressTimer;
+        card.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            pressTimer = setTimeout(() => {
+                addToBasket(b);
+                card.classList.add('added');
+                setTimeout(() => card.classList.remove('added'), 500);
+            }, longPressDuration);
+        });
+        card.addEventListener('mouseup', () => { clearTimeout(pressTimer); });
+        card.addEventListener('mouseleave', () => { clearTimeout(pressTimer); });
+        card.addEventListener('click', (e) => {
+            if (card.classList.contains('added')) return;
+            e.stopPropagation();
+            if (activeBuildingId === b.id) { activeBuildingId = null; activeEraOverride = null; card.classList.remove('active'); }
+            else { document.querySelectorAll('.building-card.active').forEach(c => c.classList.remove('active')); activeBuildingId = b.id; if (b.availableEras && b.availableEras.length > 0) activeEraOverride = b.availableEras[0]; else activeEraOverride = b.baseEra; card.classList.add('active'); updateTooltipContent(card, b); }
+        });
+        card.addEventListener('mouseenter', () => { if (activeBuildingId !== b.id) activeEraOverride = null; updateTooltipContent(card, b); });
+        resultsGrid.appendChild(card);
+    });
+    if (uniqueBuildings.length > limit) { const more = document.createElement('div'); more.className = 'no-results'; more.textContent = `... показано ${limit} из ${uniqueBuildings.length}. Уточните поиск.`; more.style.gridColumn = "1 / -1"; resultsGrid.appendChild(more); }
+}
+
+function translateType(type) {
+    const map = { 'production': 'Производство', 'residential': 'Жилое', 'decoration': 'Декор', 'greatbuilding': 'Великое Строение', 'goods': 'Товары', 'street': 'Дорога', 'culture': 'Общественное', 'main_building': 'Ратуша', 'military': 'Казарма', 'special': 'Спец. здание', 'castle_system': 'Замок', 'guild_raids': 'Рейд Гильдии' };
+    return map[type] || type;
+}
+function translateAssetId(assetId) {
+    if (!assetId || !window.AssetIdTranslations) return assetId;
+    const upperId = assetId.toUpperCase();
+    for (const [key, translation] of Object.entries(window.AssetIdTranslations)) { if (upperId.includes(key.toUpperCase())) return translation; }
+    return assetId;
+}
+function formatTime(seconds) {
+    if (!seconds) return '';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}ч ${m}м`;
+    return `${m}м`;
+}
+
+// === ОБРАБОТЧИКИ СОБЫТИЙ ===
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim().toLowerCase();
+    clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+    const useName = filterName.checked;
+    const useType = filterType.checked;
+    const useSource = filterSource.checked;
+    const noFilters = !useName && !useType && !useSource;
+    if (query.length < 2) { if(query.length === 0) renderResults(allBuildings.slice(0, 30)); else resultsGrid.innerHTML = ''; return; }
+    const filtered = allBuildings.filter(b => {
+        if (noFilters) {
+            const nameMatch = b.name.toLowerCase().includes(query);
+            const eraMatch = b.baseEra && b.baseEra.toLowerCase().includes(query);
+            const typeMatch = translateType(b.type).toLowerCase().includes(query);
+            let sourceMatch = false;
+            if (b.rawMeta && b.rawMeta.asset_id) { const assetId = b.rawMeta.asset_id.toLowerCase(); const translatedSource = translateAssetId(b.rawMeta.asset_id).toLowerCase(); sourceMatch = assetId.includes(query) || translatedSource.includes(query); }
+            return nameMatch || eraMatch || typeMatch || sourceMatch;
+        }
+        let matches = false;
+        if (useName && b.name.toLowerCase().includes(query)) matches = true;
+        if (useType && translateType(b.type).toLowerCase().includes(query)) matches = true;
+        if (useSource && b.rawMeta && b.rawMeta.asset_id) { const assetId = b.rawMeta.asset_id.toLowerCase(); const translatedSource = translateAssetId(b.rawMeta.asset_id).toLowerCase(); if (assetId.includes(query) || translatedSource.includes(query)) matches = true; }
+        return matches;
+    });
+    renderResults(filtered);
+});
+clearBtn.addEventListener('click', () => { searchInput.value = ''; clearBtn.style.display = 'none'; searchInput.focus(); renderResults(allBuildings.slice(0, 30)); });
+[filterName, filterType, filterSource].forEach(cb => { cb.addEventListener('change', () => { const query = searchInput.value.trim().toLowerCase(); if (query.length >= 2) searchInput.dispatchEvent(new Event('input')); }); });
+
+loadData();
+loadBasket();
+updateBasketCardIndicators(); // ✅ Показать какие здания уже в корзине
+</script>
+</body>
+</html>

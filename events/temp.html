@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>***********</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #5E381A;
+            color: #EFDBA6;
+            position: relative; /* Для позиционирования кнопки */
+            padding-top: 60px; /* Отступ сверху, чтобы кнопка не перекрывала контент */
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #A0522D;
+        }
+        .output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            border: 2px solid #EFDBA6;
+            padding: 15px;
+            background-color: rgba(95, 56, 26, 0.6);
+            color: #EFDBA6;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+        p {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        /* Кнопка "Назад" */
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #8B4513;
+            color: #EFDBA6;
+            border: 2px solid #EFDBA6;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(239, 219, 166, 0.5);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background-color: #A0522D;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Кнопка "Назад" -->
+    <a href="//events.html" class="back-btn">← Назад</a>
+
+    <p>*******************</p>
+    <button onclick="showText1()">Основные квесты</button>
+   
+    <button onclick="showText2()">Ежедневные квесты</button>
+    <button onclick="showText3()">---</button>
+    <button onclick="showText4()">---</button>
+   
+    <div class="output" id="output"></div>
+
+    <script>
+        function showText1() {
+            const text1 = `
+
+						
+
+
+
+
+`;
+            document.getElementById('output').textContent = text1;
+        }
+
+        function showText2() {
+            const text2 = `
+   
+`;
+            document.getElementById('output').textContent = text2;
+        }
+
+        function showText3() {
+            const text3 = `
+            
+  
+`;
+            document.getElementById('output').textContent = text3;
+        }
+      
+      function showText4() {
+            const text4 = `
+
+
+`;
+            document.getElementById('output').textContent = text4;
+        }
+    </script>
+</body>
+</html>

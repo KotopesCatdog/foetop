@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Меню - FOEhelp</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100%;
+            background-color: black;
+        }
+        body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        .menu-container {
+            position: relative; /* Нужно для позиционирования тултипа */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 500px;
+            padding: 40px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 4px solid #008080;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.9);
+        }
+        .menu-btn {
+            padding: 18px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: #008080;
+            border: 4px solid black;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .menu-btn:hover {
+            background-color: #00a0a0;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+            transform: scale(1.05);
+        }
+        .title {
+            text-align: center;
+            font-size: 48px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ==== Тултип с картинкой ==== */
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+            max-width: 300px;
+            border: 3px solid #008080;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+        }
+        .tooltip img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+        .tooltip.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h class="title">Полезные ссылки</h>
+        
+   <!--         https://foehelp.ru/links/.png           -->
+       
+        <a href="https://www.youtube.com/channel/UCIlpjEXmTRagwCiU9rYtf7g" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/obzorfoe.png">Ютуб "Обзор ФОЕ"</a>
+        <a href="https://t.me/+cTKyzVqlkjRjNWM0" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/kanalfoe.png">Тг-канал "Обзор ФОЕ"</a>
+        <a href="https://t.me/+7XJcR3u7ZV9kYjJk" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/chatfoe.png">Тг-чат "Обзор ФОЕ"</a>
+        <a href="https://shorturl.at/3US2C" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/tablden.png">Таблица Дениса (С)</a>
+        <a href="https://t.me/HelpFOE_bot" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/helpbot.png">Тг-бот "FOE Help"</a>
+        <a href="https://docs.google.com/spreadsheets/d/1znWdySl7Nbae91ikhVVkH1-qDhtlmUkYtZGpP7meHHA/edit?usp=sharing" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/tabmax.png">Калькуляторы по Квантам MAX-23 (С)</a>   
+        <a href="https://rutube.ru/channel/25935222/" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/rutub.png">Рутуб "Обзор ФОЕ"</a>
+        <a href="https://vk.com/club230336036" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/vk.png">ВК "Обзор ФОЕ"</a>
+        <a href="https://forgeofempires.fandom.com/wiki/Forge_of_Empires_Wiki" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/fandom.png">Fandom</a>
+        <a href="https://www.gdz.bplaced.net/" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/bplac.png">Bplaced</a>
+        <a href="https://docs.google.com/spreadsheets/d/166axWrrg7OzOnS-iLEWFqALO1JLc4tjCnBg7mrKTjXI/edit?gid=896343617#gid=896343617" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/linn.png">Linnun's FoEfficiency Spreadsheet</a>
+        <a href="https://docs.google.com/spreadsheets/d/1TTSz0d50r3iqw7LmlMc7xhhwoeijs9FSZI4RF2mn918/edit?gid=1407920360#gid=1407920360" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/univ.png">UniversaLьное FoE</a>
+        <a href="https://foe.tools/ru/gb-forecast-cost/" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/tools.png">FOE tools</a>
+        <a href="https://siryozhka.github.io/foemap/" target="_blank" class="menu-btn" data-image="https://foehelp.ru/links/map.png">Map editor PBG</a>
+        
+        <a href="https://foehelp.ru/" target="_self" class="menu-btn">🏠 Возврат в меню</a>
+    </div>
+
+    <!-- Тултип с картинкой -->
+    <div class="tooltip" id="tooltip">
+        <img src="" alt="Превью" id="tooltip-img">
+    </div>
+
+    <script>
+        const tooltip = document.getElementById('tooltip');
+        const tooltipImg = document.getElementById('tooltip-img');
+        let timeout;
+
+        document.querySelectorAll('.menu-btn[data-image]').forEach(btn => {
+            btn.addEventListener('mouseenter', (e) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const imgUrl = btn.getAttribute('data-image');
+                    tooltipImg.src = imgUrl;
+
+                    // Позиционируем справа от кнопки
+                    const rect = btn.getBoundingClientRect();
+                    const containerRect = document.querySelector('.menu-container').getBoundingClientRect();
+
+                    tooltip.style.top = (rect.top - containerRect.top + rect.height / 2 - tooltip.offsetHeight / 2) + 'px';
+                    tooltip.style.left = (rect.right - containerRect.left + 20) + 'px'; // 20px отступ
+
+                    tooltip.classList.add('visible');
+                }, 200); // задержка 200 мс
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                clearTimeout(timeout);
+                tooltip.classList.remove('visible');
+            });
+        });
+
+        // Скрываем при уходе мыши с контейнера
+        document.querySelector('.menu-container').addEventListener('mouseleave', () => {
+            tooltip.classList.remove('visible');
+        });
+    </script>
+</body>
+</html>
