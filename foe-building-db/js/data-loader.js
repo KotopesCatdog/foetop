@@ -1,5 +1,5 @@
 // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
-let currentJsonUrl = '/building.json';  // Текущий URL
+let currentJsonUrl = 'https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json';  // Текущий URL
 let dataLoadDate = null;  // Дата файла на сервере
 
 // === ФУНКЦИЯ ОБНОВЛЕНИЯ ДАТЫ ===
