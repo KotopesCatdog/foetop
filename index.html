@@ -143,39 +143,7 @@ const helpWrapper = document.createElement('div');
     helpBtn.addEventListener('mouseover', () => helpBtn.style.transform = 'scale(1.08)');
     helpBtn.addEventListener('mouseout', () => helpBtn.style.transform = 'scale(1)');
 
-    // Новая кнопка ENGLISH (зеленая)
-    const englishBtn = document.createElement('a');
-    englishBtn.textContent = 'English';
-    englishBtn.href = '//indexen.html';
-    englishBtn.target = '_self';
-    englishBtn.style.cssText = `
-        width: 130px;
-        padding: 12px 0;
-        background: #2e7d32;
-        color: white;
-        border: none;
-        border-radius: 50px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        box-shadow: 0 4px 16px rgba(46,125,50,0.4);
-        transition: all 0.3s;
-        font-family: inherit;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-    `;
-    englishBtn.addEventListener('mouseover', () => {
-        englishBtn.style.transform = 'scale(1.08)';
-        englishBtn.style.background = '#3c9e40';
-        englishBtn.style.boxShadow = '0 6px 20px rgba(46,125,50,0.6)';
-    });
-    englishBtn.addEventListener('mouseout', () => {
-        englishBtn.style.transform = 'scale(1)';
-        englishBtn.style.background = '#2e7d32';
-        englishBtn.style.boxShadow = '0 4px 16px rgba(46,125,50,0.4)';
-    });
-
+   
     // Окно помощи
     const helpWindow = document.createElement('div');
     helpWindow.id = 'helpProjectWindow';
@@ -305,10 +273,9 @@ const helpWrapper = document.createElement('div');
     helpWindow.appendChild(windowHeader);
     helpWindow.appendChild(windowContent);
     
-    // Добавляем обе кнопки в контейнер
+   
     helpWrapper.appendChild(helpBtn);
-    helpWrapper.appendChild(englishBtn);
-    
+       
     document.body.appendChild(helpWrapper);
     document.body.appendChild(helpWindow);
 
