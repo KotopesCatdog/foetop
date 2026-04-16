@@ -1,6 +1,6 @@
 // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
-let currentJsonUrl = 'https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json';  // Текущий URL
-let dataLoadDate = null;  // Дата файла на сервере
+const DATA_URL = 'https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json';
+let dataLoadDate = null;  // Дата файла на сервере (оставьте, если хотите показывать дату)
 
 // === ФУНКЦИЯ ОБНОВЛЕНИЯ ДАТЫ ===
 function updateServerFileDate() {
@@ -21,31 +21,9 @@ function updateServerFileDate() {
     }
 }
 
-// === ПЕРЕКЛЮЧЕНИЕ JSON ===
-async function switchJson(url) {
-    currentJsonUrl = url;
-    const statusMsg = document.getElementById('statusMsg');
-    statusMsg.textContent = "Переключение базы данных...";
-    statusMsg.style.color = '#ffd700';
-    
-    // Очищаем текущие данные
-    window.allBuildings = [];
-    document.getElementById('resultsGrid').innerHTML = '';
-    document.getElementById('searchInput').disabled = true;
-    document.getElementById('searchInput').value = '';
-    
-    // Загружаем новые данные
-    await loadData();
-    
-    statusMsg.textContent = `База данных переключена`;
-    setTimeout(() => {
-        statusMsg.style.color = '#c5c6c7';
-    }, 2000);
-}
-
 // === ЗАГРУЗКА ДАННЫХ ===
 async function loadData() {
-    console.log(`🚀 Начало загрузки данных из: ${currentJsonUrl}`);
+    console.log(`🚀 Начало загрузки данных из: ${DATA_URL}`);
     const statusMsg = document.getElementById('statusMsg');
     statusMsg.textContent = "Загрузка конфигурации...";
     
@@ -54,7 +32,7 @@ async function loadData() {
     
     try {
         // Получаем дату файла
-        const headResponse = await fetch(currentJsonUrl, { method: 'HEAD' });
+        const headResponse = await fetch(DATA_URL, { method: 'HEAD' });
         const lastModified = headResponse.headers.get('Last-Modified');
         if (lastModified) {
             dataLoadDate = new Date(lastModified);
@@ -64,7 +42,7 @@ async function loadData() {
         updateServerFileDate();
         
         // Загружаем данные
-        const response = await fetch(currentJsonUrl);
+        const response = await fetch(DATA_URL);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const rawData = await response.json();
