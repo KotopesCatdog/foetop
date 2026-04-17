@@ -763,7 +763,8 @@ function loadLevel(levelIndex) {
                 y: BRICKS_TOP_Y + row * BRICK_H,
                 originalX: col * BRICK_W,
                 originalY: BRICKS_TOP_Y + row * BRICK_H,
-                hiddenBonus: null
+                hiddenBonus: null,
+                hitCount: 0
             };
         }
     }
@@ -1171,10 +1172,27 @@ function handleCollisionWithBricks() {
                 hitSomething = true;
 
                 if (b.type === 9 || b.type === 13) {
-                    bounceOffBrick(b);
-                    playBrickHit(1);
-                    return true;
-                }
+    bounceOffBrick(b);
+    playBrickHit(1);
+    
+    // Непробиваемые блоки (тип 9) - считаем удары
+    if (b.type === 9) {
+        if (!b.hitCount) b.hitCount = 0;
+        b.hitCount++;
+        
+        if (b.hitCount >= 100) {
+            // Разрушаем после 100 ударов
+            b.active = false;
+            score += 100;
+            if (b.hiddenBonus) spawnBonusDrop(b.x, b.y, b.hiddenBonus);
+            playBrickHit(0);
+            updateUI();
+            saveGame();
+            onBrickDestroyedForMoving(row, col);
+        }
+    }
+    return true;
+}
 
                 if (megaBallActive) {
     b.active = false;
@@ -2175,7 +2193,8 @@ function loadNextLevel() {
                     y: BRICKS_TOP_Y + row * BRICK_H,
                     originalX: col * BRICK_W,
                     originalY: BRICKS_TOP_Y + row * BRICK_H,
-                    hiddenBonus: null
+                    hiddenBonus: null,
+                    hitCount: 0
                 };
             }
         }
