@@ -244,7 +244,7 @@
     }
 
     class TopBuildingsTable {
-        constructor(containerId, jsonUrl = 'https://foehelp.ru/building.json') {
+        constructor(containerId, jsonUrl = '/building.json') {
             this.container = document.getElementById(containerId);
             this.jsonUrl = jsonUrl;
             this.buildings = [];
