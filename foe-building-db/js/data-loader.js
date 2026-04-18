@@ -48,7 +48,7 @@ async function loadData() {
         const rawData = await response.json();
         console.log("✅ JSON получен. Тип:", Array.isArray(rawData) ? "Массив" : "Объект");
         
-        statusMsg.textContent = "Анализ данных...";
+       statusMsg.textContent = "Анализ данных...";
         setTimeout(() => {
             try {
                 const entities = Array.isArray(rawData) ? rawData : Object.values(rawData);
