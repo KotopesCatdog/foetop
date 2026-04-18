@@ -2216,7 +2216,8 @@ function loadNextLevel() {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === ' ' || e.key === 'Space') {
+    // Пробел или Enter для закрытия окна завершения уровня
+    if (e.key === ' ' || e.key === 'Space' || e.key === 'Enter') {
         const modal = document.getElementById('levelCompleteModal');
         if (modal && modal.classList.contains('active')) {
             e.preventDefault();
