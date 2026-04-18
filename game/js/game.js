@@ -88,35 +88,26 @@ function spawnFox() {
     
     playFoxSound();
     
-    // Очищаем старые таймеры
+        // Очищаем старые таймеры
     if (foxTimer) clearTimeout(foxTimer);
     if (foxTimerInterval) clearInterval(foxTimerInterval);
     
-    // Таймер для исчезновения через 20 секунд
-    foxTimer = setTimeout(() => {
-    if (fox.active) {
-        fox.active = false;
-        updateFoxTimerBar();
-        if (foxTimerInterval) clearInterval(foxTimerInterval);
-   }
-}, foxMaxTime * 1000); // 20000 (20 секунд)
-    
-    // Интервал для обновления полоски (каждые 100 мс)
+    // ЕДИНЫЙ ТАЙМЕР: только интервал (без setTimeout)
     foxTimerInterval = setInterval(() => {
-    // Не уменьшаем время, если игра на паузе или game over
-    if (!fox.active || paused || gameOver) return;
-    
-    foxRemainingTime -= 0.1;
-    if (foxRemainingTime <= 0) {
-        foxRemainingTime = 0;
-        fox.active = false;
+        // Не уменьшаем время, если игра на паузе или game over
+        if (!fox.active || paused || gameOver) return;
+        
+        foxRemainingTime -= 0.1;
         updateFoxTimerBar();
-        if (foxTimerInterval) clearInterval(foxTimerInterval);
-        console.log("🦊 Лиса исчезла (таймер)");
-    } else {
-        updateFoxTimerBar();
-    }
-}, 100);
+        
+        if (foxRemainingTime <= 0) {
+            foxRemainingTime = 0;
+            fox.active = false;
+            updateFoxTimerBar();
+            if (foxTimerInterval) clearInterval(foxTimerInterval);
+       }
+    }, 100);
+
 }
 
 function updateFox() {
