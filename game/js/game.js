@@ -103,19 +103,20 @@ function spawnFox() {
     
     // Интервал для обновления полоски (каждые 100 мс)
     foxTimerInterval = setInterval(() => {
-        if (fox.active) {
-            foxRemainingTime -= 0.1;
-            if (foxRemainingTime <= 0) {
-                foxRemainingTime = 0;
-                fox.active = false;
-                updateFoxTimerBar();
-                if (foxTimerInterval) clearInterval(foxTimerInterval);
-                console.log("🦊 Лиса исчезла (таймер)");
-            } else {
-                updateFoxTimerBar();
-            }
-        }
-    }, 100);
+    // Не уменьшаем время, если игра на паузе или game over
+    if (!fox.active || paused || gameOver) return;
+    
+    foxRemainingTime -= 0.1;
+    if (foxRemainingTime <= 0) {
+        foxRemainingTime = 0;
+        fox.active = false;
+        updateFoxTimerBar();
+        if (foxTimerInterval) clearInterval(foxTimerInterval);
+        console.log("🦊 Лиса исчезла (таймер)");
+    } else {
+        updateFoxTimerBar();
+    }
+}, 100);
 }
 
 function updateFox() {
