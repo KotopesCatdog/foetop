@@ -107,6 +107,38 @@ function findProductionByMask(building, searchMask) {
                 for (const option of eraData.production.options) {
                     if (option.products) {
                         for (const product of option.products) {
+                            // Проверка обычных ресурсов (resources / guildResources)
+                            const resObj = product.type === 'resources'
+                                ? product.playerResources?.resources
+                                : product.type === 'guildResources'
+                                    ? product.guildResources?.resources
+                                    : null;
+                            if (resObj) {
+                                const aliases = {
+                                    supplies:         ['припасы', 'supplies'],
+                                    money:            ['монеты', 'деньги', 'money', 'coins'],
+                                    medals:           ['медали', 'medals'],
+                                    strategy_points:  ['очки форжа', 'фп', 'fp', 'strategy_points', 'forge points'],
+                                    clan_power:       ['мощь гильдии', 'clan_power', 'guild power'],
+                                    goods:            ['товары', 'goods'],
+                                    all_goods_of_age: ['товары', 'goods', 'all_goods_of_age'],
+                                };
+                                for (const [resKey, resVal] of Object.entries(resObj)) {
+                                    const names = aliases[resKey] || [resKey];
+                                    if (names.some(n => n.toLowerCase().includes(maskLower) || maskLower.includes(n.toLowerCase()))) {
+                                        results.productions.push({
+                                            era,
+                                            rewardId: resKey,
+                                            rewardName: resKey,
+                                            rewardType: product.type,
+                                            amount: resVal,
+                                            time: option.time || null,
+                                            optionName: option.name || null
+                                        });
+                                    }
+                                }
+                            }
+
                             // Проверка genericReward
                             if (product.type === 'genericReward' && product.reward) {
                                 const rewardId = product.reward.id;
@@ -214,6 +246,44 @@ function findProductionByMask(building, searchMask) {
         checkEraComponents(building.rawMeta.components);
     }
     
+    // Дополнительно проверяем entity_levels (здания is_multi_age и обычные production-здания)
+    // Эти здания хранят продукцию в entity_levels[eraId].production_values, а не в components
+    if (results.productions.length === 0 && results.randomProductions.length === 0) {
+        const entityLevels = building.rawMeta?.entity_levels;
+        if (Array.isArray(entityLevels)) {
+            // Словарь типов продукции для поиска по русским и английским названиям
+            const productionTypeNames = {
+                'supplies':        ['припасы', 'supplies'],
+                'money':           ['монеты', 'деньги', 'money', 'coins'],
+                'medals':          ['медали', 'medals'],
+                'strategy_points': ['очки форжа', 'фп', 'strategy_points', 'forge points', 'fp'],
+                'clan_power':      ['мощь гильдии', 'clan_power', 'guild power'],
+                'goods':           ['товары', 'goods'],
+            };
+            
+            for (const level of entityLevels) {
+                if (!level.production_values || !Array.isArray(level.production_values)) continue;
+                for (const pv of level.production_values) {
+                    if (!pv.type || !pv.value || pv.value <= 0) continue;
+                    // Проверяем, совпадает ли запрос с типом ресурса
+                    const aliases = productionTypeNames[pv.type] || [pv.type];
+                    const matched = aliases.some(alias => alias.toLowerCase().includes(maskLower) || maskLower.includes(alias.toLowerCase()));
+                    if (matched) {
+                        results.productions.push({
+                            era: level.era || 'unknown',
+                            rewardId: pv.type,
+                            rewardName: pv.type,
+                            rewardType: 'resources',
+                            amount: pv.value,
+                            fromEntityLevels: true
+                        });
+                        break; // достаточно одного совпадения на уровень
+                    }
+                }
+            }
+        }
+    }
+    
     return results.productions.length > 0 || results.randomProductions.length > 0 ? results : null;
 }
 
@@ -234,7 +304,7 @@ function renderResults(buildings) {
     });
     const uniqueBuildings = Array.from(uniqueBuildingsMap.values());
     
-    const limit = 50;
+    const limit = 2000;
     const toRender = uniqueBuildings.length > limit ? uniqueBuildings.slice(0, limit) : uniqueBuildings;
     const longPressDuration = basketConfig?.settings?.longPressDuration || 700;
     
