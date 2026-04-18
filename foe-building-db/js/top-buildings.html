@@ -681,7 +681,7 @@
         // ========== ОСНОВНОЙ КЛАСС ==========
         
         class TopBuildingsTable {
-            constructor(containerId, jsonUrl = '/building.json') {
+            constructor(containerId, jsonUrl = 'https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json') {
                 this.container = document.getElementById(containerId);
                 this.jsonUrl = jsonUrl;
                 this.buildings = [];
@@ -694,14 +694,6 @@
                 this.container.innerHTML = `
                     <div class="top-card">
                         <div class="top-controls-row">
-                            <div class="top-ctrl-group">
-                                <label>📁 БАЗА ДАННЫХ</label>
-                                <select id="topJsonSelect">
-                                    <option value="/building.json">RU</option>
-                                    <option value="/buildingzz.json">BETA</option>
-                                    <option value="https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json">TEST (R2)</option>
-                                </select>
-                            </div>
                             <div class="top-ctrl-group">
                                 <label>📂 КАТЕГОРИЯ</label>
                                 <select id="topGroupSelect"></select>
@@ -736,11 +728,11 @@
                                         <th class="top-value-col top-sort-header" id="topValueHeader">📊 Значение <span class="top-sort-indicator">▼</span></th>
                                     </tr>
                                 </thead>
-                                <tbody id="topTableBody"><tr class="top-empty-row"><td colspan="3">⏳ Загрузка данных...</td></tr>
+                                <tbody id="topTableBody"><tr class="top-empty-row"><td colspan="3">⏳ Загрузка数据...<\/td><\/tr>
                                 </tbody>
-                            </table>
-                        </div>
-                    </div>
+                            <\/table>
+                        <\/div>
+                    <\/div>
                 `;
             }
 
@@ -750,7 +742,6 @@
                 this.eraSelect = document.getElementById('topEraSelect');
                 this.limitSelect = document.getElementById('topLimitSelect');
                 this.perTileCheckbox = document.getElementById('perTileCheckbox');
-                this.jsonSelect = document.getElementById('topJsonSelect');
                 this.tableBody = document.getElementById('topTableBody');
                 this.valueHeader = document.getElementById('topValueHeader');
                 
@@ -768,17 +759,6 @@
                 if (this.eraSelect) this.eraSelect.addEventListener('change', () => this.buildTop());
                 if (this.limitSelect) this.limitSelect.addEventListener('change', () => this.buildTop());
                 if (this.perTileCheckbox) this.perTileCheckbox.addEventListener('change', () => this.buildTop());
-                if (this.jsonSelect) {
-                    this.jsonSelect.addEventListener('change', (e) => {
-                        this.changeJsonSource(e.target.value);
-                    });
-                }
-            }
-
-            async changeJsonSource(newUrl) {
-                this.jsonUrl = newUrl;
-                this.tableBody.innerHTML = '<tr class="top-empty-row"><td colspan="3">🔄 Переключение базы данных...<\/td><\/tr>';
-                await this.loadData();
             }
 
             updateParamSelect() {
@@ -796,115 +776,113 @@
                 this.buildTop();
             }
 
-        async loadData() {
-    this.tableBody.innerHTML = '<tr class="top-empty-row"><td colspan="3">⏳ Загрузка данных...<\/td><\/tr>';
-    try {
-        console.log('📥 Загрузка JSON из:', this.jsonUrl);
-        
-        // === ИНДИКАТОР С ПРОГРЕССОМ ===
-        const statusRow = document.getElementById('topTableBody');
-        if (statusRow) {
-            statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">🔄 Подключение...<\/td><\/tr>';
-        }
-        
-        const response = await fetch(this.jsonUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const contentLength = response.headers.get('content-length');
-        const totalMB = contentLength ? (parseInt(contentLength) / 1024 / 1024).toFixed(1) : '?';
-        
-        const reader = response.body.getReader();
-        let received = 0;
-        const chunks = [];
-        
-        if (statusRow) {
-            statusRow.innerHTML = `<tr class="top-empty-row"><td colspan="3">📥 Загрузка ${totalMB} МБ... 0%<\/td><\/tr>`;
-        }
-        
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            chunks.push(value);
-            received += value.length;
-            
-            if (contentLength && statusRow) {
-                const percent = Math.round(received / parseInt(contentLength) * 100);
-                const receivedMB = (received / 1024 / 1024).toFixed(1);
-                statusRow.innerHTML = `<tr class="top-empty-row"><td colspan="3">📥 Загрузка ${totalMB} МБ... ${percent}% (${receivedMB} МБ)<\/td><\/tr>`;
+            async loadData() {
+                this.tableBody.innerHTML = '<tr class="top-empty-row"><td colspan="3">⏳ Загрузка данных...<\/td><\/tr>';
+                try {
+                    console.log('📥 Загрузка JSON из:', this.jsonUrl);
+                    
+                    const statusRow = document.getElementById('topTableBody');
+                    if (statusRow) {
+                        statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">🔄 Подключение...<\/td><\/tr>';
+                    }
+                    
+                    const response = await fetch(this.jsonUrl);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const contentLength = response.headers.get('content-length');
+                    const totalMB = contentLength ? (parseInt(contentLength) / 1024 / 1024).toFixed(1) : '?';
+                    
+                    const reader = response.body.getReader();
+                    let received = 0;
+                    const chunks = [];
+                    
+                    if (statusRow) {
+                        statusRow.innerHTML = `<tr class="top-empty-row"><td colspan="3">📥 Загрузка ${totalMB} МБ... 0%<\/td><\/tr>`;
+                    }
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        chunks.push(value);
+                        received += value.length;
+                        
+                        if (contentLength && statusRow) {
+                            const percent = Math.round(received / parseInt(contentLength) * 100);
+                            const receivedMB = (received / 1024 / 1024).toFixed(1);
+                            statusRow.innerHTML = `<tr class="top-empty-row"><td colspan="3">📥 Загрузка ${totalMB} МБ... ${percent}% (${receivedMB} МБ)<\/td><\/tr>`;
+                        }
+                    }
+                    
+                    if (statusRow) {
+                        statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">📦 Обработка JSON...<\/td><\/tr>';
+                    }
+                    
+                    const chunksAll = new Uint8Array(received);
+                    let position = 0;
+                    for (const chunk of chunks) {
+                        chunksAll.set(chunk, position);
+                        position += chunk.length;
+                    }
+                    
+                    const decoder = new TextDecoder();
+                    const jsonText = decoder.decode(chunksAll);
+                    const rawData = JSON.parse(jsonText);
+                    
+                    if (statusRow) {
+                        statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">🔄 Преобразование данных...<\/td><\/tr>';
+                    }
+                    
+                    let buildings = [];
+                    if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) buildings = Object.values(rawData);
+                    else if (Array.isArray(rawData)) buildings = rawData;
+                    else throw new Error('Формат JSON не распознан');
+                    
+                    if (buildings.length === 0) throw new Error('Нет данных о зданиях');
+                    
+                    this.buildings = buildings;
+                    console.log(`📊 Загружено зданий: ${this.buildings.length}`);
+                    
+                    const eraSet = new Set();
+                    for (const b of this.buildings) if (b.components) Object.keys(b.components).forEach(era => eraSet.add(era));
+                    let eraArray = Array.from(eraSet);
+                    eraArray = sortEras(eraArray);
+                    
+                    let eraSelect = document.getElementById('topEraSelect');
+                    if (!eraSelect) {
+                        eraSelect = document.createElement('select');
+                        eraSelect.id = 'topEraSelect';
+                        eraSelect.style.display = 'none';
+                        document.body.appendChild(eraSelect);
+                        this.eraSelect = eraSelect;
+                    }
+                    
+                    eraSelect.innerHTML = '';
+                    eraArray.forEach(era => {
+                        const option = document.createElement('option');
+                        option.value = era;
+                        option.textContent = getHumanEraName(era);
+                        if (era === 'SpaceAgeSpaceHub') option.selected = true;
+                        eraSelect.appendChild(option);
+                    });
+                    
+                    this.groupSelect.innerHTML = '';
+                    const groups = [...new Set(CUSTOM_PARAMS.map(p => p.group))];
+                    groups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group;
+                        option.textContent = GROUP_NAMES[group] || group;
+                        this.groupSelect.appendChild(option);
+                    });
+                    
+                    this.updateParamSelect();
+                    this.buildTop();
+                    
+                } catch (err) {
+                    console.error('❌ Ошибка:', err);
+                    this.tableBody.innerHTML = `<tr class="top-empty-row"><td colspan="3">❌ Ошибка: ${err.message}<\/td><\/tr>`;
+                }
             }
-        }
-        
-        if (statusRow) {
-            statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">📦 Обработка JSON...<\/td><\/tr>';
-        }
-        
-        const chunksAll = new Uint8Array(received);
-        let position = 0;
-        for (const chunk of chunks) {
-            chunksAll.set(chunk, position);
-            position += chunk.length;
-        }
-        
-        const decoder = new TextDecoder();
-        const jsonText = decoder.decode(chunksAll);
-        const rawData = JSON.parse(jsonText);
-        
-        if (statusRow) {
-            statusRow.innerHTML = '<tr class="top-empty-row"><td colspan="3">🔄 Преобразование данных...<\/td><\/tr>';
-        }
-        
-        let buildings = [];
-        if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) buildings = Object.values(rawData);
-        else if (Array.isArray(rawData)) buildings = rawData;
-        else throw new Error('Формат JSON не распознан');
-        
-        if (buildings.length === 0) throw new Error('Нет данных о зданиях');
-        
-        this.buildings = buildings;
-        console.log(`📊 Загружено зданий: ${this.buildings.length}`);
-        
-        // Остальной код без изменений...
-        const eraSet = new Set();
-        for (const b of this.buildings) if (b.components) Object.keys(b.components).forEach(era => eraSet.add(era));
-        let eraArray = Array.from(eraSet);
-        eraArray = sortEras(eraArray);
-        
-        let eraSelect = document.getElementById('topEraSelect');
-        if (!eraSelect) {
-            eraSelect = document.createElement('select');
-            eraSelect.id = 'topEraSelect';
-            eraSelect.style.display = 'none';
-            document.body.appendChild(eraSelect);
-            this.eraSelect = eraSelect;
-        }
-        
-        eraSelect.innerHTML = '';
-        eraArray.forEach(era => {
-            const option = document.createElement('option');
-            option.value = era;
-            option.textContent = getHumanEraName(era);
-            if (era === 'SpaceAgeSpaceHub') option.selected = true;
-            eraSelect.appendChild(option);
-        });
-        
-        this.groupSelect.innerHTML = '';
-        const groups = [...new Set(CUSTOM_PARAMS.map(p => p.group))];
-        groups.forEach(group => {
-            const option = document.createElement('option');
-            option.value = group;
-            option.textContent = GROUP_NAMES[group] || group;
-            this.groupSelect.appendChild(option);
-        });
-        
-        this.updateParamSelect();
-        this.buildTop();
-        
-    } catch (err) {
-        console.error('❌ Ошибка:', err);
-        this.tableBody.innerHTML = `<tr class="top-empty-row"><td colspan="3">❌ Ошибка: ${err.message}<\/td><\/tr>`;
-    }
-}
 
             getValuePerTile(building, era, paramDef) {
                 let rawValue = paramDef.fetch(building, era);
