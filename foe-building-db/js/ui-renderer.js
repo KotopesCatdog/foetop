@@ -327,10 +327,7 @@ function renderResults(buildings) {
         const popClass = baseData.population > 0 ? 'positive' : (baseData.population < 0 ? 'negative' : 'neutral');
         const popSign = baseData.population > 0 ? '+' : '';
         
-        card.innerHTML = `<div class="card-header"><div class="card-title" title="${b.name}">${b.name}</div></div><div class="card-size">${b.size.width}×${b.size.length}</div><div class="tooltip-box"></div>`;
-        
-        
-        
+       card.innerHTML = `<div class="card-header"><div class="card-title" title="${b.name}">${b.name}</div></div><div class="card-size">${b.size.length}×${b.size.width}</div><div class="tooltip-box"></div>`;        
         // Long press для добавления/удаления из корзины
         let pressTimer;
         card.addEventListener('mousedown', (e) => {
