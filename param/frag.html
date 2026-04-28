@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FoE: Источники фрагментов</title>
-<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -13,6 +13,28 @@ body {
     padding: 20px;
     max-width: 800px;
     margin: 0 auto;
+}
+.json-selector {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.json-selector label {
+    color: #888;
+    font-size: 12px;
+}
+.json-selector select {
+    background: #333;
+    color: #fff;
+    border: 1px solid #4ecdc4;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.json-selector select:hover {
+    border-color: #66fcf1;
 }
 input#search {
     width: 100%;
@@ -119,17 +141,27 @@ mark {
         align-items: center;
     }
     .back-button { width: 80%; text-align: center; }
+    .json-selector { flex-direction: column; align-items: flex-start; }
 }
 </style>
 </head>
 <body>
 <div class="navigation-buttons">
     <a href="javascript:history.back()" class="back-button">← Назад</a>
-    <a href="/" class="back-button">🏠 Домой</a>
+    <a href="https://www.foehelp.ru" class="back-button">🏠 Домой</a>
 </div>
 
-<h2>🔍 Источники фрагментов   (С) foehelp.top</h2>
+<h2>🔍 Источники фрагментов   (С) foehelp.ru</h2>
 
+<div class="json-selector">
+    <label>📁 БАЗА ДАННЫХ:</label>
+    <select id="jsonSelect">
+        <option value="/building.json">RU</option>
+        <option value="/buildingzz.json">BETA</option>
+        <option value="https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json">TEST (R2)</option>
+    </select>
+    <div id="localJsonStatus" style="font-size: 11px; color: #4ecdc4;">🌐 Серверная версия</div>
+</div>
 
 <div id="serverFileDate"></div>
 <div id="statusMsg" class="status-msg">Загрузка...</div>
@@ -143,8 +175,7 @@ mark {
 // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
 let buildingsList = [];
 let allExpanded = false;
- let currentJsonUrl = 'https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json';
-
+let currentJsonUrl = '/building.json';
 
 // === ПОЛУЧЕНИЕ ДАТЫ ФАЙЛА ===
 async function loadServerFileDate() {
@@ -442,6 +473,29 @@ async function loadFragments() {
     }
 }
 
+// === ПЕРЕКЛЮЧЕНИЕ JSON ===
+async function switchJson(url) {
+    currentJsonUrl = url;
+    const select = document.getElementById('jsonSelect');
+    if (select) select.value = url;
+    
+    // Обновляем статус источника
+    const statusDiv = document.getElementById('localJsonStatus');
+    if (statusDiv) {
+        if (url.includes('r2.dev')) {
+            statusDiv.innerHTML = '📁 R2 (TEST)';
+            statusDiv.style.color = '#4ecdc4';
+        } else if (url.includes('buildingzz')) {
+            statusDiv.innerHTML = '📁 BETA';
+            statusDiv.style.color = '#4ecdc4';
+        } else {
+            statusDiv.innerHTML = '🌐 Серверная версия';
+            statusDiv.style.color = '#888';
+        }
+    }
+    
+    await loadFragments();
+}
 
 function render() {
     const searchInputElem = document.getElementById('search');
@@ -503,8 +557,39 @@ function render() {
 
 // === ИНИЦИАЛИЗАЦИЯ ===
 document.addEventListener('DOMContentLoaded', () => {
+    // Объявляем глобальные переменные здесь, после загрузки DOM
     window.searchInput = document.getElementById('search');
     window.toggleAllBtn = document.getElementById('toggle-all');
+    window.jsonSelect = document.getElementById('jsonSelect');
+    
+    // Устанавливаем currentJsonUrl из селекта
+    currentJsonUrl = window.jsonSelect ? window.jsonSelect.value : '/building.json';
+    
+    // Обновляем статус источника
+    const statusDiv = document.getElementById('localJsonStatus');
+    if (statusDiv && window.jsonSelect) {
+        const url = window.jsonSelect.value;
+        if (url.includes('r2.dev')) {
+            statusDiv.innerHTML = '📁 R2 (TEST)';
+            statusDiv.style.color = '#4ecdc4';
+        } else if (url.includes('buildingzz')) {
+            statusDiv.innerHTML = '📁 BETA';
+            statusDiv.style.color = '#4ecdc4';
+        } else {
+            statusDiv.innerHTML = '🌐 Серверная версия';
+            statusDiv.style.color = '#888';
+        }
+    }
+    
+    if (window.jsonSelect) {
+        window.jsonSelect.addEventListener('change', (e) => {
+            if (confirm('Переключение базы данных приведет к перезагрузке. Продолжить?')) {
+                switchJson(e.target.value);
+            } else {
+                window.jsonSelect.value = currentJsonUrl;
+            }
+        });
+    }
     
     if (window.searchInput) {
         window.searchInput.addEventListener('input', () => render());
