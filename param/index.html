@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Параметры</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh; /* Позволяет странице расти выше экрана */
+            width: 100%;
+            background-color: black;
+            /* overflow больше не hidden — прокрутка разрешена */
+        }
+        body {
+            display: flex;
+            align-items: flex-start; /* Начинаем с верха, чтобы не обрезалось сверху */
+            justify-content: center;
+            padding: 40px 20px; /* Отступы по краям для мобильных */
+            box-sizing: border-box;
+        }
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 500px;
+            padding: 40px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 4px solid #008080;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.9);
+        }
+        .menu-btn {
+            padding: 18px 40px;
+            font-size: 26px;
+            font-weight: bold;
+            color: white;
+            background-color: #008080;
+            border: 4px solid black;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .menu-btn:hover {
+            background-color: #00a0a0;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+            transform: scale(1.05);
+        }
+        .title {
+            text-align: center;
+            font-size: 48px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+        }
+        .under-construction {
+            width: 100%;
+            max-width: 400px;
+            margin: 40px auto 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h class="title">Параметры</h>
+       
+       
+       <a href="https://foehelp.ru/foe-building-db/build.html" target="_blank" class="menu-btn">База Зданий FoE</a>
+       <a href="https://foehelp.ru/foe-building-db/js/top-buildings.html" target="_blank" class="menu-btn">ТОП Зданий</a>
+        <a href="http://www.foehelp.ru/param/frag.html" target="_self" class="menu-btn">Фрагменты</a>
+        <a href="http://www.foehelp.ru/param/kits.html" target="_blank" class="menu-btn">Наборы</a>
+        <a href="https://www.foehelp.ru/param/inventar.html" target="_blank" class="menu-btn">Инвентарь</a>
+          <a href="https://www.foehelp.ru/param/plstat/" target="_blank" class="menu-btn">Рейтинг зданий игрока</a>
+        <a href="https://www.foehelp.ru/param/foestat.html" target="_blank" class="menu-btn">FOE RU статистика миров</a>
+        
+        <a href="http://www.foehelp.ru/param/nauka.html" target="_self" class="menu-btn">Стоимость науки</a>
+        <a href="http://www.foehelp.ru/param/kratkart.html" target="_blank" class="menu-btn">Кратчайшие карты</a>
+        <a href="http://www.foehelp.ru/param/rasbrikart.html" target="_blank" class="menu-btn">Расш. и брил. на картах</a>
+        
+       
+            <a href="http://www.foehelp.ru" target="_self" class="menu-btn">🏠 Возврат в меню</a>
+        
+  
+    </div>
+ <script src="/game/js/background2.js"></script>
+</body>
+</html>
