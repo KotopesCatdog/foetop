@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>FoE Рейтинг зданий</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="container">
+<h1>🏛️ Forge of Empires – Рейтинг зданий</h1>
+<div class="subtitle">Идея — papachina</div>
+
+<!-- Блок с двумя элементами: окно загрузки (тёмно-синее) и кнопка расширения, одинаковый размер -->
+<div class="ext-header-row">
+    <div id="uploadArea" class="upload-area">📁 Загрузка JSON</div>
+    <button id="downloadExtBtn">📦 Скачать расширение<br>для Хрома (пароль: 1)</button>
+</div>
+
+<input type="file" id="fileInput" accept=".json" hidden>
+<input id="searchInput" class="search-box" placeholder="🔍 Поиск по названию..." />
+<button id="togglePerTile" class="switchButton">На клетку: выкл</button>
+<button id="toggleInventory" class="switchButton">Инвентарь: все</button>
+<button id="toggleAverage" class="switchButton">Среднее: выкл</button>
+<div class="tabs">
+<button class="tab-btn active" data-tab="all">🏗️ Все здания</button>
+<button class="tab-btn" data-tab="battle">Боевые бонусы</button>
+<button id="favToggle" class="fav-btn">★ Только избранные</button>
+</div>
+
+<div id="tab-all" class="tab-content active">
+<div class="scrollable">
+<table id="buildingsTable">
+<thead>
+<tr>
+<th>★</th>    
+<th>И</th>
+<th>Имя</th>
+<th>К-во</th>
+<th>Размер</th>
+<th>Эпоха</th>
+<th>Население</th>
+<th>СО</th>
+<th>Тов пр</th>
+<th>Тов</th>
+<th>Тов сл</th>
+</tr>
+</thead><tbody></tbody>
+</table>
+</div>
+</div>
+
+<div id="tab-battle" class="tab-content">
+<div class="scrollable">
+<table id="battleTable">
+<thead>
+<tr>
+<th>★</th>   
+<th>И</th>
+<th>Имя</th>
+<th>К-во</th>
+<th><img src="/icons/att_boost_attacker.png"></th>
+<th><img src="/icons/def_boost_attacker.png"></th>
+<th><img src="/icons/att_boost_defender.png"></th>
+<th><img src="/icons/def_boost_defender.png"></th>
+<th><img src="/icons/att_boost_attacker_gbg.png"></th>
+<th><img src="/icons/def_boost_attacker_gbg.png"></th>
+<th><img src="/icons/att_boost_defender_gbg.png"></th>
+<th><img src="/icons/def_boost_defender_gbg.png"></th>
+<th><img src="/icons/att_boost_attacker_gr.png"></th>
+<th><img src="/icons/def_boost_attacker_gr.png"></th>
+<th><img src="/icons/att_boost_defender_gr.png"></th>
+<th><img src="/icons/def_boost_defender_gr.png"></th>
+<th><img src="/icons/att_boost_attacker_gex.png"></th>
+<th><img src="/icons/def_boost_attacker_gex.png"></th>
+<th><img src="/icons/att_boost_defender_gex.png"></th>
+<th><img src="/icons/def_boost_defender_gex.png"></th>
+
+</tr>
+</thead><tbody></tbody>
+</table>
+</div>
+</div>
+
+</div>
+<script src="foe_analyzer.js"></script>
+<script>
+    // Обработчик кнопки скачивания расширения (открывает ссылку)
+    const extBtn = document.getElementById('downloadExtBtn');
+    if(extBtn) {
+        extBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.open('https://drive.google.com/file/d/1nkJHNTCg6gfDQyyIVTlzIBO84P7NPINi/view?usp=sharing', '_blank');
+        });
+    }
+</script>
+</body>
+</html>
