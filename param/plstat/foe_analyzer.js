@@ -42,8 +42,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- переключатель "на клетку" ---
     document.getElementById("togglePerTile").addEventListener("click", function(){
         perTileMode = !perTileMode;
-        this.textContent = perTileMode ? "На клетку: вкл" : "На клетку: выкл";
+//        this.textContent = perTileMode ? "На клетку: вкл" : "На клетку: выкл";
+this.textContent = perTileMode 
+    ? (window._i18nT?.plstat_btn_per_tile_on || "На клетку: вкл")
+    : (window._i18nT?.plstat_btn_per_tile_off || "На клетку: выкл");
+
+
 this.classList.toggle("active", perTileMode);
+
+
 
         // пересборка таблиц
         fillAllBuildings(lastGrouped);
@@ -72,7 +79,7 @@ this.classList.toggle("active", perTileMode);
         updateBattleAverages();
     });
 
-});
+
 
 
 // =========================================================
@@ -548,4 +555,5 @@ document.getElementById("favToggle")?.addEventListener("click", ()=>{
 
     document.querySelectorAll("tbody tr").forEach(tr => syncRowVisibility(tr));
     updateBattleAverages();
+});
 });
