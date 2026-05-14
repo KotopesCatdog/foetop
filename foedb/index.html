@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoE Building DB</title>
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .top-left-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .chat-btn, .help-btn-left, .donate-btn-left {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .chat-btn { background: linear-gradient(135deg, #10a37f 0%, #0e8c6c 100%); }
+        .chat-btn:hover { transform: scale(1.05); background: linear-gradient(135deg, #0e8c6c 0%, #0c755a 100%); box-shadow: 0 4px 12px rgba(16,163,127,0.4); }
+        .help-btn-left { background: linear-gradient(135deg, #6c5ce7 0%, #5a4bce 100%); font-size: 24px; font-weight: bold; }
+        .help-btn-left:hover { transform: scale(1.05); background: linear-gradient(135deg, #5a4bce 0%, #4a3cb8 100%); box-shadow: 0 4px 12px rgba(108,92,231,0.4); }
+        .donate-btn-left { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); font-size: 24px; }
+        .donate-btn-left:hover { transform: scale(1.05); background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); box-shadow: 0 4px 12px rgba(243,156,18,0.4); }
+        .chat-btn:active, .help-btn-left:active, .donate-btn-left:active { transform: scale(0.98); }
+        @media (max-width: 768px) {
+            .top-left-buttons { top: 10px; left: 10px; gap: 8px; }
+            .chat-btn, .help-btn-left, .donate-btn-left { width: 44px; height: 44px; font-size: 20px; }
+        }
+        #help-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #e6d7ac;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            width: 90%;
+            max-width: 800px;
+            max-height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        #help-window.hidden { display: none !important; }
+        @media (max-width: 768px) {
+            #help-window { width: 95%; max-height: 70vh; top: 50%; left: 50%; }
+            .close-btn { width: 44px; height: 44px; font-size: 32px; top: 5px; right: 5px; }
+            body.modal-open { overflow: hidden; }
+        }
+        .help-content { padding: 20px; background: #e6d7ac; position: relative; color: #3a2e1a; }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 32px; cursor: pointer; color: #ff4444; font-weight: bold;
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: all 0.2s; background: transparent; border: none; z-index: 1002;
+        }
+        .close-btn:hover { color: #ff0000; background: rgba(0,0,0,0.05); transform: scale(1.1); }
+        .close-btn:active { transform: scale(0.95); }
+        #statusMsg {
+            transition: opacity 0.5s; font-size: 14px; text-align: center;
+            padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.6);
+            margin: 10px auto; max-width: 80%; font-family: monospace;
+        }
+        .file-upload-btn {
+            width: 100%; background: rgba(157,78,221,0.15); border: 2px solid #9d4edd;
+            color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            transition: all 0.3s ease; font-size: 14px; box-sizing: border-box;
+        }
+        .file-upload-btn:hover { background: #9d4edd; border: 2px solid #9d4edd; }
+        .file-upload-btn:active { transform: scale(0.98); }
+        .file-upload-btn.active { background: #9d4edd; border: 2px solid #c77dff; }
+        #quantaTable thead th, #guildRaidsTable thead th { position: sticky; top: 0; z-index: 2; }
+
+        /* Переключатель языка */
+        .lang-switcher-db {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .lang-switcher-db button {
+            padding: 5px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            background: transparent;
+            border: 2px solid #555;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-switcher-db button:hover,
+        .lang-switcher-db button.active {
+            background: #444;
+            border-color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-left-buttons">
+        <button class="chat-btn" id="chatButton" data-i18n-title="db_chat_btn_title">💬</button>
+        <button class="help-btn-left" id="helpButtonLeft" data-i18n-title="db_help_btn_title">?</button>
+        <button class="donate-btn-left" id="donateButtonLeft" data-i18n-title="db_donate_btn_title">🍺</button>
+    </div>
+    <br><br>
+    <div class="header-container">
+        <h1 data-i18n="db_page_title">База Зданий FoE</h1>
+        <div class="header-buttons">
+            <div class="basket-btn-container">
+                <button class="file-upload-btn" id="uploadFileBtn" onclick="selectLocalFile()"
+                    data-i18n="db_upload_btn"
+                    data-i18n-title="db_upload_tooltip">📂 Загрузить JSON</button>
+                <span class="basket-tooltip" data-i18n="db_upload_tooltip">Выбрать JSON файл со своего ПК</span>
+            </div>
+            <div class="basket-btn-container" id="serverDataContainer" style="display: none;">
+                <button class="file-upload-btn" id="serverDataBtn" onclick="resetToServerData()"
+                    data-i18n="db_reset_btn"
+                    data-i18n-title="db_reset_tooltip">🗑 Сбросить</button>
+                <span class="basket-tooltip" data-i18n="db_reset_tooltip">Сбросить загруженные данные</span>
+            </div>
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openBasketModal()" style="background: rgba(78,205,196,0.15); border: 2px solid #4ecdc4;">
+                    <span data-i18n="db_basket_btn">🛒 Корзина</span> <span class="basket-count" id="basketCount">0</span>
+                </button>
+                <span class="basket-tooltip" data-i18n="db_basket_tooltip">Для добавления держи ЛКМ на здании</span>
+            </div>
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openQuantaModal()"
+                    style="background: rgba(0,180,216,0.15); border: 2px solid #00b4d8; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;"
+                    onmouseover="this.style.background='#00b4d8'"
+                    onmouseout="this.style.background='rgba(0,180,216,0.15)'"
+                    data-i18n="db_neo_btn">НЕО-здания</button>
+                <span class="basket-tooltip" data-i18n="db_neo_tooltip">Все здания «нео ...»</span>
+            </div>
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openGuildRaidsModal()"
+                    style="background: rgba(244,162,97,0.15); border: 2px solid #f4a261; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;"
+                    onmouseover="this.style.background='#f4a261'"
+                    onmouseout="this.style.background='rgba(244,162,97,0.15)'"
+                    data-i18n="db_quanta_btn">Здания для квантов</button>
+                <span class="basket-tooltip" data-i18n="db_quanta_tooltip">Здания с бонусами для Квантов</span>
+            </div>
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openTopBuildingsModal()"
+                    style="background: rgba(46,204,113,0.15); border: 2px solid #2ecc71; color: #fff;"
+                    data-i18n="db_top_btn">🏆 Топ-здания</button>
+                <span class="basket-tooltip" data-i18n="db_top_tooltip">Рейтинг зданий по параметрам</span>
+            </div>
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openFragmentsModal()"
+                    style="background: #1a2a4a; border: 2px solid #3a7bd5; color: #fff;"
+                    data-i18n="db_fragments_btn">🔍 Фрагменты</button>
+                <span class="basket-tooltip" data-i18n="db_fragments_tooltip">Источники фрагментов по зданиям</span>
+            </div>
+
+            <!-- Переключатель языка -->
+            <div class="lang-switcher-db">
+                <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
+                <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-window" class="hidden">
+        <div class="help-content">
+            <button class="close-btn" onclick="toggleHelp()">&times;</button>
+            <h2 data-i18n="db_help_title">Справка</h2>
+            <p data-i18n="db_help_welcome">Добро пожаловать в Базу Зданий FoE!</p>
+            <ul>
+                <li><span data-i18n="db_help_li1">Для загрузки базы данных установите</span> <a href="https://drive.google.com/file/d/1zq0WyPXdIMwtj6ASWyHb7CBg7tTbr0jb/view?usp=sharing" target="_blank">URL</a></li>
+                <li data-i18n="db_help_li2">В своём городе нажмите на расширение -> "Импорт JSON" и сохраните файл.</li>
+                <li><span data-i18n="db_help_li3">Последнюю уже извлечённую версию json в архиве можно загрузить</span> <a href="https://drive.google.com/file/d/1MiyYHZ6bV3sOxbRIsL2MMMfexCKImynq/view?usp=sharing" target="_blank">URL</a></li>
+                <li>==========</li>
+                <li data-i18n="db_help_li4">Кнопка "📂 Загрузить JSON" — выбрать локальный JSON файл с базой данных</li>
+                <li data-i18n="db_help_li5">Кнопка "🗑 Сбросить" — очистить загруженные данные</li>
+                <li>==========</li>
+                <li data-i18n="db_help_li6">Клик на карточке здания - показ-скрытие данных</li>
+                <li data-i18n="db_help_li7">Удержание ЛКМ на здании добавляет его в корзину</li>
+                <li data-i18n="db_help_li8">Клик по колонке в корзине — сортировка</li>
+                <li data-i18n="db_help_li9">Колонки в корзине можно перетаскивать</li>
+                <li data-i18n="db_help_li10">Выбор эпохи и параметров для фильтрации</li>
+                <li>==========</li>
+                <li data-i18n="db_help_li11">Внимание! Ведутся работы, возможны неточности</li>
+            </ul>
+            <p>
+                <span data-i18n="db_help_contact">Есть вопросы, предложения, заметили неточность? Пишите...</span>
+                <a href="https://t.me/foehelp" target="_blank">Телеграм</a> или
+                <a href="https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help" target="_blank">Zuli чат</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="main-content"></div>
+    <div id="serverFileDate" style="text-align:center; color:#ffd700; font-size:11px; margin-bottom:10px;"></div>
+    <div id="statusMsg" class="status-msg" data-i18n="db_status_load">📂 Загрузите JSON файл для начала работы</div>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" data-i18n-placeholder="db_search_placeholder" disabled>
+            <button id="clearBtn">✕</button>
+        </div>
+        <div class="filter-options">
+            <label class="filter-option"><input type="checkbox" id="filterName" checked><span data-i18n="db_filter_name">Имя</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterType" checked><span data-i18n="db_filter_type">Тип</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterSource" checked><span data-i18n="db_filter_source">Источник</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterProduction"><span data-i18n="db_filter_production">В продукции</span></label>
+        </div>
+    </div>
+
+    <div id="resultsGrid" class="results-grid"></div>
+
+    <!-- Корзина -->
+    <div class="modal-overlay" id="basketModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" data-i18n="db_basket_modal_title">🛒 Корзина зданий</span>
+                <span data-i18n="db_basket_modal_hint">(сортировка - клик по колонке, колонки можно перетаскивать)</span>
+                <button class="modal-close" onclick="closeBasketModal()">&times;</button>
+            </div>
+            <div class="basket-controls">
+                <div class="basket-era-select">
+                    <label data-i18n="db_basket_era_label">📅 Эпоха для всех зданий:</label>
+                    <select id="basketEraSelect" onchange="onBasketEraChange()"></select>
+                </div>
+                <div class="basket-era-select" style="margin-top: 10px;">
+                    <label data-i18n="db_basket_display_label">📐 Отображение:</label>
+                    <select id="perTileSelect" onchange="onPerTileChange()">
+                        <option value="total" data-i18n="db_display_total">Общие значения</option>
+                        <option value="perTile" data-i18n="db_display_per_tile">На клетку</option>
+                    </select>
+                </div>
+                <div class="basket-actions">
+                    <button class="btn btn-export" onclick="exportBasketXLSX()" data-i18n="db_export_excel">📥 Экспорт Excel</button>
+                    <button class="btn btn-clear" onclick="clearBasket()" data-i18n="db_clear_basket">🗑 Очистить</button>
+                </div>
+            </div>
+            <div class="basket-table-container">
+                <table class="basket-table" id="basketTable"><thead></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- НЕО-здания -->
+    <div class="modal-overlay" id="quantaModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" data-i18n="db_neo_modal_title">⚡ Кванты — здания «нео ...»</span>
+                <span data-i18n="db_neo_modal_hint">(сортировка - клик по колонке)</span>
+                <button class="modal-close" onclick="closeQuantaModal()">&times;</button>
+            </div>
+            <div class="basket-controls">
+                <div class="basket-era-select">
+                    <label data-i18n="db_basket_era_label">📅 Эпоха для всех зданий:</label>
+                    <select id="quantaEraSelect" onchange="onQuantaEraChange()"></select>
+                </div>
+                <div class="basket-era-select" style="margin-top: 10px;">
+                    <label data-i18n="db_basket_display_label">📐 Отображение:</label>
+                    <select id="quantaPerTileSelect" onchange="onQuantaPerTileChange()">
+                        <option value="total" data-i18n="db_display_total">Общие значения</option>
+                        <option value="perTile" data-i18n="db_display_per_tile">На клетку</option>
+                    </select>
+                </div>
+            </div>
+            <div class="basket-table-container">
+                <table class="basket-table" id="quantaTable"><thead></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кванты (бои) -->
+    <div class="modal-overlay" id="guildRaidsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" data-i18n="db_quanta_modal_title">⚔️ Здания с квантовыми бонусами</span>
+                <span data-i18n="db_neo_modal_hint">(сортировка - клик по колонке)</span>
+                <button class="modal-close" onclick="closeGuildRaidsModal()">&times;</button>
+            </div>
+            <div class="basket-controls">
+                <div class="basket-era-select">
+                    <label data-i18n="db_basket_era_label">📅 Эпоха для всех зданий:</label>
+                    <select id="guildRaidsEraSelect" onchange="onGuildRaidsEraChange()"></select>
+                </div>
+                <div class="basket-era-select" style="margin-top: 10px;">
+                    <label data-i18n="db_basket_display_label">📐 Отображение:</label>
+                    <select id="guildRaidsPerTileSelect" onchange="onGuildRaidsPerTileChange()">
+                        <option value="total" data-i18n="db_display_total">Общие значения</option>
+                        <option value="perTile" data-i18n="db_display_per_tile">На клетку</option>
+                    </select>
+                </div>
+            </div>
+            <div class="basket-table-container">
+                <table class="basket-table" id="guildRaidsTable"><thead></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-notification" id="toastNotification"></div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/building-processor.js"></script>
+    <script src="js/basket-manager.js"></script>
+    <script src="js/data-loader.js"></script>
+    <script src="js/ui-renderer.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/event-handlers.js"></script>
+    <script>
+        function toggleHelp() {
+            const helpWindow = document.getElementById('help-window');
+            const body = document.body;
+            if (helpWindow.classList.contains('hidden')) {
+                helpWindow.classList.remove('hidden');
+                if (window.innerWidth <= 768) body.classList.add('modal-open');
+                setTimeout(() => { document.addEventListener('click', closeHelpOnBackdrop); }, 100);
+            } else {
+                helpWindow.classList.add('hidden');
+                body.classList.remove('modal-open');
+                document.removeEventListener('click', closeHelpOnBackdrop);
+            }
+        }
+        function closeHelpOnBackdrop(event) {
+            const helpWindow = document.getElementById('help-window');
+            const helpButton = document.getElementById('helpButtonLeft');
+            if (helpWindow.contains(event.target) || helpButton.contains(event.target)) return;
+            if (!helpWindow.classList.contains('hidden')) toggleHelp();
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            initLocalFileUpload();
+            loadBasketConfig().then(() => {
+                loadBasket();
+                updateBasketCardIndicators();
+                initEventListeners();
+            });
+            document.getElementById('resultsGrid').innerHTML =
+                `<div class="no-results" style="color:#aaa; text-align:center; padding:40px;" data-i18n="db_no_results_hint">Выберите JSON файл с данными</div>`;
+            const chatButton = document.getElementById('chatButton');
+            if (chatButton) chatButton.addEventListener('click', () => {
+                window.open('https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help', '_blank', 'noopener,noreferrer');
+            });
+            const helpButtonLeft = document.getElementById('helpButtonLeft');
+            if (helpButtonLeft) helpButtonLeft.addEventListener('click', (e) => { e.stopPropagation(); toggleHelp(); });
+            const donateButtonLeft = document.getElementById('donateButtonLeft');
+            if (donateButtonLeft) donateButtonLeft.addEventListener('click', () => {
+                window.open('https://boosty.to/foehelp/donate', '_blank', 'noopener,noreferrer');
+            });
+            const helpWindow = document.getElementById('help-window');
+            if (helpWindow) helpWindow.classList.add('hidden');
+            if (window.innerWidth <= 768) {
+                window.addEventListener('popstate', () => {
+                    const hw = document.getElementById('help-window');
+                    if (hw && !hw.classList.contains('hidden')) toggleHelp();
+                });
+            }
+        });
+    </script>
+
+    <script src="js/top-buildings.js"></script>
+    <script src="/game/krak/js/background2.js"></script>
+    <select id="topEraSelect" style="display:none;"></select>
+
+    <!-- Топ-здания -->
+    <div id="topBuildingsModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); overflow-y:auto; padding:20px;">
+        <div style="max-width:900px; margin:0 auto; background:#1a1a1d; border:1px solid #2ecc71; border-radius:16px; overflow:hidden; position:relative;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:rgba(39,174,96,0.15); border-bottom:1px solid #2ecc71;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:20px;">🏆</span>
+                    <span style="color:#2ecc71; font-weight:700; font-size:16px;" data-i18n="db_top_modal_title">Топ-здания</span>
+                    <span id="topBuildingsStatus" style="color:#888; font-size:12px;"></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <label style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#66fcf1;" data-i18n="db_top_era_label">🌍 ЭПОХА</label>
+                        <select id="topEraSelectVisible" onchange="document.getElementById('topEraSelect').value=this.value; window._topTable && window._topTable.buildTop()"
+                            style="background:#333; border:1px solid #45454b; padding:6px 10px; border-radius:8px; font-size:0.8rem; color:#c5c6c7; cursor:pointer;"></select>
+                    </div>
+                    <button onclick="closeTopBuildingsModal()"
+                        style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
+                </div>
+            </div>
+            <div id="top-buildings-container" style="min-height:200px;"></div>
+        </div>
+    </div>
+
+    <script>
+        function openTopBuildingsModal() {
+            const modal = document.getElementById('topBuildingsModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            const status = document.getElementById('topBuildingsStatus');
+            if (!window.localFileData) {
+                const t = window._i18nT || {};
+                status.textContent = '⚠️ ' + (t['db_top_no_file'] || 'Сначала загрузите JSON файл');
+                document.getElementById('top-buildings-container').innerHTML =
+                    `<div style="text-align:center; color:#ffd700; padding:60px;">${t['db_top_no_file'] || 'Сначала загрузите JSON файл на главной странице'}</div>`;
+                return;
+            }
+            if (!window._topTable) window._topTable = new TopBuildingsTable('top-buildings-container');
+            const hiddenEra = document.getElementById('topEraSelect');
+            const visibleEra = document.getElementById('topEraSelectVisible');
+            const t = window._i18nT || {};
+            status.textContent = `${window.allBuildings ? window.allBuildings.length : 0} ${t['db_top_buildings_count'] || 'зданий'}`;
+            window._topTable.loadFromData(window.localFileData).then(() => {
+                visibleEra.innerHTML = Array.from(hiddenEra.options)
+                    .filter(o => o.value !== 'AllAge')
+                    .map(o => `<option value="${o.value}"${o.selected ? ' selected' : ''}>${o.text}</option>`)
+                    .join('');
+                visibleEra.value = hiddenEra.value !== 'AllAge' ? hiddenEra.value : visibleEra.options[0]?.value || '';
+            });
+        }
+        function closeTopBuildingsModal() {
+            document.getElementById('topBuildingsModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        document.getElementById('topBuildingsModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTopBuildingsModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('topBuildingsModal').style.display === 'block')
+                closeTopBuildingsModal();
+        });
+        function formatNumbersInTable(table) {
+            table.querySelectorAll('td').forEach(td => {
+                const text = td.textContent.trim();
+                if (/^-?\d{4,}$/.test(text)) td.textContent = parseInt(text, 10).toLocaleString('ru-RU');
+            });
+        }
+        const guildRaidsTable = document.getElementById('guildRaidsTable');
+        if (guildRaidsTable) {
+            new MutationObserver(() => formatNumbersInTable(guildRaidsTable))
+                .observe(guildRaidsTable, { childList: true, subtree: true });
+        }
+    </script>
+
+    <!-- Фрагменты -->
+    <div id="fragmentsModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.80); overflow-y:auto; padding:20px;">
+        <div style="max-width:860px; margin:0 auto; background:#222; border:1px solid #3a7bd5; border-radius:16px; overflow:hidden; position:relative;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(58,123,213,0.15); border-bottom:1px solid #3a7bd5;">
+                <span style="color:#3a7bd5; font-weight:700; font-size:16px;" data-i18n="db_fragments_modal_title">🔍 Источники фрагментов</span>
+                <button onclick="closeFragmentsModal()" style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
+            </div>
+            <div style="padding:20px; font-family:Arial,sans-serif; color:#eee;">
+                <input type="text" id="fragSearch" data-i18n-placeholder="db_frag_search_placeholder"
+                    style="width:100%;padding:10px;margin-bottom:10px;border-radius:4px;border:1px solid #555;background:#333;color:white;box-sizing:border-box;">
+                <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                    <button id="fragToggleAll" data-i18n="db_frag_expand_all"
+                        style="padding:6px 12px;background:rgba(255,255,255,0.1);color:white;border:1px solid #555;border-radius:4px;cursor:pointer;">Развернуть все</button>
+                    <button id="fragRatingBtn" data-i18n="db_frag_rating_btn"
+                        style="padding:6px 12px;background:rgba(255,165,0,0.15);color:white;border:1px solid #ffa500;border-radius:4px;cursor:pointer;">🏆 Рейтинг зданий</button>
+                </div>
+                <div id="fragLoading" style="display:none;text-align:center;color:#ffd700;padding:10px;font-family:monospace;background:rgba(0,0,0,0.5);border-radius:8px;"></div>
+                <div id="fragResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .frag-building { border-bottom:1px solid #444; padding:10px 0; cursor:pointer; }
+        .frag-building-header { font-weight:bold; color:#4fc3f7; display:flex; align-items:center; }
+        .frag-building-header::before { content:"▶ "; margin-right:6px; }
+        .frag-building.open .frag-building-header::before { content:"▼ "; }
+        .frag-rewards { margin-top:8px; padding-left:24px; display:none; color:#ccc; }
+        .frag-building.open .frag-rewards { display:block; }
+        .frag-reward-item { margin:4px 0; }
+        #fragmentsModal mark { background-color:#ffeb3b; color:#000; padding:0 2px; border-radius:2px; }
+    </style>
+
+    <!-- Весь JS фрагментов остаётся без изменений — он генерирует UI динамически -->
+    <!-- Строки в JS переведены через window._i18nT ниже -->
+    <script>
+    // Мост: i18n для динамически создаваемых строк в JS
+    // Скрипт фрагментов использует window._i18nT для получения переводов
+    window._i18nT = {};
+    const _origI18nApply = typeof i18nApply !== 'undefined' ? i18nApply : null;
+    </script>
+
+    <script src="/js/i18n.js"></script>
+
+    <!-- Скрипт фрагментов (оригинальный, без изменений) -->
+    <script>
+    (function() {
+        let fragBuildingsList = [];
+        let fragFragmentIndex = {};
+        let fragAllExpanded = false;
+        let fragInitialized = false;
+        let fragMode = 'list';
+        let fragRatingFragId = null;
+        let fragPerTile = false;
+        const SEARCH_ALIASES = { 'риф': ['завершите особое производство', 'rush_event_buildings_instant'] };
+        const ERAS_TO_CHECK = ['AllAge','BronzeAge','IronAge','EarlyMiddleAge','HighMiddleAge','LateMiddleAge','ColonialAge','IndustrialAge','ProgressiveEra','ModernEra','PostModernEra','ContemporaryEra','TomorrowEra','FutureEra','ArcticFuture','OceanicFuture','VirtualFuture','SpaceAgeMars','SpaceAgeAsteroidBelt','SpaceAgeVenus','SpaceAgeJupiterMoon','SpaceAgeTitan'];
+        const FRAGMENT_PATTERNS = ['fragment','rush_event','rush_buildings','renovation_kit','one_up_kit','upgrade_kit','selection_kit','mass_self_aid','self_aid_kit','building_','coin_boost','attacker_boost','defence_attacker','store_building','blueprint_box'];
+        function t(key, fallback) { return (window._i18nT && window._i18nT[key]) || fallback || key; }
+        function isFragmentId(id) { if (!id) return false; return FRAGMENT_PATTERNS.some(p => id.toLowerCase().includes(p)); }
+        function findRewardInLookup(rewardId, metaData, era) { try { if (!metaData.components) return null; for (const e of [era, 'AllAge']) { const comp = metaData.components[e]; if (comp && comp.lookup && comp.lookup.rewards) { const rewards = comp.lookup.rewards; if (rewards[rewardId]) return rewards[rewardId]; for (const key in rewards) { const item = rewards[key]; if (item.type === 'chest' && item.possible_rewards) { for (const p of item.possible_rewards) if (p.reward && p.reward.id === rewardId) return p.reward; } } } } } catch(e) {} return null; }
+        function normalizeFragName(name) { if (!name) return name; return name.replace(/^(Фрагмент)\s*:\s*/i, '$1 ').trim(); }
+        function parseFragmentName(fullName) { if (!fullName) return { baseName: fullName, amount: 1 }; const match = fullName.match(/^(.*?)\s*[xх×]\s*(\d+)\s*$/i); if (match) return { baseName: normalizeFragName(match[1].trim()), amount: parseInt(match[2], 10) }; return { baseName: normalizeFragName(fullName.trim()), amount: 1 }; }
+        function getFragmentNameAndAmount(rewardId, metaData, era) { let idAmount = null; let lookupId = rewardId; const idParts = rewardId.split('#'); if (idParts.length === 3 && !isNaN(idParts[2])) { idAmount = parseInt(idParts[2], 10); lookupId = idParts[0] + '#' + idParts[1]; } const lookup = findRewardInLookup(rewardId, metaData, era) || findRewardInLookup(lookupId, metaData, era) || findRewardInLookup(idParts[1] || rewardId, metaData, era); let fullName = rewardId; let lookupAmount = null; if (lookup) { if (lookup.amount != null && lookup.amount > 0) lookupAmount = lookup.amount; if (lookup.subType === 'fragment') fullName = lookup.name || (lookup.assembledReward ? lookup.assembledReward.name : 'Фрагмент'); else if (lookup.type === 'blueprint' || lookup.subType === 'reward_item') fullName = lookup.name; else if (lookup.name) fullName = lookup.subType !== 'reward_item' ? lookup.name.replace(/^\+?\d+\s*/,'') : lookup.name; } else if (rewardId.includes('fragment')) { fullName = 'Фрагмент (' + (idParts[1] || rewardId) + ')'; } const { baseName, amount: nameAmount } = parseFragmentName(fullName); const amount = idAmount || lookupAmount || nameAmount; return { baseName, amount }; }
+        function getBuildingSize(metaData) { try { const comp = metaData.components?.AllAge; if (comp?.placement?.size) { const x = comp.placement.size.x || 0; const y = comp.placement.size.y || 0; if (x && y) { const area = x * y; const road = comp.streetConnectionRequirement?.requiredLevel ?? 0; if (road > 0) return area + Math.min(x, y) / 2; return area; } } for (const era of ERAS_TO_CHECK) { const c = metaData.components?.[era]; if (c?.placement?.size) { const x = c.placement.size.x || 0; const y = c.placement.size.y || 0; if (x && y) return x * y; } if (c?.placement) { const w = c.placement.width || c.placement.x || 0; const h = c.placement.height || c.placement.y || 0; if (w && h) return w * h; } } } catch(e) {} return null; }
+        function calcFragsPerDay(opt, metaData, era) { const result = new Map(); const cycleSec = opt.time || opt.duration || opt.production_time || 0; if (!cycleSec) return result; const cyclesPerDay = 86400 / cycleSec; if (!Array.isArray(opt.products)) return result; opt.products.forEach(prod => { if (prod.type === 'genericReward' && prod.reward?.id && isFragmentId(prod.reward.id)) { const { baseName, amount } = getFragmentNameAndAmount(prod.reward.id, metaData, era); const dc = prod.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: prod.reward.id, avgPerDay: avg }); } if (prod.type === 'random' && Array.isArray(prod.products)) { prod.products.forEach(rp => { const id = rp.product?.reward?.id; if (!id || !isFragmentId(id)) return; const { baseName, amount } = getFragmentNameAndAmount(id, metaData, era); const dc = rp.chance != null ? rp.chance : rp.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: id, avgPerDay: avg }); }); } }); return result; }
+        let fragRatingSortCol = 'perDay';
+        let fragRatingSortAsc = false;
+        window.openFragmentsModal = function() {
+            document.getElementById('fragmentsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            if (!fragInitialized) {
+                fragInitialized = true;
+                document.getElementById('fragSearch').addEventListener('input', () => { fragMode === 'list' ? fragRenderList() : fragRenderRatingSearch(); });
+                document.getElementById('fragToggleAll').addEventListener('click', function() { const items = document.querySelectorAll('.frag-building'); if (fragAllExpanded) { items.forEach(b => b.classList.remove('open')); this.textContent = t('db_frag_expand_all','Развернуть все'); } else { items.forEach(b => b.classList.add('open')); this.textContent = t('db_frag_collapse_all','Свернуть все'); } fragAllExpanded = !fragAllExpanded; });
+                document.getElementById('fragRatingBtn').addEventListener('click', () => { fragMode = fragMode === 'list' ? 'rating' : 'list'; fragUpdateModeUI(); });
+            }
+            fragLoadData();
+        };
+        window.closeFragmentsModal = function() { document.getElementById('fragmentsModal').style.display = 'none'; document.body.style.overflow = ''; };
+        function fragUpdateModeUI() { const btn = document.getElementById('fragRatingBtn'); const toggleAllBtn = document.getElementById('fragToggleAll'); const searchEl = document.getElementById('fragSearch'); if (fragMode === 'rating') { btn.style.background = 'rgba(255,165,0,0.3)'; btn.textContent = t('db_frag_back_btn','← Список'); toggleAllBtn.style.display = 'none'; searchEl.placeholder = t('db_frag_search_placeholder_rating','Поиск фрагмента...'); fragRatingFragId = null; fragRenderRatingSearch(); } else { btn.style.background = 'rgba(255,165,0,0.15)'; btn.textContent = t('db_frag_rating_btn','🏆 Рейтинг зданий'); toggleAllBtn.style.display = ''; searchEl.placeholder = t('db_frag_search_placeholder','Поиск: здание или фрагмент'); fragRenderList(); } }
+        async function fragLoadData() { const loadingDiv = document.getElementById('fragLoading'); if (!window.localFileData) { document.getElementById('fragResults').innerHTML = `<p style="color:#ffd700;padding:20px;text-align:center;">${t('db_frag_no_file','📂 Сначала загрузите JSON файл')}</p>`; return; } if (fragBuildingsList.length > 0) { fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); return; } loadingDiv.style.display = 'block'; loadingDiv.innerHTML = t('db_frag_loading','🔄 Анализ фрагментов...'); document.getElementById('fragResults').innerHTML = ''; const entities = Array.isArray(window.localFileData) ? window.localFileData : Object.values(window.localFileData); fragBuildingsList = []; fragFragmentIndex = {}; entities.forEach(metaData => { if (!metaData || !metaData.id || !metaData.name) return; const size = getBuildingSize(metaData); const bestPerDay = new Map(); ERAS_TO_CHECK.forEach(era => { const comp = metaData.components?.[era]; if (!comp?.production?.options) return; comp.production.options.forEach(opt => { const dayMap = calcFragsPerDay(opt, metaData, era); dayMap.forEach(({ fragId, avgPerDay }, baseName) => { const cur = bestPerDay.get(baseName); if (!cur || avgPerDay > cur.perDay) bestPerDay.set(baseName, { fragId, perDay: avgPerDay }); }); }); }); if (bestPerDay.size === 0) return; const rewards = []; bestPerDay.forEach(({ fragId, perDay }, baseName) => { const perDayPerTile = size ? perDay / size : null; rewards.push({ id: fragId, name: baseName, perDay, perDayPerTile }); if (!fragFragmentIndex[baseName]) fragFragmentIndex[baseName] = { name: baseName, buildings: [] }; fragFragmentIndex[baseName].buildings.push({ id: metaData.id, name: metaData.name, size, perDay, perDayPerTile }); }); fragBuildingsList.push({ id: metaData.id, name: metaData.name, size, rewards }); }); fragBuildingsList.sort((a,b) => a.name.localeCompare(b.name,'ru')); loadingDiv.style.display = 'none'; fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); }
+        function fragRenderList() { const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); const resultsDiv = document.getElementById('fragResults'); if (!resultsDiv) return; resultsDiv.innerHTML = ''; const aliases = SEARCH_ALIASES[query] || []; const allQ = [query, ...aliases].filter(Boolean); const filtered = fragBuildingsList.filter(b => !allQ.length || allQ.some(q => b.name.toLowerCase().includes(q)) || b.rewards.some(r => allQ.some(q => r.name.toLowerCase().includes(q)))); if (!filtered.length) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found','Ничего не найдено.')}</p>`; return; } const hl = text => { for (const q of allQ) { if (q && text.toLowerCase().includes(q)) return text.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>'); } return text; }; filtered.forEach(b => { const div = document.createElement('div'); div.className = 'frag-building'; div.innerHTML = `<div class="frag-building-header">${hl(b.name)}</div><div class="frag-rewards">${b.rewards.map(r=>`<div class="frag-reward-item">${hl(r.name)}</div>`).join('')}</div>`; div.querySelector('.frag-building-header').addEventListener('click', () => div.classList.toggle('open')); resultsDiv.appendChild(div); }); }
+        function fragRenderRatingSearch() { const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); const resultsDiv = document.getElementById('fragResults'); if (!resultsDiv) return; if (!query) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_hint','Введите название фрагмента...')}</p>`; return; } const matches = Object.entries(fragFragmentIndex).filter(([baseName]) => baseName.toLowerCase().includes(query)).sort((a,b) => a[0].localeCompare(b[0],'ru')); if (!matches.length) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found_rating','Фрагменты не найдены.')}</p>`; return; } resultsDiv.innerHTML = ''; const hint = document.createElement('p'); hint.style.cssText = 'color:#aaa;font-size:12px;margin:0 0 8px;'; hint.textContent = t('db_frag_hint','Нажмите на фрагмент чтобы увидеть рейтинг зданий:'); resultsDiv.appendChild(hint); matches.forEach(([fragId, frag]) => { const btn = document.createElement('div'); btn.style.cssText = 'padding:8px 12px;margin:4px 0;background:rgba(58,123,213,0.15);border:1px solid #3a7bd5;border-radius:6px;cursor:pointer;color:#7ec8e3;transition:background 0.2s;'; btn.textContent = frag.name; btn.onmouseover = () => btn.style.background = 'rgba(58,123,213,0.35)'; btn.onmouseout = () => btn.style.background = 'rgba(58,123,213,0.15)'; btn.addEventListener('click', () => { fragRatingFragId = fragId; fragRenderRatingTable(); }); resultsDiv.appendChild(btn); }); }
+        function fragRenderRatingTable() { const resultsDiv = document.getElementById('fragResults'); const frag = fragFragmentIndex[fragRatingFragId]; if (!frag || !resultsDiv) return; const sorted = [...frag.buildings].sort((a, b) => { const av = fragRatingSortCol === 'perDayPerTile' ? (a.perDayPerTile || 0) : a.perDay; const bv = fragRatingSortCol === 'perDayPerTile' ? (b.perDayPerTile || 0) : b.perDay; return fragRatingSortAsc ? av - bv : bv - av; }); const fmt = n => n != null && n > 0 ? n.toFixed(2) : '—'; const arrow = col => fragRatingSortCol === col ? (fragRatingSortAsc ? ' ▲' : ' ▼') : ' ⇅'; const thStyle = `padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;`; const thActive = `color:#ffd700;`; resultsDiv.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:#7ec8e3;font-weight:bold;">${frag.name}</span><span style="color:#aaa;font-size:12px;">${sorted.length} ${t('db_top_buildings_count','зданий')}</span></div><table id="fragRatingTable" style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="border-bottom:1px solid #444;"><th style="${thStyle}color:#aaa;">#</th><th style="${thStyle}text-align:left;color:#aaa;">Здание</th><th id="thPerDay" style="${thStyle}text-align:right;${fragRatingSortCol==='perDay'?thActive:'color:#aaa;}'}">📦 /сутки${arrow('perDay')}</th><th id="thPerTile" style="${thStyle}text-align:right;${fragRatingSortCol==='perDayPerTile'?thActive:'color:#aaa;'}">📐 /сутки/кл.${arrow('perDayPerTile')}</th></tr></thead><tbody>${sorted.map((b,i) => `<tr style="border-bottom:1px solid #333;${i===0?'color:#ffd700;':''}"><td style="padding:5px 8px;color:#666;">${i+1}</td><td style="padding:5px 8px;">${b.name}${b.size ? ` <span style="color:#666;font-size:11px;">(${b.size}кл)</span>` : ''}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDay)}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDayPerTile)}</td></tr>`).join('')}</tbody></table>`; document.getElementById('thPerDay').addEventListener('click', () => { if (fragRatingSortCol === 'perDay') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDay'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); document.getElementById('thPerTile').addEventListener('click', () => { if (fragRatingSortCol === 'perDayPerTile') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDayPerTile'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); }
+        document.addEventListener('click', e => { if (e.target.id === 'fragmentsModal') window.closeFragmentsModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('fragmentsModal')?.style.display === 'block') window.closeFragmentsModal(); });
+    })();
+    </script>
+</body>
+</html>
