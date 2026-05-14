@@ -24,18 +24,18 @@
         .menu-container {
     display: flex;
     flex-direction: column;
-    gap: 20px;          /* ← расстояние между кнопками (можно уменьшить) */
-    width: 80%;         /* ← ширина контейнера */
-    max-width: 400px;   /* ← максимальная ширина (уменьшите, например до 400px) */
-    padding: 40px;      /* ← внутренние отступы (уменьшите, например до 30px) */
+    gap: 20px;
+    width: 80%;
+    max-width: 400px;
+    padding: 40px;
     background-color: rgba(0, 0, 0, 0.7);
     border: 4px solid #008080;
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(0, 255, 255, 0.9);
 }
         .menu-btn {
-    padding: 12px 30px;  /* ← вертикальный и горизонтальный отступ внутри кнопки (уменьшите, например до 12px 30px) */
-    font-size: 20px;     /* ← размер шрифта (уменьшите, например до 20px или 22px) */
+    padding: 12px 30px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     background-color: #008080;
@@ -53,10 +53,10 @@
         }
         .title {
     text-align: center;
-    font-size: 36px;     /* ← уменьшите, например до 36px */
+    font-size: 36px;
     color: #00ffff;
     text-shadow: 0 0 20px #00ffff;
-    margin-bottom: 20px;  /* ← уменьшите отступ снизу */
+    margin-bottom: 20px;
     font-family: 'Courier New', monospace;
 }
         .under-construction {
@@ -65,18 +65,37 @@
             margin: 40px auto 0;
             display: block;
         }
-
-        /* Новый стиль для мелкого текста под меню */
         .footer-text {
-            margin-top: 0px;           /* Отступ от последнего кнопки */
+            margin-top: 0px;
             text-align: center;
-            font-size: 14px;            /* Мелкий шрифт (можно уменьшить до 12px, если нужно ещё мельче) */
-            color: #888;                /* Серый цвет, чтобы не бросался в глаза */
+            font-size: 14px;
+            color: #888;
             line-height: 1.4;
         }
+
+        .lang-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        .lang-switcher button {
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #00ffff;
+            background: transparent;
+            border: 2px solid #008080;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-switcher button:hover,
+        .lang-switcher button.active {
+            background: #008080;
+            color: white;
+        }
         
-        
-         body {
+        body {
             transition: background-image 1s ease-in-out;
             margin: 0;
             padding: 0;
@@ -85,30 +104,35 @@
     </style>
 </head>
 <body>
+    
     <div class="menu-container">
-        <a href="/events/events.html" target="_self" class="menu-btn">Ивенты</a>
-        <a href="/kva.html" target="_self" class="menu-btn">Кванты</a>
-        <a href="/param/" target="_self" class="menu-btn">Параметры</a>  
-        <a href="/calk/calk.html" target="_self" class="menu-btn">Калькуляторы</a>  
-        <a href="/redaktor/redaktor.html" target="_self" class="menu-btn">Редакторы</a>
-        <a href="/links.html" target="_self" class="menu-btn">Полезные ссылки</a>
-        <a href="/game/" target="_blank" class="menu-btn">Game</a>
-        
-        
-        <a href="https://t.me/foehelp" target="_blank" class="menu-btn">Вопросы, предложения...</a>
-        <div style="text-align: center; margin-top: 30px;">
-         <!--    <img src="//underconstruction.png"  style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">   -->
-</div>
-        
-        <!-- Мелкий текст прямо внутри контейнера, под кнопками -->
-           <div class="footer-text">
-        © 2026 KotoPes | <a href="/privacy.html" target="_blank">Политика конфиденциальности</a>
-    </div>
-    </div>
+        <a href="/events/" target="_self" class="menu-btn" data-i18n="index_btn_events">Ивенты</a>
+        <a href="/kva/" target="_self" class="menu-btn" data-i18n="index_btn_quanta">Кванты</a>
+        <a href="/param/" target="_self" class="menu-btn" data-i18n="index_btn_params">Параметры</a>  
+        <a href="/calk/" target="_self" class="menu-btn" data-i18n="index_btn_calc">Калькуляторы</a>  
+        <a href="/redaktor/" target="_self" class="menu-btn" data-i18n="index_btn_editors">Редакторы</a>
+        <a href="/links/" target="_self" class="menu-btn" data-i18n="index_btn_links">Полезные ссылки</a>
+        <a href="/game/" target="_self" class="menu-btn" data-i18n="index_btn_games">Games</a>
+        <a href="https://t.me/foehelp" target="_blank" class="menu-btn" data-i18n="index_btn_questions">Вопросы, предложения...</a>
 
+        <div style="text-align: center; margin-top: 30px;"></div>
+
+        <div class="lang-switcher">
+            <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
+            <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
+        </div>
+
+        <div class="footer-text" style="color: #ffffff;">
+    © 2026 KotoPes <br> 
+     <a href="privacy.html" 
+       target="_blank" 
+       style="color: #00ddff; text-decoration: none;" data-i18n="common_footer_privacy">
+       Privacy Policy
+     </a>
+</div>
+    </div>
   
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-
 <script>
 const helpWrapper = document.createElement('div');
     helpWrapper.id = 'helpWidgetWrapper';
@@ -122,9 +146,8 @@ const helpWrapper = document.createElement('div');
         gap: 10px;
         align-items: flex-end;
     `;
-
-    // Кнопка открытия окна
     const helpBtn = document.createElement('button');
+    helpBtn.dataset.i18n = 'common_help_btn';
     helpBtn.textContent = 'Помощь проекту';
     helpBtn.style.cssText = `
         width: 130px;
@@ -143,8 +166,6 @@ const helpWrapper = document.createElement('div');
     helpBtn.addEventListener('mouseover', () => helpBtn.style.transform = 'scale(1.08)');
     helpBtn.addEventListener('mouseout', () => helpBtn.style.transform = 'scale(1)');
 
-   
-    // Окно помощи
     const helpWindow = document.createElement('div');
     helpWindow.id = 'helpProjectWindow';
     helpWindow.style.cssText = `
@@ -163,8 +184,6 @@ const helpWrapper = document.createElement('div');
         overflow: hidden;
         font-family: 'Segoe UI', system-ui, sans-serif;
     `;
-
-    // Заголовок (перетаскиваемый)
     const windowHeader = document.createElement('div');
     windowHeader.style.cssText = `
         background: linear-gradient(135deg, #b83b5e, #6a1b3a);
@@ -180,6 +199,7 @@ const helpWrapper = document.createElement('div');
         border-bottom: 2px solid #ff99cc;
     `;
     const headerTitle = document.createElement('span');
+    headerTitle.dataset.i18n = 'common_help_title';
     headerTitle.innerHTML = '❤️ Поддержка проекта';
     const closeBtnHelp = document.createElement('button');
     closeBtnHelp.textContent = '✕';
@@ -203,16 +223,12 @@ const helpWrapper = document.createElement('div');
     });
     windowHeader.appendChild(headerTitle);
     windowHeader.appendChild(closeBtnHelp);
-
-    // Контент окна
     const windowContent = document.createElement('div');
     windowContent.style.cssText = `
         padding: 30px 25px;
         text-align: center;
         color: #f0e6ff;
     `;
-
-    // Иконка/эмодзи
     const iconDiv = document.createElement('div');
     iconDiv.innerHTML = '🐱✨🐶';
     iconDiv.style.cssText = `
@@ -220,9 +236,8 @@ const helpWrapper = document.createElement('div');
         margin-bottom: 15px;
         opacity: 0.9;
     `;
-
-    // Текст описания
     const descText = document.createElement('p');
+    descText.dataset.i18n = 'common_help_desc';
     descText.textContent = 'Если вам нравится проект — поддержите его развитие!';
     descText.style.cssText = `
         margin: 0 0 20px 0;
@@ -230,9 +245,8 @@ const helpWrapper = document.createElement('div');
         line-height: 1.4;
         color: #ddd0ff;
     `;
-
-    // Кнопка "Помощь проекту" с ссылкой
     const donateBtn = document.createElement('button');
+    donateBtn.dataset.i18n = 'common_help_donate_btn';
     donateBtn.textContent = 'Помощь проекту';
     donateBtn.style.cssText = `
         padding: 14px 28px;
@@ -259,30 +273,20 @@ const helpWrapper = document.createElement('div');
         donateBtn.style.background = '#ff4757';
         donateBtn.style.boxShadow = '0 4px 12px rgba(255,71,87,0.4)';
     });
-    
-    // Ссылка на DonationAlerts
     donateBtn.addEventListener('click', () => {
         window.open('https://boosty.to/foehelp/donate', '_blank', 'noopener,noreferrer');
     });
-
-    // Собираем контент
     windowContent.appendChild(iconDiv);
     windowContent.appendChild(descText);
     windowContent.appendChild(donateBtn);
-    
     helpWindow.appendChild(windowHeader);
     helpWindow.appendChild(windowContent);
-    
-   
     helpWrapper.appendChild(helpBtn);
-       
     document.body.appendChild(helpWrapper);
     document.body.appendChild(helpWindow);
 
-    // ========== ЛОГИКА ПЕРЕТАСКИВАНИЯ ==========
     let isDraggingHelp = false;
     let dragOffsetXHelp = 0, dragOffsetYHelp = 0;
-    
     windowHeader.addEventListener('mousedown', (e) => {
         if (e.target === closeBtnHelp) return;
         isDraggingHelp = true;
@@ -295,7 +299,6 @@ const helpWrapper = document.createElement('div');
         helpWindow.style.left = rect.left + 'px';
         e.preventDefault();
     });
-    
     document.addEventListener('mousemove', (e) => {
         if (!isDraggingHelp) return;
         let newLeft = e.clientX - dragOffsetXHelp;
@@ -308,19 +311,15 @@ const helpWrapper = document.createElement('div');
         helpWindow.style.top = newTop + 'px';
         helpWindow.style.right = 'auto';
     });
-    
     document.addEventListener('mouseup', () => {
         if (isDraggingHelp) {
             isDraggingHelp = false;
             helpWindow.style.cursor = 'default';
         }
     });
-
-    // ========== ОТКРЫТИЕ / ЗАКРЫТИЕ ==========
     helpBtn.addEventListener('click', () => {
         helpBtn.style.display = 'none';
         helpWindow.style.display = 'block';
-        // Сбрасываем позицию в верхний правый угол, если окно не было перемещено
         if (!helpWindow.hasAttribute('data-dragged')) {
             helpWindow.style.top = '80px';
             helpWindow.style.right = '20px';
@@ -328,18 +327,13 @@ const helpWrapper = document.createElement('div');
             helpWindow.style.bottom = 'auto';
         }
     });
-    
     closeBtnHelp.addEventListener('click', () => {
         helpWindow.style.display = 'none';
         helpBtn.style.display = 'block';
     });
-    
-    // При перетаскивании ставим метку, чтобы окно не возвращалось в исходную позицию
     windowHeader.addEventListener('mousedown', () => {
         helpWindow.setAttribute('data-dragged', 'true');
     });
-    
-    // Фикс при изменении размера окна
     window.addEventListener('resize', () => {
         if (helpWindow.style.display === 'block') {
             const maxX = window.innerWidth - helpWindow.offsetWidth;
@@ -356,10 +350,10 @@ const helpWrapper = document.createElement('div');
     });
 </script>
 
-
- <script src="/game/js/background2.js"></script>
- <link rel="stylesheet" href="/game/js/radio-widget.css">
-    <script src="/game/js/radio-widget.js"></script>
-
+<script src="/js/i18n.js"></script>
+<script src="/game/krak/js/background2.js"></script>
+<link rel="stylesheet" href="/game/krak/js/radio-widget.css">
+<script src="/game/krak/js/radio-widget.js"></script>
+    
 </body>
 </html>
