@@ -550,16 +550,24 @@
         return who === 'player' ? state.playerGroup : state.aiGroup;
     }
 
-    function getAllGroupBallsPotted(who) {
+    function getAllGroupBallsPotted(who, excludeBalls) {
         const group = getPlayerGroup(who);
         if (!group) return false;
-        const potted = who === 'player' ? state.playerPotted : state.aiPotted;
-        if (group === 'solids') return potted.filter(n => isSolid(n)).length >= 7;
-        return potted.filter(n => isStripe(n)).length >= 7;
+        // excludeBalls: balls potted this shot - pretend they are still on table
+        // so we evaluate the pre-shot state (before this shot's balls dropped)
+        const excluded = excludeBalls ? new Set(excludeBalls) : new Set();
+        const groupBallsOnTable = state.balls.filter(b => {
+            if (isEightBall(b.number)) return false;
+            const stillOnTable = !b.potted || excluded.has(b); // potted-this-shot count as still on table
+            if (!stillOnTable) return false;
+            if (group === 'solids') return isSolid(b.number);
+            return isStripe(b.number);
+        });
+        return groupBallsOnTable.length === 0;
     }
 
-    function canShootEightBall(who) {
-        return getAllGroupBallsPotted(who);
+    function canShootEightBall(who, excludeBalls) {
+        return getAllGroupBallsPotted(who, excludeBalls);
     }
 
     function onShotEnd() {
@@ -581,12 +589,12 @@
 
             if (cuePotted) {
                 foul = true;
-                msg = (isAI ? 'ИИ' : 'Вы') + ': фол на разбитии (биток в лузу).';
+                msg = (isAI ? 'Снеговик' : 'Вы') + ': фол на разбитии (биток в лузу). ';
             }
 
             if (eightPotted) {
                 // 8-ball potted on break: re-rack (special rule)
-                msg = 'Шар 8 забит на разбитии! Переигровка.';
+                msg = 'Шар 8 забит на разбитии! Переигровка. ';
                 resetGame(true);
                 updateHUD();
                 setMessage(msg);
@@ -615,7 +623,7 @@
                 }
 
                 if (!foul) {
-                    msg = (isAI ? 'ИИ' : 'Вы') + ` забил(и) ${potted.length} шар(ов) на разбитии.`;
+                    msg = (isAI ? 'Снеговик' : 'Вы') + ' забили на разбитии. ';
                     // Breaker continues
                     startTurn(who, msg);
                     return;
@@ -629,7 +637,7 @@
             }
 
             // No balls potted on break — switch turn
-            msg = (isAI ? 'ИИ' : 'Вы') + ': ни одного шара на разбитии.';
+            msg = (isAI ? 'Снеговик' : 'Вы') + ': ни одного шара на разбитии. ';
             switchTurn(opponent, msg);
             return;
         }
@@ -640,24 +648,25 @@
         // Check fouls
         if (cuePotted) {
             foul = true;
-            msg += (isAI ? 'ИИ' : 'Вы') + ': биток в лузу! Фол. ';
+            msg += (isAI ? 'Снеговик' : 'Вы') + ': биток в лузу! Фол. ';
         }
 
         if (!state.anyBallHit) {
             foul = true;
-            msg += (isAI ? 'ИИ' : 'Вы') + ': не задет ни один шар! Фол. ';
+            msg += (isAI ? 'Снеговик' : 'Вы') + ': не задет ни один шар! Фол. ';
         } else if (firstHit && myGroup) {
             // Must hit own group first (unless shooting at 8)
-            const shootingEight = canShootEightBall(who);
+            // Pass potted-this-shot so we check state BEFORE this shot's balls dropped
+            const shootingEight = canShootEightBall(who, potted);
             if (shootingEight) {
-                if (!isEightBall(firstHit.number) && !isBallInMyGroup(who, firstHit.number)) {
+                if (!isEightBall(firstHit.number)) {
                     foul = true;
-                    msg += (isAI ? 'ИИ' : 'Вы') + ': первое касание не своего шара! Фол. ';
+                    msg += (isAI ? 'Снеговик' : 'Вы') + ': нужно бить по шару 8! Фол. ';
                 }
             } else {
                 if (!isBallInMyGroup(who, firstHit.number)) {
                     foul = true;
-                    msg += (isAI ? 'ИИ' : 'Вы') + ': первое касание не своего шара! Фол. ';
+                    msg += (isAI ? 'Снеговик' : 'Вы') + ': первое касание не своего шара! Фол. ';
                 }
             }
         }
@@ -673,18 +682,19 @@
             if (!canShootEightBall(who)) {
                 // 8-ball potted too early — lose
                 loseGame = true;
-                msg = (isAI ? 'ИИ' : 'Вы') + ' забил(и) шар 8 раньше времени! ';
+                msg = (isAI ? 'Снеговик' : 'Вы') + ' забили шар 8 раньше времени! ';
             } else if (cuePotted) {
                 // 8-ball + cue potted — lose
                 loseGame = true;
-                msg = (isAI ? 'ИИ' : 'Вы') + ' забил(и) шар 8, но биток тоже в лузе! ';
-            } else if (foul) {
+                msg = (isAI ? 'Снеговик' : 'Вы') + ' забили шар 8, но биток тоже в лузе! ';
+            } else if (!state.anyBallHit) {
+                // No contact at all — lose
                 loseGame = true;
-                msg += (isAI ? 'ИИ' : 'Вы') + ' забил(и) шар 8 с фолом! ';
+                msg += (isAI ? 'Снеговик' : 'Вы') + ' забили шар 8 с фолом (нет контакта)! ';
             } else {
                 // Legal 8-ball pot — win!
                 winGame = true;
-                msg = (isAI ? 'ИИ' : 'Вы') + ' забил(и) шар 8! ';
+                msg = (isAI ? 'Снеговик' : 'Вы') + ' забили шар 8! ';
             }
         }
 
@@ -746,15 +756,15 @@
         }
 
         if (potted.length > 0 && ownBallPotted) {
-            msg += (isAI ? 'ИИ' : 'Вы') + ` забил(и) ${potted.length} шар(ов). `;
-            if (canShootEightBall(who)) msg += 'Можно бить шар 8! ';
+            msg += (isAI ? 'Снеговик' : 'Вы') + ' забили. ';
+            if (canShootEightBall(who)) msg += 'Можно бить шар 8! '; // no exclusions: balls are already recorded
             startTurn(who, msg);
         } else if (potted.length > 0 && !ownBallPotted) {
-            msg += (isAI ? 'ИИ' : 'Вы') + ` забил(и) шар соперника. Переход хода. `;
+            msg += (isAI ? 'Снеговик' : 'Вы') + ` забили шар соперника. Переход хода. `;
             // Opponent's balls were potted — still counts, but turn switches
             switchTurn(opponent, msg);
         } else {
-            msg += (isAI ? 'ИИ' : 'Вы') + ': промах. ';
+            msg += (isAI ? 'Снеговик' : 'Вы') + ': промах. ';
             switchTurn(opponent, msg);
         }
     }
@@ -800,7 +810,7 @@
         if (to === 'ai') {
             state.aiState = 'thinking';
             state.aiTimer = 60;
-            msg += 'Ход ИИ.';
+            msg += 'Ход Снеговика.';
         } else {
             state.aiState = 'idle';
             msg += 'Ваш ход.';
@@ -819,7 +829,7 @@
             state.aiTimer = 40;
             state.ballInHand = false; // AI handles it internally
             aiPlaceCueBall();
-            msg += 'Ход ИИ (свободный шар).';
+            msg += 'Ход Снеговика (свободный шар).';
         } else {
             state.placingCue = true;
             state.aiState = 'idle';
@@ -833,7 +843,7 @@
         if (who === 'ai') {
             state.aiState = 'thinking';
             state.aiTimer = 50;
-            msg += 'Ход ИИ.';
+            msg += 'Ход Снеговика.';
         } else {
             state.aiState = 'idle';
             msg += 'Ваш ход.';
@@ -1482,7 +1492,7 @@
                 turnEl.textContent = 'ВАШ ХОД';
                 turnEl.className = 'turn-player';
             } else {
-                turnEl.textContent = 'ХОД ИИ';
+                turnEl.textContent = 'ХОД Снеговика';
                 turnEl.className = 'turn-ai';
             }
         }

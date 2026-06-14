@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOEhelp</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            width: 100%;
+            background-color: black;
+        }
+        body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 500px;
+            padding: 40px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 4px solid #008080;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.9);
+        }
+        .menu-btn {
+            padding: 18px 40px;
+            font-size: 26px;
+            font-weight: bold;
+            color: white;
+            background-color: #008080;
+            border: 4px solid black;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .menu-btn:hover {
+            background-color: #00a0a0;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+            transform: scale(1.05);
+        }
+        .title {
+            text-align: center;
+            font-size: 48px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+        }
+        .under-construction {
+            width: 100%;
+            max-width: 400px;
+            margin: 40px auto 0;
+            display: block;
+        }
+
+        /* Новый стиль для мелкого текста под меню */
+        .footer-text {
+            margin-top: 0px;           /* Отступ от последнего кнопки */
+            text-align: center;
+            font-size: 14px;            /* Мелкий шрифт (можно уменьшить до 12px, если нужно ещё мельче) */
+            color: #888;                /* Серый цвет, чтобы не бросался в глаза */
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <img src="https://www.foehelp.ru/underconstruction1.jpg"  style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+ 
+ <a href="https://foehelp.ru/foe-building-db/builden.html" target="_blank" class="menu-btn">Building DB</a>
+ <a href="https://www.foehelp.ru/param/kitsen.html" target="_blank" class="menu-btn">Selection Kits ✅</a>
+<a href="https://foehelp.ru/foe-building-db/js/top-buildingsen.html" target="_blank" class="menu-btn">Top Building ✅</a>
+
+
+ <a href="https://www.foehelp.ru/events.html" target="_self" class="menu-btn">Events</a>
+<a href="https://www.foehelp.ru/kva.html" target="_self" class="menu-btn">Quantum</a>
+<a href="https://www.foehelp.ru/expa.html" target="_self" class="menu-btn">Expedition</a>
+<a href="https://www.foehelp.ru/param/param.html" target="_self" class="menu-btn">Parameters</a>  
+<a href="https://www.foehelp.ru/calk/calk.html" target="_self" class="menu-btn">Calculators</a>  
+<a href="https://www.foehelp.ru/cityplan.html" target="_blank" class="menu-btn">City Editor</a>
+<a href="https://www.foehelp.ru/posplan.html" target="_blank" class="menu-btn">Settlement Editor</a>
+<a href="https://www.foehelp.ru/links.html" target="_self" class="menu-btn">Useful Links</a>
+<a href="https://t.me/foehelp" target="_blank" class="menu-btn">Questions, suggestions...</a>
+        <div style="text-align: center; margin-top: 30px;">
+         <!--    <img src="https://www.foehelp.ru/underconstruction.png"  style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">   -->
+</div>
+        
+        <!-- Мелкий текст прямо внутри контейнера, под кнопками -->
+           
+           <div class="footer-text" style="color: #ffffff;">
+    © 2026 KotoPes <br> 
+    With help from berrypancake (US7).<br>
+     <a href="https://www.foehelp.ru/privacy.html" 
+       target="_blank" 
+       style="color: #00ddff; text-decoration: none;">
+       Privacy Policy
+     </a>
+</div>
+           
+           
+           
+    </div>
+
+  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<script>
+// Контейнер для кнопки открытия
+const radioWrapper = document.createElement('div');
+radioWrapper.id = 'radioWrapper';
+radioWrapper.style.cssText = `
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 10000;
+`;
+// Кнопка открытия плеера
+const radioBtn = document.createElement('button');
+radioBtn.textContent = '📻 Radio';
+radioBtn.style.cssText = `
+padding: 12px 24px;
+background: #2196F3;
+color: white;
+border: none;
+border-radius: 50px;
+cursor: pointer;
+font-size: 16px;
+font-weight: bold;
+box-shadow: 0 4px 16px rgba(33,150,243,0.4);
+transition: all 0.3s;
+`;
+radioBtn.addEventListener('mouseover', () => radioBtn.style.transform = 'scale(1.08)');
+radioBtn.addEventListener('mouseout', () => radioBtn.style.transform = 'scale(1)');
+// Окно плеера
+const radioPlayer = document.createElement('div');
+radioPlayer.id = 'radioPlayer';
+radioPlayer.style.cssText = `
+display: none;
+position: fixed;
+background: rgba(0, 0, 0, 0.7);
+border: 4px solid #008080;
+border-radius: 15px;
+box-shadow: 0 0 30px rgba(0, 255, 255, 0.9);
+width: 400px;
+min-height: 300px;
+height: 320px;
+z-index: 10001;
+overflow: hidden;
+font-family: 'Courier New', monospace;
+`;
+// Заголовок
+const playerHeader = document.createElement('div');
+playerHeader.style.cssText = `
+background: linear-gradient(135deg, #008080, #004d4d);
+color: #00ffff;
+padding: 10px 18px;
+font-size: 22px;
+font-weight: bold;
+display: flex;
+justify-content: space-between;
+align-items: center;
+cursor: move;
+user-select: none;
+text-shadow: 0 0 15px #00ffff;
+border-bottom: 3px solid #00ffff;
+`;
+const titleSpan = document.createElement('span');
+titleSpan.textContent = '📻 Радио';
+const closeBtn = document.createElement('button');
+closeBtn.textContent = '×';
+closeBtn.style.cssText = `
+background: none;
+border: none;
+color: #00ffff;
+font-size: 32px;
+cursor: pointer;
+padding: 0 12px;
+text-shadow: 0 0 12px #00ffff;
+transition: all 0.3s;
+`;
+closeBtn.addEventListener('mouseover', () => {
+closeBtn.style.transform = 'scale(1.2)';
+closeBtn.style.textShadow = '0 0 20px #ffffff';
+});
+closeBtn.addEventListener('mouseout', () => {
+closeBtn.style.transform = 'scale(1)';
+closeBtn.style.textShadow = '0 0 12px #00ffff';
+});
+playerHeader.appendChild(titleSpan);
+playerHeader.appendChild(closeBtn);
+// Контент
+const playerContent = document.createElement('div');
+playerContent.style.cssText = `
+padding: 25px;
+color: #e0ffff;
+font-family: 'Courier New', monospace;
+`;
+// Контейнер кнопок
+const buttonsContainer = document.createElement('div');
+buttonsContainer.style.cssText = `
+display: flex;
+flex-direction: column;
+gap: 15px;
+`;
+// Кнопки станций
+const foeBtn = document.createElement('button');
+foeBtn.textContent = 'ФОЕ Радио';
+foeBtn.style.cssText = `
+padding: 14px 30px;
+background: #008080;
+color: white;
+border: 4px solid black;
+border-radius: 10px;
+font-size: 18px;
+font-weight: bold;
+cursor: pointer;
+box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+transition: all 0.3s;
+text-shadow: 0 0 5px black;
+`;
+const odesBtn = document.createElement('button');
+odesBtn.textContent = 'Всемирное Одесское радио';
+odesBtn.style.cssText = foeBtn.style.cssText;
+const slayBtn = document.createElement('button');
+slayBtn.textContent = 'SLAY Radio';
+slayBtn.style.cssText = foeBtn.style.cssText;
+// Собираем
+buttonsContainer.appendChild(foeBtn);
+buttonsContainer.appendChild(odesBtn);
+buttonsContainer.appendChild(slayBtn);
+playerContent.appendChild(buttonsContainer);
+radioPlayer.appendChild(playerHeader);
+radioPlayer.appendChild(playerContent);
+radioWrapper.appendChild(radioBtn);
+document.body.appendChild(radioWrapper);
+document.body.appendChild(radioPlayer);
+// Переменные
+let currentHowl = null;
+let currentStationType = null;
+// Функция обновления заголовка
+function updateTitle() {
+if (currentStationType && currentHowl && !currentHowl.paused) {
+titleSpan.innerHTML = `🔊 ${getStationName(currentStationType)}`;
+} else {
+titleSpan.textContent = '📻 Радио';
+}
+}
+// Название станции
+function getStationName(type) {
+if (type === 'foe') {
+return 'ФОЕ Радио <a href="https://t.me/catdogmusic" target="_blank" style="color:#00ffff; ">(Телеграм)</a>';
+}
+if (type === 'odes') return 'Всемирное Одесское';
+if (type === 'slay') return 'SLAY Radio';
+return '';
+}
+// Запуск/остановка станции
+function toggleStation(type) {
+const isSame = currentStationType === type;
+// Если уже играет эта станция — стоп
+if (isSame && currentHowl && !currentHowl.paused) {
+currentHowl.pause();
+currentStationType = null;
+updateTitle();
+updateButtonColors();
+return;
+}
+// Останавливаем предыдущую
+if (currentHowl) {
+currentHowl.unload();
+currentHowl = null;
+}
+currentStationType = type;
+
+// Обработка SLAY (отдельное окно)
+if (type === 'slay') {
+window.open(
+'https://popout.tunein.com/embed/player/s54881?mode=popout&partnerId=RadioTime',
+'slayRadioPopup',
+'width=500,height=100,menubar=no,toolbar=no,location=no,resizable=yes,scrollbars=no'
+);
+currentStationType = null;
+updateTitle();
+updateButtonColors();
+return;
+}
+
+// Для потоковых станций (ФОЕ и Одесское)
+// 1. Сразу показываем статус загрузки
+titleSpan.textContent = '⏳ Загрузка...';
+// 2. Сразу обновляем цвета кнопок (активная подсветка)
+updateButtonColors();
+
+let url = '';
+if (type === 'foe') url = 'https://stream.zeno.fm/s1q6arg0afbvv';
+if (type === 'odes') url = 'https://myradio24.org/odesradio';
+
+currentHowl = new Howl({
+src: [url],
+html5: true,
+format: ['mp3', 'aac'],
+volume: 0.8,
+onplay: () => {
+// Когда поток заиграл, обновляем заголовок на название станции
+updateTitle();
+updateButtonColors();
+},
+onpause: () => {
+// Когда пауза, возвращаем стандартный заголовок
+updateTitle();
+updateButtonColors();
+},
+onloaderror: (id, err) => {
+console.error('Ошибка загрузки:', err);
+titleSpan.textContent = 'Ошибка потока';
+}
+});
+currentHowl.play().catch(e => console.log('Ошибка запуска:', e));
+// Обновление цветов вызывается еще раз в конце для надежности
+updateButtonColors();
+}
+// Обновление цвета кнопок для визуальной имитации нажатия
+function updateButtonColors() {
+// Сбрасываем все кнопки
+foeBtn.style.background = '#008080';
+foeBtn.style.transform = 'scale(1)';
+foeBtn.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.8)';
+foeBtn.style.border = '4px solid black';
+odesBtn.style.background = '#008080';
+odesBtn.style.transform = 'scale(1)';
+odesBtn.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.8)';
+odesBtn.style.border = '4px solid black';
+slayBtn.style.background = '#008080';
+slayBtn.style.transform = 'scale(1)';
+slayBtn.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.8)';
+slayBtn.style.border = '4px solid black';
+
+// Подсвечиваем активную кнопку на основе выбранной станции (не дожидаясь play)
+if (currentStationType === 'foe') {
+foeBtn.style.background = '#40a0a0'; // Светлый бирюзовый
+foeBtn.style.boxShadow = '0 0 20px #40a0a0';
+} else if (currentStationType === 'odes') {
+odesBtn.style.background = '#40a0a0'; // Светлый бирюзовый
+odesBtn.style.boxShadow = '0 0 20px #40a0a0';
+}
+// SLAY не подсвечивается, так как currentStationType для неё сбрасывается в null
+}
+// Назначаем клики
+foeBtn.addEventListener('click', () => toggleStation('foe'));
+odesBtn.addEventListener('click', () => toggleStation('odes'));
+slayBtn.addEventListener('click', () => toggleStation('slay'));
+// Перетаскивание
+let isDragging = false;
+let offsetX, offsetY;
+playerHeader.addEventListener('mousedown', e => {
+if (e.target === closeBtn) return;
+isDragging = true;
+const rect = radioPlayer.getBoundingClientRect();
+offsetX = e.clientX - rect.left;
+offsetY = e.clientY - rect.top;
+radioPlayer.style.cursor = 'grabbing';
+e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+if (!isDragging) return;
+let x = e.clientX - offsetX;
+let y = e.clientY - offsetY;
+const maxX = window.innerWidth - radioPlayer.offsetWidth;
+const maxY = window.innerHeight - radioPlayer.offsetHeight;
+radioPlayer.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+radioPlayer.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+});
+document.addEventListener('mouseup', () => {
+if (isDragging) {
+isDragging = false;
+radioPlayer.style.cursor = 'default';
+}
+});
+// Открытие / закрытие
+radioBtn.addEventListener('click', () => {
+radioBtn.style.display = 'none';
+radioPlayer.style.display = 'block';
+radioPlayer.style.bottom = '80px';
+radioPlayer.style.right = '20px';
+radioPlayer.style.left = 'auto';
+radioPlayer.style.top = 'auto';
+updateTitle();
+updateButtonColors();
+});
+closeBtn.addEventListener('click', () => {
+radioPlayer.style.display = 'none';
+radioBtn.style.display = 'block';
+if (currentHowl) {
+currentHowl.pause();
+currentHowl.unload();
+currentHowl = null;
+}
+currentStationType = null;
+updateTitle();
+updateButtonColors();
+});
+// Инициализация цветов при загрузке
+updateButtonColors();
+</script>
+
+
+<script>
+(function() {
+    // Контейнер для кнопки открытия
+    const helpWrapper = document.createElement('div');
+    helpWrapper.id = 'helpWidgetWrapper';
+    helpWrapper.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+    `;
+
+    // Кнопка открытия окна
+    const helpBtn = document.createElement('button');
+    helpBtn.textContent = 'Donate';
+    helpBtn.style.cssText = `
+        width: 130px;
+        padding: 12px 0;
+        background: #e91e63;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        box-shadow: 0 4px 16px rgba(233,30,99,0.4);
+        transition: all 0.3s;
+        font-family: inherit;
+    `;
+    helpBtn.addEventListener('mouseover', () => helpBtn.style.transform = 'scale(1.08)');
+    helpBtn.addEventListener('mouseout', () => helpBtn.style.transform = 'scale(1)');
+
+    // Новая кнопка ENGLISH (зеленая)
+    const englishBtn = document.createElement('a');
+    englishBtn.textContent = 'Russian';
+    englishBtn.href = 'https://www.foehelp.ru/index.html';
+    englishBtn.target = '_self';
+    englishBtn.style.cssText = `
+        width: 130px;
+        padding: 12px 0;
+        background: #2e7d32;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        box-shadow: 0 4px 16px rgba(46,125,50,0.4);
+        transition: all 0.3s;
+        font-family: inherit;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+    `;
+    englishBtn.addEventListener('mouseover', () => {
+        englishBtn.style.transform = 'scale(1.08)';
+        englishBtn.style.background = '#3c9e40';
+        englishBtn.style.boxShadow = '0 6px 20px rgba(46,125,50,0.6)';
+    });
+    englishBtn.addEventListener('mouseout', () => {
+        englishBtn.style.transform = 'scale(1)';
+        englishBtn.style.background = '#2e7d32';
+        englishBtn.style.boxShadow = '0 4px 16px rgba(46,125,50,0.4)';
+    });
+
+    // Окно помощи
+    const helpWindow = document.createElement('div');
+    helpWindow.id = 'helpProjectWindow';
+    helpWindow.style.cssText = `
+        display: none;
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: linear-gradient(135deg, rgba(30,20,40,0.95), rgba(15,10,25,0.98));
+        backdrop-filter: blur(8px);
+        border: 3px solid #ff66c0;
+        border-radius: 20px;
+        box-shadow: 0 0 30px rgba(255,102,192,0.6);
+        width: 300px;
+        min-height: 280px;
+        z-index: 10001;
+        overflow: hidden;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+    `;
+
+    // Заголовок (перетаскиваемый)
+    const windowHeader = document.createElement('div');
+    windowHeader.style.cssText = `
+        background: linear-gradient(135deg, #b83b5e, #6a1b3a);
+        color: white;
+        padding: 14px 18px;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: move;
+        user-select: none;
+        border-bottom: 2px solid #ff99cc;
+    `;
+    const headerTitle = document.createElement('span');
+    headerTitle.innerHTML = '❤️ Поддержка проекта';
+    const closeBtnHelp = document.createElement('button');
+    closeBtnHelp.textContent = '✕';
+    closeBtnHelp.style.cssText = `
+        background: none;
+        border: none;
+        color: #ffb347;
+        font-size: 28px;
+        cursor: pointer;
+        padding: 0 8px;
+        font-weight: bold;
+        transition: all 0.2s;
+    `;
+    closeBtnHelp.addEventListener('mouseover', () => {
+        closeBtnHelp.style.transform = 'scale(1.2)';
+        closeBtnHelp.style.color = '#fff';
+    });
+    closeBtnHelp.addEventListener('mouseout', () => {
+        closeBtnHelp.style.transform = 'scale(1)';
+        closeBtnHelp.style.color = '#ffb347';
+    });
+    windowHeader.appendChild(headerTitle);
+    windowHeader.appendChild(closeBtnHelp);
+
+    // Контент окна
+    const windowContent = document.createElement('div');
+    windowContent.style.cssText = `
+        padding: 30px 25px;
+        text-align: center;
+        color: #f0e6ff;
+    `;
+
+    // Иконка/эмодзи
+    const iconDiv = document.createElement('div');
+    iconDiv.innerHTML = '🐱✨🐶';
+    iconDiv.style.cssText = `
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.9;
+    `;
+
+    // Текст описания
+    const descText = document.createElement('p');
+    descText.textContent = 'Если вам нравится проект — поддержите его развитие!';
+    descText.style.cssText = `
+        margin: 0 0 20px 0;
+        font-size: 15px;
+        line-height: 1.4;
+        color: #ddd0ff;
+    `;
+
+    // Кнопка "Помощь проекту" с ссылкой
+    const donateBtn = document.createElement('button');
+    donateBtn.textContent = 'Donate';
+    donateBtn.style.cssText = `
+        padding: 14px 28px;
+        background: #ff4757;
+        color: white;
+        border: none;
+        border-radius: 60px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(255,71,87,0.4);
+        margin-top: 8px;
+        width: 100%;
+        font-family: inherit;
+    `;
+    donateBtn.addEventListener('mouseover', () => {
+        donateBtn.style.transform = 'scale(1.02)';
+        donateBtn.style.background = '#ff6b81';
+        donateBtn.style.boxShadow = '0 6px 18px rgba(255,71,87,0.6)';
+    });
+    donateBtn.addEventListener('mouseout', () => {
+        donateBtn.style.transform = 'scale(1)';
+        donateBtn.style.background = '#ff4757';
+        donateBtn.style.boxShadow = '0 4px 12px rgba(255,71,87,0.4)';
+    });
+    
+    // Ссылка на DonationAlerts
+    donateBtn.addEventListener('click', () => {
+        window.open('https://boosty.to/foehelp/donate', '_blank', 'noopener,noreferrer');
+    });
+
+    // Собираем контент
+    windowContent.appendChild(iconDiv);
+    windowContent.appendChild(descText);
+    windowContent.appendChild(donateBtn);
+    
+    helpWindow.appendChild(windowHeader);
+    helpWindow.appendChild(windowContent);
+    
+    // Добавляем обе кнопки в контейнер
+    helpWrapper.appendChild(helpBtn);
+    helpWrapper.appendChild(englishBtn);
+    
+    document.body.appendChild(helpWrapper);
+    document.body.appendChild(helpWindow);
+
+    // ========== ЛОГИКА ПЕРЕТАСКИВАНИЯ ==========
+    let isDraggingHelp = false;
+    let dragOffsetXHelp = 0, dragOffsetYHelp = 0;
+    
+    windowHeader.addEventListener('mousedown', (e) => {
+        if (e.target === closeBtnHelp) return;
+        isDraggingHelp = true;
+        const rect = helpWindow.getBoundingClientRect();
+        dragOffsetXHelp = e.clientX - rect.left;
+        dragOffsetYHelp = e.clientY - rect.top;
+        helpWindow.style.cursor = 'grabbing';
+        helpWindow.style.top = rect.top + 'px';
+        helpWindow.style.right = 'auto';
+        helpWindow.style.left = rect.left + 'px';
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingHelp) return;
+        let newLeft = e.clientX - dragOffsetXHelp;
+        let newTop = e.clientY - dragOffsetYHelp;
+        const maxX = window.innerWidth - helpWindow.offsetWidth;
+        const maxY = window.innerHeight - helpWindow.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxX));
+        newTop = Math.max(0, Math.min(newTop, maxY));
+        helpWindow.style.left = newLeft + 'px';
+        helpWindow.style.top = newTop + 'px';
+        helpWindow.style.right = 'auto';
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isDraggingHelp) {
+            isDraggingHelp = false;
+            helpWindow.style.cursor = 'default';
+        }
+    });
+
+    // ========== ОТКРЫТИЕ / ЗАКРЫТИЕ ==========
+    helpBtn.addEventListener('click', () => {
+        helpBtn.style.display = 'none';
+        helpWindow.style.display = 'block';
+        // Сбрасываем позицию в верхний правый угол, если окно не было перемещено
+        if (!helpWindow.hasAttribute('data-dragged')) {
+            helpWindow.style.top = '80px';
+            helpWindow.style.right = '20px';
+            helpWindow.style.left = 'auto';
+            helpWindow.style.bottom = 'auto';
+        }
+    });
+    
+    closeBtnHelp.addEventListener('click', () => {
+        helpWindow.style.display = 'none';
+        helpBtn.style.display = 'block';
+    });
+    
+    // При перетаскивании ставим метку, чтобы окно не возвращалось в исходную позицию
+    windowHeader.addEventListener('mousedown', () => {
+        helpWindow.setAttribute('data-dragged', 'true');
+    });
+    
+    // Фикс при изменении размера окна
+    window.addEventListener('resize', () => {
+        if (helpWindow.style.display === 'block') {
+            const maxX = window.innerWidth - helpWindow.offsetWidth;
+            const maxY = window.innerHeight - helpWindow.offsetHeight;
+            let left = parseFloat(helpWindow.style.left);
+            let top = parseFloat(helpWindow.style.top);
+            if (!isNaN(left) && !isNaN(top)) {
+                left = Math.max(0, Math.min(left, maxX));
+                top = Math.max(0, Math.min(top, maxY));
+                helpWindow.style.left = left + 'px';
+                helpWindow.style.top = top + 'px';
+            }
+        }
+    });
+})();
+</script>
+<script src="https://foehelp.ru/foe-building-db/js/background-changer.js"></script>
+</body>
+</html>

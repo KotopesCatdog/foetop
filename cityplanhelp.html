@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Справка по редактору города</title>
-    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -92,6 +92,7 @@
             }
         }
     </style>
+    <script src="/links-loader.js" defer></script>
 </head>
 <body>
 
@@ -107,9 +108,10 @@
             <ol>
                <li>
   Устанавливаем расширение для хрома
-  <a href="https://drive.google.com/file/d/1zq0WyPXdIMwtj6ASWyHb7CBg7tTbr0jb/view?usp=sharing"
-      target="_blank"
-      style="
+  <a href="#"
+   data-link-key="chrome_extension"
+   target="_blank"
+   style="
         display: inline-block;
         padding: 6px 14px;
         background-color: #4CAF50;
@@ -118,21 +120,17 @@
         border-radius: 4px;
         font-size: 14px;
       ">
-      скачать
-  </a>
+   скачать
+</a>
 </li>
 
                 (Расширение берёт данные только из хелпера, с самой игрой не взаимодействует).<br>
                 Распаковываем архив в любое место.<br>
                 Для установки в браузере вводим chrome://extensions/ - Загрузить распакованное расширение и указываем на папку MyExtractor.</li>
 
-                <li>В любом городе включаем в хелпере "обзор города" (вид - сверху, масштаб 100%).</li>
+                <li>В любом городе включаем в хелпере "Обзор города".</li>
 
-                <li>Нажимаем на иконку расширения, потом - "извлечь" и "копировать".</li>
-
-                <li>Идём на страницу редактора города или поселения (квантов) по ссылке в расширении.</li>
-
-                <li>Вставляем данные в окно ввода и нажимаем "Старт".</li>
+                <li>Нажимаем на кнопку в окне хелпера "FOEhelp-Plan"</li>
 
                 <li>Границы - для обозначения границ города, выставляются вручную, т.к. данные по занятой территории мы не можем извлечь. (Кнопка имеет 3 состояния - неактивная, активная и удаление границ).</li>
 

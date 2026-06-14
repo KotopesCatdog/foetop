@@ -8,12 +8,13 @@
   "index_btn_quanta": "Кванты",
   "index_btn_params": "Параметры",
   "index_btn_calc": "Калькуляторы",
-  "index_btn_editors": "Редакторы",
+  "index_btn_editors": "Редактор города",
+  "index_btn_cityplan": "Редактор города",
   "index_btn_links": "Полезные ссылки",
   "index_btn_games": "Games",
   "index_btn_questions": "Вопросы, предложения...",
   "db_page_title": "База Зданий FoE",
-  "db_chat_btn_title": "Открыть чат",
+  "db_chat_btn_title": "Телеграм FOEhelp",
   "db_help_btn_title": "Справка",
   "db_donate_btn_title": "Помощь проекту",
   "db_upload_btn": "📂 Загрузить JSON",
@@ -87,6 +88,7 @@
   "param_btn_nauka": "Стоимость науки",
   "param_btn_kratkart": "Кратчайшие карты",
   "param_btn_rasbrikart": "Расш. и брил. на картах",
+  "param_btn_maptime": "Время и ресурсы на карту",
   "common_btn_back_menu": "🏠 Возврат в меню",
   "kits_title": "🎁 FoE: Наборы выбора (Selection Kits)",
   "kits_subtitle": "Поиск по названиям наборов и предметам, которые в них входят",
@@ -323,5 +325,6 @@
   "era_top_titan": "🌑 Космическая эра (Титан)",
   "era_top_hub": "🚀 Космическая эра (Космический хаб)",
   "top_group_guild_goods": "товары в гильдию"
+ 
   
 }

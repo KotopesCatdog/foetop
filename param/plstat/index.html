@@ -48,6 +48,7 @@
 .lang-switcher button { padding: 4px 12px; font-size: 12px; font-weight: bold; color: #c9d8e8; background: transparent; border: 1px solid #3a4f66; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
 .lang-switcher button:hover, .lang-switcher button.active { background: #3a4f66; }
 </style>
+ <script src="/links-loader.js" defer></script>
 </head>
 <body>
 <div class="container">
@@ -173,7 +174,7 @@
     if (extBtn) {
         extBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            window.open('https://drive.google.com/file/d/1zq0WyPXdIMwtj6ASWyHb7CBg7tTbr0jb/view?usp=sharing', '_blank');
+            openLink('chrome_extension');
         });
     }
 

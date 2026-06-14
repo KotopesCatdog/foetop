@@ -94,6 +94,7 @@ mark { background-color: #ffd700; color: #1a1a2e; padding: 0 2px; border-radius:
 .lang-switcher button { padding: 5px 14px; font-size: 13px; font-weight: bold; color: #ffd700; background: transparent; border: 2px solid #555; border-radius: 16px; cursor: pointer; transition: all 0.2s; }
 .lang-switcher button:hover, .lang-switcher button.active { background: #444; border-color: #ffd700; }
 </style>
+ <script src="/links-loader.js" defer></script>
 </head>
 <body>
 
@@ -306,7 +307,7 @@ uploadArea.addEventListener('click', () => {
 
 // Кнопка расширения Chrome
 document.getElementById('chrome-extension-btn').addEventListener('click', () => {
-    window.open('https://drive.google.com/file/d/1zq0WyPXdIMwtj6ASWyHb7CBg7tTbr0jb/view?usp=sharing', '_blank');
+    openLink('chrome_extension');
 });
 
 document.getElementById('search').addEventListener('input', render);

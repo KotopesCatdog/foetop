@@ -109,10 +109,11 @@
             border-color: #888;
         }
     </style>
+     <script src="/links-loader.js" defer></script>
 </head>
 <body>
     <div class="top-left-buttons">
-        <button class="chat-btn" id="chatButton" data-i18n-title="db_chat_btn_title">💬</button>
+        
         <button class="help-btn-left" id="helpButtonLeft" data-i18n-title="db_help_btn_title">?</button>
         <button class="donate-btn-left" id="donateButtonLeft" data-i18n-title="db_donate_btn_title">🍺</button>
     </div>
@@ -181,9 +182,10 @@
             <h2 data-i18n="db_help_title">Справка</h2>
             <p data-i18n="db_help_welcome">Добро пожаловать в Базу Зданий FoE!</p>
             <ul>
-                <li><span data-i18n="db_help_li1">Для загрузки базы данных установите</span> <a href="https://drive.google.com/file/d/1zq0WyPXdIMwtj6ASWyHb7CBg7tTbr0jb/view?usp=sharing" target="_blank">URL</a></li>
+                <li><span data-i18n="db_help_li1">Для загрузки базы данных установите</span> <a data-link-key="chrome_extension">URL</a></li>
                 <li data-i18n="db_help_li2">В своём городе нажмите на расширение -> "Импорт JSON" и сохраните файл.</li>
-                <li><span data-i18n="db_help_li3">Последнюю уже извлечённую версию json в архиве можно загрузить</span> <a href="https://drive.google.com/file/d/1MiyYHZ6bV3sOxbRIsL2MMMfexCKImynq/view?usp=sharing" target="_blank">URL</a></li>
+                <li><span data-i18n="db_help_li3">Последнюю уже извлечённую версию json в архиве можно загрузить</span> <a data-link-key="json_ru">URL</a></li>
+                
                 <li>==========</li>
                 <li data-i18n="db_help_li4">Кнопка "📂 Загрузить JSON" — выбрать локальный JSON файл с базой данных</li>
                 <li data-i18n="db_help_li5">Кнопка "🗑 Сбросить" — очистить загруженные данные</li>
@@ -197,9 +199,10 @@
                 <li data-i18n="db_help_li11">Внимание! Ведутся работы, возможны неточности</li>
             </ul>
             <p>
-                <span data-i18n="db_help_contact">Есть вопросы, предложения, заметили неточность? Пишите...</span>
-                <a href="https://t.me/foehelp" target="_blank">Телеграм</a> или
-                <a href="https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help" target="_blank">Zuli чат</a>
+                <span data-i18n="db_help_contact">Есть вопросы, предложения, заметили неточность? Пишите...</span><br>
+                <a href="https://t.me/foehelp" target="_blank">Telegram</a><br>
+                <a href="https://discord.gg/ZVSf4ZM34a" target="_blank">Discord</a>
+                
             </p>
         </div>
     </div>
@@ -349,7 +352,7 @@
                 `<div class="no-results" style="color:#aaa; text-align:center; padding:40px;" data-i18n="db_no_results_hint">Выберите JSON файл с данными</div>`;
             const chatButton = document.getElementById('chatButton');
             if (chatButton) chatButton.addEventListener('click', () => {
-                window.open('https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help', '_blank', 'noopener,noreferrer');
+                window.open('https://t.me/foehelp', '_blank', 'noopener,noreferrer');
             });
             const helpButtonLeft = document.getElementById('helpButtonLeft');
             if (helpButtonLeft) helpButtonLeft.addEventListener('click', (e) => { e.stopPropagation(); toggleHelp(); });

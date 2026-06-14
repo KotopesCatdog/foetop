@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта ресурсов | Время и ресурсы на карту</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            padding: 30px 24px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Заголовок */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f0f9ff 0%, #a855f7 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-top: 12px;
+        }
+
+        /* Главная сетка */
+        .main-grid {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+        }
+
+        /* Левая панель */
+        .categories-section {
+            flex: 2;
+            min-width: 320px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            padding: 24px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.5);
+        }
+
+        /* Кнопка "Выбрать все" */
+        .select-all-wrapper {
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-select-all {
+            background: linear-gradient(95deg, #10b981, #059669);
+            border: none;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .btn-select-all:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Карточка категории */
+        .category-card {
+            background: #0f172a;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+            transition: all 0.2s;
+        }
+
+        .category-card:hover {
+            border-color: #8b5cf6;
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: #111827;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .category-header:hover {
+            background: #1a2332;
+        }
+
+        .category-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #e2e8f0, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .category-controls {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            color: #a78bfa;
+            transition: transform 0.2s;
+        }
+
+        .category-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #8b5cf6;
+        }
+
+        /* Список предметов - по умолчанию скрыт */
+        .items-grid {
+            display: none;
+            padding: 20px;
+            background: #0a0f1a;
+            border-top: 1px solid #2d3a5e;
+            max-height: 320px;
+            overflow-y: auto;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px 20px;
+        }
+
+        .items-grid.active {
+            display: grid;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.15s;
+            cursor: pointer;
+            background: rgba(30, 41, 59, 0.4);
+        }
+
+        .item-row:hover {
+            background: #1e293b;
+            transform: translateX(4px);
+        }
+
+        .item-row input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #10b981;
+        }
+
+        .item-row label {
+            cursor: pointer;
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        /* Правая панель */
+        .stats-section {
+            flex: 1.2;
+            min-width: 320px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            padding: 24px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            position: sticky;
+            top: 20px;
+            align-self: start;
+        }
+
+        .stats-header {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            border-left: 5px solid #8b5cf6;
+            padding-left: 18px;
+            background: linear-gradient(135deg, #f1f5f9, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Таблица */
+        .resource-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .resource-table th {
+            background: #1e293b;
+            color: #a78bfa;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 14px 12px;
+            text-align: left;
+        }
+
+        .resource-table td {
+            padding: 12px 12px;
+            background: #0f172a;
+            color: #e2e8f0;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .resource-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .resource-table tr:hover td {
+            background: #1a253c;
+        }
+
+        .value-highlight {
+            font-weight: 700;
+            color: #facc15;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 20px 16px;
+            }
+            .stats-section {
+                position: static;
+            }
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>🗺️ Время и ресурсы на карту</h1>
+        <p>Выберите нужные локации — получите точную сводку ресурсов и времени</p>
+    </div>
+
+    <div class="main-grid">
+        <div class="categories-section">
+            <div class="select-all-wrapper">
+                <button class="btn-select-all" id="selectAllBtn">Выбрать / Снять всё</button>
+            </div>
+            <div id="categoriesContainer"></div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stats-header">📊 Сводка ресурсов</div>
+            <div id="databaseOutput">
+                <div class="empty-state">⚡ Отметьте локации, чтобы начать расчёт</div>
+            </div>
+        </div>
+    </div>
+    <footer>🔮 Актуальные данные по всем эпохам | Суммирование ресурсов и времени</footer>
+</div>
+
+<script src="database.js"></script>
+<script src="categories.js"></script>
+<script>
+    // Функции для работы с временем
+    function parseTime(timeStr) {
+        const parts = timeStr.split('д ');
+        const days = parseInt(parts[0], 10);
+        const time = parts[1].split(':');
+        return { days, hours: parseInt(time[0], 10), minutes: parseInt(time[1], 10) };
+    }
+
+    function formatTime(totalDays, totalHours, totalMinutes) {
+        const extraDays = Math.floor((totalHours + Math.floor(totalMinutes / 60)) / 24);
+        const days = totalDays + extraDays;
+        const hours = (totalHours + Math.floor(totalMinutes / 60)) % 24;
+        const minutes = totalMinutes % 60;
+        return `${days}д ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    // Обновление таблицы - сохраняем порядок появления ресурсов (как в оригинале)
+    window.checkDatabase = function() {
+        const output = document.getElementById('databaseOutput');
+        const totals = { Время: { days: 0, hours: 0, minutes: 0 } };
+        const resourceOrder = []; // Для сохранения порядка появления ресурсов
+        const seenResources = new Set(); // Чтобы не дублировать порядок
+        
+        const allCheckboxes = document.querySelectorAll('.item-row input[type="checkbox"]');
+        allCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                const itemName = cb.getAttribute('data-name');
+                const entry = database.find(item => item.startsWith(itemName));
+                if (entry) {
+                    const parts = entry.split(', ');
+                    const timeStr = parts[1];
+                    const timeData = parseTime(timeStr);
+                    totals['Время'].days += timeData.days;
+                    totals['Время'].hours += timeData.hours;
+                    totals['Время'].minutes += timeData.minutes;
+                    
+                    for (let i = 2; i < parts.length; i++) {
+                        const pair = parts[i].trim().split(' ');
+                        if (pair.length >= 2) {
+                            const key = pair[0];
+                            const val = parseInt(pair[1], 10);
+                            if (totals[key]) {
+                                totals[key] += val;
+                            } else {
+                                totals[key] = val;
+                            }
+                            // Запоминаем порядок только при первом появлении ресурса
+                            if (!seenResources.has(key)) {
+                                seenResources.add(key);
+                                resourceOrder.push(key);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        const formattedTime = formatTime(totals['Время'].days, totals['Время'].hours, totals['Время'].minutes);
+        
+        // Формируем таблицу с сохранением порядка появления ресурсов
+        let html = '<table class="resource-table"><thead><tr><th>📦 Ресурс</th><th>🔢 Значение</th></tr></thead><tbody>';
+        
+        // 1. Строка Времени (всегда первая)
+        html += `<tr><td>Время</td><td class="value-highlight">⏱️ ${formattedTime}</td></tr>`;
+        
+        // 2. Все остальные ресурсы в порядке их первого появления (как в оригинале)
+        for (const key of resourceOrder) {
+            let displayValue = totals[key];
+            if (key === 'Монеты') {
+                displayValue = `💰 ${displayValue.toLocaleString()}`;
+            }
+            html += `<tr><td>${key}</td><td class="value-highlight">${displayValue}</td></tr>`;
+        }
+        
+        html += '</tbody></table>';
+        
+        // Проверка на пустой выбор
+        const hasAnySelection = Array.from(allCheckboxes).some(cb => cb.checked);
+        if (!hasAnySelection) {
+            html = '<div class="empty-state">✨ Выберите локации для расчёта ресурсов</div>';
+        }
+        
+        output.innerHTML = html;
+    };
+
+    // Построение интерфейса из categories.js
+    function buildUI() {
+        const container = document.getElementById('categoriesContainer');
+        container.innerHTML = '';
+        
+        categoriesConfig.forEach(cat => {
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            
+            const header = document.createElement('div');
+            header.className = 'category-header';
+            header.innerHTML = `
+                <div class="category-title">📂 ${cat.name}</div>
+                <div class="category-controls">
+                    <span class="toggle-icon">▶</span>
+                    <input type="checkbox" class="category-checkbox">
+                </div>
+            `;
+            
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'items-grid';
+            
+            cat.items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <input type="checkbox" data-name="${item}" onchange="checkDatabase()">
+                    <label>${item}</label>
+                `;
+                itemsDiv.appendChild(row);
+            });
+            
+            card.appendChild(header);
+            card.appendChild(itemsDiv);
+            container.appendChild(card);
+            
+            // События
+            const toggleIcon = header.querySelector('.toggle-icon');
+            const groupCheckbox = header.querySelector('.category-checkbox');
+            const childCheckboxes = itemsDiv.querySelectorAll('input[type="checkbox"]');
+            
+            // Клик по заголовку — раскрыть/свернуть
+            header.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') return;
+                itemsDiv.classList.toggle('active');
+                toggleIcon.textContent = itemsDiv.classList.contains('active') ? '▼' : '▶';
+            });
+            
+            // Чекбокс группы
+            groupCheckbox.addEventListener('change', () => {
+                childCheckboxes.forEach(cb => cb.checked = groupCheckbox.checked);
+                window.checkDatabase();
+            });
+            
+            // Синхронизация состояния группы
+            childCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const allChecked = Array.from(childCheckboxes).every(c => c.checked);
+                    groupCheckbox.checked = allChecked;
+                    window.checkDatabase();
+                });
+            });
+            
+            // По умолчанию все списки СКРЫТЫ
+            itemsDiv.classList.remove('active');
+            toggleIcon.textContent = '▶';
+        });
+    }
+    
+    // Кнопка "Выбрать все"
+    document.getElementById('selectAllBtn')?.addEventListener('click', () => {
+        const allBoxes = document.querySelectorAll('.item-row input[type="checkbox"]');
+        const allChecked = Array.from(allBoxes).every(cb => cb.checked);
+        allBoxes.forEach(cb => cb.checked = !allChecked);
+        document.querySelectorAll('.category-checkbox').forEach(gc => gc.checked = !allChecked);
+        window.checkDatabase();
+    });
+    
+    buildUI();
+    window.checkDatabase();
+</script>
+</body>
+</html>

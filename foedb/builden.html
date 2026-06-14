@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoE Building DB</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Styles for vertical buttons on the left */
+        .top-left-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+        
+        .chat-btn, .help-btn-left, .donate-btn-left {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .chat-btn {
+            background: linear-gradient(135deg, #10a37f 0%, #0e8c6c 100%);
+        }
+        
+        .chat-btn:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #0e8c6c 0%, #0c755a 100%);
+            box-shadow: 0 4px 12px rgba(16,163,127,0.4);
+        }
+        
+        .help-btn-left {
+            background: linear-gradient(135deg, #6c5ce7 0%, #5a4bce 100%);
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .help-btn-left:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #5a4bce 0%, #4a3cb8 100%);
+            box-shadow: 0 4px 12px rgba(108,92,231,0.4);
+        }
+        
+        .donate-btn-left {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            font-size: 24px;
+        }
+        
+        .donate-btn-left:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            box-shadow: 0 4px 12px rgba(243,156,18,0.4);
+        }
+        
+        .chat-btn:active, .help-btn-left:active, .donate-btn-left:active {
+            transform: scale(0.98);
+        }
+        
+        /* Mobile adaptation */
+        @media (max-width: 768px) {
+            .top-left-buttons {
+                top: 10px;
+                left: 10px;
+                gap: 8px;
+            }
+            
+            .chat-btn, .help-btn-left, .donate-btn-left {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+            }
+        }
+        
+        /* Help window styles */
+        #help-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #e6d7ac;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            width: 90%;
+            max-width: 500px;
+            max-height: 50vh;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        
+        #help-window.hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            #help-window {
+                width: 95%;
+                max-height: 70vh;
+                top: 50%;
+                left: 50%;
+            }
+            
+            .close-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 32px;
+                top: 5px;
+                right: 5px;
+            }
+            
+            body.modal-open {
+                overflow: hidden;
+            }
+        }
+        
+        .help-content {
+            padding: 20px;
+            background: #e6d7ac;
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 32px;
+            cursor: pointer;
+            color: #ff4444;
+            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+            background: transparent;
+            border: none;
+            z-index: 1002;
+        }
+        
+        .close-btn:hover {
+            color: #ff0000;
+            background: rgba(0,0,0,0.05);
+            transform: scale(1.1);
+        }
+        
+        .close-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <!-- Vertical buttons on the left -->
+    <div class="top-left-buttons">
+        <button class="chat-btn" id="chatButton" title="Open chat">
+            💬
+        </button>
+        <button class="help-btn-left" id="helpButtonLeft" title="Help">
+            ?
+        </button>
+        <button class="donate-btn-left" id="donateButtonLeft" title="Support the project">
+            ⛄
+        </button>
+    </div>
+
+    <br><br>
+    <div class="header-container">
+        <h1>FoE Buildings Database</h1>
+        
+        <div class="header-buttons">
+            <!-- JSON selector -->
+            <div class="json-selector" style="margin-bottom: 10px;">
+                <label for="jsonSelect" style="color: #888; font-size: 12px;">📁 Database:</label>
+                <select id="jsonSelect" style="background: #333; color: #fff; border: 1px solid #4ecdc4; padding: 5px 10px; border-radius: 5px; margin-left: 8px;">
+                    <option value="https://foehelp.ru/buildingus.json">US</option>
+                    <option value="https://foehelp.ru/building.json">RU</option>
+                    <option value="https://foehelp.ru/buildingzz.json">BETA</option>
+                </select>
+            </div>
+            
+            <div class="basket-btn-container">
+                <button class="basket-btn" onclick="openBasketModal()">
+                    🛒 Basket <span class="basket-count" id="basketCount">0</span>
+                </button>
+                <span class="basket-tooltip">To add, hold LMB on building</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help window - hidden by default -->
+    <div id="help-window" class="hidden">
+        <div class="help-content">
+            <button class="close-btn" onclick="toggleHelp()">&times;</button>
+            <h2>Help</h2>
+            <p>Welcome to the FoE Buildings Database!</p>
+            <ul>
+                <li>Click on building card - show/hide data</li>
+                <li>Hold LMB on building adds it to the basket</li>
+                <li>Click on column in basket - sort</li>
+                <li>Columns can be dragged</li>
+                <li>Select era and parameters for filtering</li>
+                <li>Attention! Work in progress, possible inaccuracies</li>
+                <li>To load latest changes, refresh page with Ctrl+F5</li>
+            </ul>
+            <p>Have questions, suggestions, noticed an inaccuracy? Write to...
+            <a href="https://t.me/foehelp">Telegram</a> or 
+            <a href="https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help">Zuli chat</a></p>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <!-- Your main content goes here -->
+    </div>
+
+    
+    <div id="serverFileDate" style="text-align:center; color:#ffd700; font-size:11px; margin-bottom:10px;"></div>
+    <div id="statusMsg" class="status-msg">Loading...</div>
+    
+    <div class="search-container">
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="Enter at least 2 characters..." disabled>
+            <button id="clearBtn">✕</button>
+        </div>
+        <div class="filter-options">
+            <label class="filter-option"><input type="checkbox" id="filterName" checked><span>Name</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterType" checked><span>Type</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterSource" checked><span>Source</span></label>
+            <label class="filter-option"><input type="checkbox" id="filterProduction"><span>Production</span></label>
+        </div>
+    </div>
+    
+    <div id="resultsGrid" class="results-grid"></div>
+
+    <!-- Basket modal window -->
+    <div class="modal-overlay" id="basketModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">🛒 Buildings basket</span> (sort - click on column, columns can be dragged)
+                <button class="modal-close" onclick="closeBasketModal()">&times;</button>
+            </div>
+            <div class="basket-controls">
+                <div class="basket-era-select">
+                    <label>📅 Era for all buildings:</label>
+                    <select id="basketEraSelect" onchange="onBasketEraChange()"></select>
+                </div>
+                <div class="basket-era-select" style="margin-top: 10px;">
+                    <label>📐 Display:</label>
+                    <select id="perTileSelect" onchange="onPerTileChange()">
+                        <option value="total">Total values</option>
+                        <option value="perTile">Per tile</option>
+                    </select>
+                </div>
+                <div class="basket-actions">
+                    <button class="btn btn-export" onclick="exportBasketXLSX()">📥 Export Excel</button>
+                    <button class="btn btn-clear" onclick="clearBasket()">🗑 Clear</button>
+                </div>
+            </div>
+            <div class="basket-table-container">
+                <table class="basket-table" id="basketTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="toast-notification" id="toastNotification"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/building-processor.js"></script>
+    <script src="js/basket-manager.js"></script>
+    <script src="js/data-loaderen.js"></script>
+    <script src="js/ui-renderer.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/event-handlers.js"></script>
+    <script>
+        // toggleHelp function with improved mobile handling
+        function toggleHelp() {
+            const helpWindow = document.getElementById('help-window');
+            const body = document.body;
+            
+            if (helpWindow.classList.contains('hidden')) {
+                // Open window
+                helpWindow.classList.remove('hidden');
+                // Block background scroll on mobile
+                if (window.innerWidth <= 768) {
+                    body.classList.add('modal-open');
+                }
+                // Add click outside listener
+                setTimeout(() => {
+                    document.addEventListener('click', closeHelpOnBackdrop);
+                }, 100);
+            } else {
+                // Close window
+                helpWindow.classList.add('hidden');
+                body.classList.remove('modal-open');
+                document.removeEventListener('click', closeHelpOnBackdrop);
+            }
+        }
+        
+        // Close window when clicking outside
+        function closeHelpOnBackdrop(event) {
+            const helpWindow = document.getElementById('help-window');
+            const helpButton = document.getElementById('helpButtonLeft');
+            
+            if (helpWindow.contains(event.target) || helpButton.contains(event.target)) {
+                return;
+            }
+            
+            if (!helpWindow.classList.contains('hidden')) {
+                toggleHelp();
+            }
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBasketConfig().then(() => {
+                loadData();
+                loadBasket();
+                updateBasketCardIndicators();
+                initEventListeners();
+            });
+            
+            // Chat button setup
+            const chatButton = document.getElementById('chatButton');
+            if (chatButton) {
+                chatButton.addEventListener('click', function() {
+                    window.open('https://foehelp.zulipchat.com/#narrow/channel/585361-FOE-help', '_blank', 'noopener,noreferrer');
+                });
+            }
+            
+            // Help button setup (left)
+            const helpButtonLeft = document.getElementById('helpButtonLeft');
+            if (helpButtonLeft) {
+                helpButtonLeft.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleHelp();
+                });
+            }
+            
+            // Donate button setup (left)
+            const donateButtonLeft = document.getElementById('donateButtonLeft');
+            if (donateButtonLeft) {
+                donateButtonLeft.addEventListener('click', function() {
+                    window.open('https://boosty.to/foehelp/donate', '_blank', 'noopener,noreferrer');
+                });
+            }
+            
+            // Ensure help window is hidden on load
+            const helpWindow = document.getElementById('help-window');
+            if (helpWindow) {
+                helpWindow.classList.add('hidden');
+            }
+            
+            // For mobile: handle back button to close window
+            if (window.innerWidth <= 768) {
+                window.addEventListener('popstate', function() {
+                    const helpWindow = document.getElementById('help-window');
+                    if (helpWindow && !helpWindow.classList.contains('hidden')) {
+                        toggleHelp();
+                    }
+                });
+            }
+        });
+        
+        // JSON switching
+        const jsonSelect = document.getElementById('jsonSelect');
+        if (jsonSelect) {
+            jsonSelect.addEventListener('change', (e) => {
+                if (confirm('Switching the database will reload. Continue?')) {
+                    switchJson(e.target.value);
+                } else {
+                    jsonSelect.value = currentJsonUrl;
+                }
+            });
+        }
+    </script>
+    <script src="js/top-buildings.js"></script>
+    <script src="js/background-changer.js"></script>
+</body>
+</html>

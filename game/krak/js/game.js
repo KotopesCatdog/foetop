@@ -88,7 +88,7 @@ function spawnFox() {
     
     playFoxSound();
     
-        // Очищаем старые таймеры
+    // Очищаем старые таймеры
     if (foxTimer) clearTimeout(foxTimer);
     if (foxTimerInterval) clearInterval(foxTimerInterval);
     
@@ -105,9 +105,11 @@ function spawnFox() {
             fox.active = false;
             updateFoxTimerBar();
             if (foxTimerInterval) clearInterval(foxTimerInterval);
-       }
+           
+        }
     }, 100);
-
+    
+   
 }
 
 function updateFox() {
@@ -756,7 +758,7 @@ function loadLevel(levelIndex) {
                 originalX: col * BRICK_W,
                 originalY: BRICKS_TOP_Y + row * BRICK_H,
                 hiddenBonus: null,
-                hitCount: 0
+                hitCount: 0 
             };
         }
     }
@@ -2186,7 +2188,7 @@ function loadNextLevel() {
                     originalX: col * BRICK_W,
                     originalY: BRICKS_TOP_Y + row * BRICK_H,
                     hiddenBonus: null,
-                    hitCount: 0
+                    hitCount: 0 
                 };
             }
         }
@@ -2239,6 +2241,8 @@ function showHelpModal() {
             <p>• <kbd>ПКМ</kbd> - Активация бомбы 💣</p>
             <p>• <kbd>ПРОБЕЛ</kbd> - Пауза</p>
             <p>• <kbd>B</kbd> - Выбор ракетки</p>
+            <p>• <kbd>M</kbd> - Старт - стоп музыки</p>
+            <p>• <kbd>N</kbd> - Смена трека</p>
             <p>• <kbd>Е</kbd> - Топ игроков</p>
             <p>• <kbd>L</kbd> - Настройки генератора уровней</p>
             <p>• <kbd>H</kbd> - Эта справка</p>
@@ -2253,7 +2257,7 @@ function showHelpModal() {
 
 <hr>
             <p>🎨 <strong>Создавайте свои уровни тут:</strong><br>
-            <a href="/game/lg.html" target="_blank" style="color: #4ecca3;">Редактор уровней</a></p>
+            <a href="https://foehelp.ru/game/lg.html" target="_blank" style="color: #4ecca3;">Редактор уровней</a></p>
             <p>📨 <strong>Присылайте уровни:</strong><br>
             <a href="https://t.me/foehelp" target="_blank" style="color: #ffaa44;">Телеграм</a></p>
 

@@ -72,7 +72,9 @@ window.BonusIcons = {
     "goods_production": "https://foehelp.ru/icons/all_goods_of_age.png",
     "forge_points_production": "https://foehelp.ru/icons/strategy_points.png",
     "money_production": "https://foehelp.ru/icons/money.png",
-    "supplies_production": "https://foehelp.ru/icons/supplies.png",
+    "coin_production": "https://foehelp.ru/icons/coin_production.png",
+   
+    "supply_production": "https://foehelp.ru/icons/supply_production.png",
     "happiness": "https://foehelp.ru/icons/happiness.png",
     "population": "https://foehelp.ru/icons/population.png",
     "clan_power": "https://foehelp.ru/icons/clan_power.png",

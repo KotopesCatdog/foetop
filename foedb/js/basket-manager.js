@@ -829,7 +829,7 @@ function openQuantaModal() {
     if (!modal) return;
 
     const allBuildings = window.allBuildings || [];
-    const neoBuildings = allBuildings.filter(b => (b.name || '').toLowerCase().startsWith('нео '));
+    const neoBuildings = allBuildings.filter(b => /^(нео|neo) /i.test(b.name || ''));
 
     if (neoBuildings.length === 0) {
         showToast('Здания «нео ...» не найдены', true);
@@ -887,7 +887,7 @@ function renderQuantaTable() {
     // Получаем здания "нео ..." с полной обработкой — точно как renderBasketTable
     const allBuildings = window.allBuildings || [];
     const quantaData = allBuildings
-        .filter(b => (b.name || '').toLowerCase().startsWith('нео '))
+        .filter(b => /^(нео|neo) /i.test(b.name || ''))
         .map(building => {
             const data = getBuildingDataForEra(building, quantaEra);
             const coefficient = getBuildingTileCoefficient(building);

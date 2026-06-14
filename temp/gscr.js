@@ -1,0 +1,3018 @@
+// === Google Drive интеграция ===
+
+const GOOGLE_CLIENT_ID = '983813195278-dlgsdjjhi0iptrrstofk240e5eddldm8.apps.googleusercontent.com';
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+let tokenClient = null;
+let accessToken = null;
+
+// Ждём, пока Google Identity Services загрузится
+function waitForGoogleIdentity() {
+    return new Promise((resolve, reject) => {
+        if (window.google?.accounts?.oauth2) {
+            resolve();
+            return;
+        }
+
+        const start = Date.now();
+        const interval = setInterval(() => {
+            if (window.google?.accounts?.oauth2) {
+                clearInterval(interval);
+                resolve();
+            }
+            if (Date.now() - start > 15000) { // 15 секунд максимум
+                clearInterval(interval);
+                reject(new Error('Google Identity Services не загрузились за 15 секунд'));
+            }
+        }, 100);
+    });
+}
+
+// Инициализация клиента — вызывается только один раз
+async function initTokenClientOnce() {
+    if (tokenClient) return tokenClient;
+
+    await waitForGoogleIdentity();
+
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: GOOGLE_SCOPES,
+        callback: '',           // ← обязательно пустая строка здесь!
+    });
+
+    return tokenClient;
+}
+
+// Безопасная авторизация
+async function googleAuth() {
+    if (accessToken) return accessToken;
+
+    const client = await initTokenClientOnce();
+
+    return new Promise((resolve, reject) => {
+        // Устанавливаем callback ПЕРЕД вызовом requestAccessToken
+        client.callback = (resp) => {
+            if (resp.error) {
+                reject(new Error(resp.error_description || resp.error || 'Ошибка авторизации'));
+                return;
+            }
+            accessToken = resp.access_token;
+            resolve(accessToken);
+        };
+
+        try {
+            client.requestAccessToken({ prompt: 'consent' });
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+// ────────────────────────────────────────────────
+// Ваши функции без изменений (getSaveData и saveToGoogleDrive)
+
+function getSaveData() {
+    const figuresData = [];
+    document.querySelectorAll('.figure').forEach(figure => {
+        figuresData.push({
+            name: figure.dataset.name || "",
+            width: parseInt(figure.style.width),
+            height: parseInt(figure.style.height),
+            left: parseInt(figure.style.left),
+            top: parseInt(figure.style.top)
+        });
+    });
+
+    const cellsData = [];
+    for (let i = 0; i < totalCells; i++) {
+        const cell = grid.children[i];
+        cellsData.push({
+            textContent: cell.textContent || '',
+            isRoad: cell.classList.contains('road')
+        });
+    }
+
+    return {
+        figures: figuresData,
+        cells: cellsData,
+        initialCellStates: initialCellStates,
+        townHallBonuses: townHallBonuses,
+        timestamp: Date.now(),
+        version: "1.0",
+        app: "kvant"
+    };
+}
+
+async function saveToGoogleDrive() {
+    const defaultName = "Кванты " + new Date().toLocaleDateString('ru-RU');
+    const name = prompt("Имя файла в Google Drive:", defaultName);
+    if (!name) return;
+
+    const btn = document.querySelector('button[onclick="saveToGoogleDrive()"]');
+    if (btn) {
+        btn.textContent = "Сохраняю...";
+        btn.disabled = true;
+    }
+
+    try {
+        const token = await googleAuth();
+        if (!token) throw new Error("Не удалось получить токен");
+
+        const data = getSaveData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+        const metadata = {
+            name: name.trim() + '.json',
+            mimeType: 'application/json'
+        };
+
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', blob);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: new Headers({ 'Authorization': 'Bearer ' + token }),
+            body: form,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            alert("Сохранено в ваш Google Drive!");
+        } else {
+            const errorText = await response.text();
+            alert("Ошибка сохранения: " + response.status + "\n" + errorText);
+            console.error("Ошибка ответа Google:", errorText);
+        }
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            alert("Превышено время ожидания. Попробуйте позже или проверьте интернет.");
+        } else {
+            alert("Ошибка: " + (e.message || "Неизвестная ошибка"));
+            console.error("Исключение при сохранении:", e);
+        }
+    } finally {
+        if (btn) {
+            btn.textContent = "Сохранить в GDrive";
+            btn.disabled = false;
+        }
+    }
+}
+
+function loadFromGoogleDrive() {
+    googleAuth().then(() => {
+        const view = new google.picker.View(google.picker.ViewId.DOCS);
+        view.setMimeTypes('application/json');
+
+        const picker = new google.picker.PickerBuilder()
+            .addView(view)
+            .setOAuthToken(accessToken)
+            .setCallback((data) => {
+                if (data.action === google.picker.Action.PICKED) {
+                    const fileId = data.docs[0].id;
+                    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                        headers: { 'Authorization': 'Bearer ' + accessToken }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(jsonData => {
+                        try {
+                            // Удаляем все здания кроме ратуши
+                            document.querySelectorAll('.figure:not([data-name="Ратуша"])').forEach(fig => {
+                                if (fig.dataset.blinkInterval) clearInterval(fig.dataset.blinkInterval);
+                                fig.remove();
+                            });
+
+                            // Восстанавливаем клетки
+                            initialCellStates = jsonData.initialCellStates || new Array(totalCells).fill('');
+                            for (let i = 0; i < totalCells; i++) {
+                                const cell = grid.children[i];
+                                cell.textContent = jsonData.cells?.[i]?.textContent || '';
+                                if (jsonData.cells?.[i]?.isRoad) {
+                                    cell.classList.add('road');
+                                    cell.classList.remove('boundary');
+                                } else {
+                                    cell.classList.remove('road');
+                                }
+                            }
+
+                            // Бонусы ратуши
+                            townHallBonuses = jsonData.townHallBonuses || {
+                                od: 0, coin_acceleration: 0, hammer_acceleration: 0,
+                                coin_initial: 0, hammer_initial: 0, kd_capacity: 200000
+                            };
+
+                            document.getElementById('townHall-od').value = townHallBonuses.od;
+                            document.getElementById('townHall-coin-acceleration').value = townHallBonuses.coin_acceleration;
+                            document.getElementById('townHall-hammer-acceleration').value = townHallBonuses.hammer_acceleration;
+                            document.getElementById('townHall-coin-initial').value = townHallBonuses.coin_initial;
+                            document.getElementById('townHall-hammer-initial').value = townHallBonuses.hammer_initial;
+
+                            // Восстанавливаем позицию ратуши
+                            const savedTownHall = jsonData.figures?.find(f => f.name === "Ратуша");
+                            if (savedTownHall) {
+                                const townHallFigure = document.querySelector('.figure[data-name="Ратуша"]');
+                                if (townHallFigure) {
+                                    let left = Number(savedTownHall.left);
+                                    let top = Number(savedTownHall.top);
+                                    if (!isNaN(left) && !isNaN(top)) {
+                                        left = Math.round(left / 30) * 30;
+                                        top = Math.round(top / 30) * 30;
+                                        townHallFigure.style.left = left + 'px';
+                                        townHallFigure.style.top = top + 'px';
+                                    }
+                                }
+                            }
+
+                            // Создаём остальные здания
+                            if (Array.isArray(jsonData.figures)) {
+                                jsonData.figures.forEach(fig => {
+                                    if (fig.name !== 'Ратуша') {
+                                        createFigure(fig.name, fig.width, fig.height, fig.left, fig.top, true);
+                                    }
+                                });
+                            }
+
+                            // Финальные действия
+                            whiteCellsCount = countWhiteCells();
+                            document.querySelectorAll('.figure').forEach(f => addDragHandlers(f));
+                            calculateBonuses();
+                            clearedCellsHistory = [];
+
+                            if (document.getElementById('bldCountModal').style.display !== 'none') {
+                                updateBldCount();
+                            }
+
+                            alert("План успешно загружен из Google Drive!");
+
+                        } catch (innerErr) {
+                            console.error("Ошибка обработки данных из Google Drive:", innerErr);
+                            alert("Ошибка при обработке загруженного файла: " + innerErr.message);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Ошибка загрузки файла из Google Drive:", err);
+                        alert("Не удалось загрузить файл из Google Drive.\n" + err.message);
+                    });
+                }
+            })
+            .build();
+        picker.setVisible(true);
+    }).catch(err => {
+        console.error("Ошибка авторизации Google:", err);
+        alert("Не удалось авторизоваться в Google. Попробуйте снова.");
+    });
+}
+
+
+
+
+
+const buildingData =
+[
+  {
+    "category": "Жилые",
+    "name": "Многоэтажный дом 2x2",
+    "display_name": "Мн-эт",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 70,
+      "coin_cost": 10000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 12500,
+      "chrono_production": 10,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Каркасный дом 2x2",
+    "display_name": "Карк",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 110,
+      "coin_cost": 10000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "coin_production": 25000,
+      "chrono_production": 75,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Дом с гонтовой кр. 2x2",
+    "display_name": "Гонт",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 150,
+      "coin_cost": 210000,
+      "hammer_cost": 200000,
+      "chrono_cost": 1000,
+      "coin_production": 130000,
+      "chrono_production": 250,
+      "coin_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Жилые",
+    "name": "Особняк 2x2",
+    "display_name": "Особн",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 60,
+      "coin_cost": 14000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 7500,
+      "chrono_production": 10,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Дом из песчаника 2x2",
+    "display_name": "Песч",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 90,
+      "coin_cost": 42000,
+      "hammer_cost": 60000,
+      "chrono_cost": 200,
+      "coin_production": 15000,
+      "chrono_production": 75,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Городской особняк 2x2",
+    "display_name": "Гор-ос",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 130,
+      "coin_cost": 294000,
+      "hammer_cost": 240000,
+      "chrono_cost": 1000,
+      "coin_production": 78000,
+      "chrono_production": 250,
+      "coin_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Жилые",
+    "name": "Усадьба 2x2",
+    "display_name": "Усадьба",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 50,
+      "coin_cost": 16000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "coin_production": 3750,
+      "chrono_production": 10,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Жилые",
+    "name": "Многоквартирный дом 2x2",
+    "display_name": "Мн-квар",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 80,
+      "coin_cost": 48000,
+      "hammer_cost": 70000,
+      "chrono_cost": 200,
+      "coin_production": 7500,
+      "chrono_production": 75,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Жилые",
+    "name": "Манор 2x2",
+    "display_name": "Манор",
+    "size": "2x2",
+    "color": "lightgreen",
+    "bonuses": {
+      "population": 110,
+      "coin_cost": 336000,
+      "hammer_cost": 280000,
+      "chrono_cost": 1000,
+      "coin_production": 39000,
+      "chrono_production": 250,
+      "coin_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Кожевня 3x3",
+    "display_name": "Кожевня",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 12000,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 12000,
+      "chrono_production": 10,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Обувная мастерская 3x3",
+    "display_name": "Обувная",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 36000,
+      "hammer_cost": 50000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 24000,
+      "chrono_production": 75,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Пекарня 4x3",
+    "display_name": "Пекарня",
+    "size": "4x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 84000,
+      "hammer_cost": 100000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 60000,
+      "chrono_production": 250,
+      "hammer_acceleration": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Молотки",
+    "name": "Ферма 4x5",
+    "display_name": "Ферма",
+    "size": "4x5",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 16800,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 7200,
+      "chrono_production": 10,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Лаборатория алхимика 3x2",
+    "display_name": "Алхимик",
+    "size": "3x2",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 50400,
+      "hammer_cost": 60000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 14400,
+      "chrono_production": 75,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Ветряная мельница 3x4",
+    "display_name": "Ветряная",
+    "size": "3x4",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 117600,
+      "hammer_cost": 120000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 36000,
+      "chrono_production": 250,
+      "hammer_acceleration": 10
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Молотки",
+    "name": "Пивоварня 3x3",
+    "display_name": "Пивоварня",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 19200,
+      "hammer_cost": 0,
+      "population_cost": 30,
+      "chrono_cost": 0,
+      "hammer_production": 4800,
+      "chrono_production": 10,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Лавка специй 3x3",
+    "display_name": "Лавка спец.",
+    "size": "3x3",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 57600,
+      "hammer_cost": 70000,
+      "population_cost": 60,
+      "chrono_cost": 200,
+      "hammer_production": 9600,
+      "chrono_production": 75,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Молотки",
+    "name": "Бондарня 3x4",
+    "display_name": "Бондарня",
+    "size": "3x4",
+    "color": "plum",
+    "bonuses": {
+      "coin_cost": 134400,
+      "hammer_cost": 140000,
+      "population_cost": 120,
+      "chrono_cost": 1000,
+      "hammer_production": 24000,
+      "chrono_production": 250,
+      "hammer_acceleration": 20
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Товар",
+    "name": "Пасека 3x3",
+    "display_name": "Пасека",
+    "size": "3x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "●",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Медь 4x3",
+    "display_name": "Медь",
+    "size": "4x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "●",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Кирпичный цех 4x3",
+    "display_name": "Кирпичный цех",
+    "size": "4x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "●",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Канатная мастерская 3x2",
+    "display_name": "Канатная",
+    "size": "3x2",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "●",
+    "symbol_color": ""
+  },
+  {
+    "category": "Товар",
+    "name": "Порох 3x3",
+    "display_name": "Порох",
+    "size": "3x3",
+    "color": "pink",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 7500,
+      "population_cost": 100,
+      "chrono_cost": 200
+    },
+    "symbol": "●",
+    "symbol_color": ""
+  },
+  {
+    "category": "Общест.",
+    "name": "Торговая площадь 3x3",
+    "display_name": "Торговая пл",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 12000,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 125,
+      "od_production": 0,
+      "od_chas": 50
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Виселица 2x2",
+    "display_name": "Висел.",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 36000,
+      "hammer_cost": 36000,
+      "chrono_cost": 100,
+      "happiness_production": 250,
+      "od_production": 0,
+      "od_chas": 60
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Позорный столб 2x2",
+    "display_name": "П. столб",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 120000,
+      "hammer_cost": 120000,
+      "chrono_cost": 500,
+      "happiness_production": 750,
+      "od_production": 0,
+      "od_chas": 120
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Общест.",
+    "name": "Церковь 3x3",
+    "display_name": "Церковь",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 16800,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 160,
+      "od_production": 500,
+      "od_chas": 50
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Типография 3x3",
+    "display_name": "Типография",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50400,
+      "hammer_cost": 43200,
+      "chrono_cost": 100,
+      "happiness_production": 375,
+      "od_production": 500,
+      "od_chas": 130
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дом лекаря 3x3",
+    "display_name": "Дом лекаря",
+    "size": "3x3",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 168000,
+      "hammer_cost": 144000,
+      "chrono_cost": 500,
+      "happiness_production": 1125,
+      "od_production": 1000,
+      "od_chas": 260
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дворец 4x4",
+    "display_name": "Дворец",
+    "size": "4x4",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 19200,
+      "hammer_cost": 0,
+      "chrono_cost": 0,
+      "happiness_production": 225,
+      "od_production": 1250,
+      "od_chas": 90
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Общест.",
+    "name": "Библиотека 4x4",
+    "display_name": "Библиотека",
+    "size": "4x4",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 57600,
+      "hammer_cost": 50400,
+      "chrono_cost": 100,
+      "happiness_production": 500,
+      "od_production": 2500,
+      "od_chas": 200
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Общест.",
+    "name": "Дом картографа 3x2",
+    "display_name": "Дом картог",
+    "size": "3x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 192000,
+      "hammer_cost": 168000,
+      "chrono_cost": 500,
+      "happiness_production": 900,
+      "od_production": 750,
+      "od_chas": 180
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Кипарис 1x1",
+    "display_name": "Кип",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 10,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Цветочная изгородь 1x1",
+    "display_name": "Ц и",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 50000,
+      "hammer_cost": 50000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 10
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Пруд 2x2",
+    "display_name": "Пруд",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 200000,
+      "hammer_cost": 200000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 25,
+      "blue_stats": 25
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Декор",
+    "name": "Указательный столб 1x1",
+    "display_name": "У с",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 62500,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 15,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Горгулья 1x1",
+    "display_name": "Гор",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 62500,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 15
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Флаг 1x1",
+    "display_name": "Фла",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 300000,
+      "hammer_cost": 250000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 20,
+      "blue_stats": 20
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Декор",
+    "name": "Разрушенная башня 2x2",
+    "display_name": "Разр. б",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 100000,
+      "hammer_cost": 75000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 45,
+      "blue_stats": 0
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Группа деревьев 2x2",
+    "display_name": "Гр. дер",
+    "size": "2x2",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 100000,
+      "hammer_cost": 75000,
+      "chrono_cost": 200,
+      "happiness_cost": 25,
+      "red_stats": 0,
+      "blue_stats": 45
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Декор",
+    "name": "Морская скульптура 1x1",
+    "display_name": "М.с",
+    "size": "1x1",
+    "color": "blue",
+    "bonuses": {
+      "coin_cost": 400000,
+      "hammer_cost": 300000,
+      "chrono_cost": 750,
+      "happiness_cost": 75,
+      "red_stats": 30,
+      "blue_stats": 30
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конный лучник 3x4",
+    "display_name": "Конный лучн",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Бронированная пехота 3x3",
+    "display_name": "Брон. пех",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Мастерская катапульт 3x3",
+    "display_name": "Катапульта",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Казармы наёмников 3x3",
+    "display_name": "Наёмники",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Тяжелая кавалерия 3x4",
+    "display_name": "Тяж. кавал",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 15000,
+      "hammer_cost": 7500,
+      "chrono_cost": 0,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "yellow"
+  },
+  {
+    "category": "Воен.",
+    "name": "Арбалетчик 3x3",
+    "display_name": "Арбалетчик",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Тяжёлая пехота 3x3",
+    "display_name": "Тяж. пехота",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Требушеты 3x3",
+    "display_name": "Требушеты",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Берсерки 3x3",
+    "display_name": "Берсерки",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конюшня рыцарей 3x4",
+    "display_name": "Конюшня рыц.",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 45000,
+      "hammer_cost": 22500,
+      "chrono_cost": 200,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "green"
+  },
+  {
+    "category": "Воен.",
+    "name": "Длиннолучник 3x3",
+    "display_name": "Дл-лучник",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Королевский стражник 3x4",
+    "display_name": "Кор. страж",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Пушка 3x4",
+    "display_name": "Пушка",
+    "size": "3x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Двуручный меч 3x3",
+    "display_name": "Двуруч. меч",
+    "size": "3x3",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Воен.",
+    "name": "Конюшня тяж рыцаря 4x4",
+    "display_name": "Конюшня тяж рыц",
+    "size": "4x4",
+    "color": "red",
+    "bonuses": {
+      "coin_cost": 75000,
+      "hammer_cost": 37500,
+      "chrono_cost": 1000,
+      "population_cost": 100
+    },
+    "symbol": "●",
+    "symbol_color": "red"
+  },
+  {
+    "category": "Расширения",
+    "name": "Расш",
+    "display_name": "Расш",
+    "size": "4x4",
+    "color": "white",
+    "bonuses": {},
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Системные",
+    "name": "Ратуша",
+    "display_name": "Ратуша",
+    "size": "7x6",
+    "color": "yellow",
+    "bonuses": {
+      "coin_production": 50000,
+      "chrono_production": 15,
+      "hammer_production": 50000
+    },
+    "symbol": "",
+    "symbol_color": ""
+  }
+]
+;
+const bonusTranslations = {
+population: 'Население',
+coin_cost: 'Затр. монет',
+hammer_cost: 'Затр. молотков',
+chrono_cost: 'Затр. хроно',
+coin_production: 'Произв. монет',
+chrono_production: 'Произв. хроно',
+coin_acceleration: 'Ускор. монет',
+hammer_production: 'Произв. молотков',
+hammer_acceleration: 'Ускор. молотков',
+population_cost: 'Затр. населения',
+happiness_production: 'Произв. счастья',
+happiness_cost: 'Затр. счастья',
+od_production: 'Ёмкость КД',
+blue_stats: 'Син. статы',
+red_stats: 'Красн. статы',
+od_chas: 'Пр-во ОД/ 1 ч.'
+};
+const grid = document.getElementById('grid');
+const spaceUnderButtons = document.getElementById('space-under-buttons');
+const tooltip = document.getElementById('tooltip');
+const tabContentContainer = document.getElementById('tab-content-container');
+const totalCells = 28 * 28;
+const areas = [
+{ colStart: 1, colEnd: 4, rowStart: 1, rowEnd: 16, color: '#ccc' },
+{ colStart: 5, colEnd: 8, rowStart: 1, rowEnd: 4, color: '#ccc' },
+{ colStart: 25, colEnd: 28, rowStart: 1, rowEnd: 4, color: '#ccc' },
+{ colStart: 25, colEnd: 28, rowStart: 21, rowEnd: 28, color: '#ccc' }
+];
+let deleteMode = false;
+let isDragging = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let currentFigure = null;
+let whiteCellsCount = 192;
+let initialCellStates = new Array(totalCells).fill('');
+let townHallBonuses = {
+od: 0,
+coin_acceleration: 0,
+hammer_acceleration: 0,
+coin_initial: 0,
+hammer_initial: 0,
+kd_capacity: 200000
+};
+let hideModeActive = false;
+// Добавляем переменные для отслеживания выбранной фигуры и призрака
+let selectedBuilding = null;
+let selectedLiElement = null;
+let ghostFigure = null; // Призрачная фигура, следующая за курсором
+
+
+
+
+// НОВАЯ ФУНКЦИЯ: показать данные здания
+function showBuildingInfo(figure) {
+    const buildingName = figure.dataset.name;
+    const building = buildingData.find(b => b.name === buildingName);
+    if (!building) return;
+    
+    // Рассчитываем глобальные бонусы (включая все здания)
+    const globalStats = calculateGlobalStats();
+    
+    // Формируем содержимое модального окна
+    let content = `<h3 style="margin:0 0 15px 0; text-align:center;">${buildingName}</h3>`;
+    content += `<table class="building-info-table">`;
+    
+    // Проходим по всем бонусам здания
+    for (let key in building.bonuses) {
+        const baseValue = building.bonuses[key];
+        const translatedKey = bonusTranslations[key] || key;
+        let finalValue = baseValue;
+        let showCalculation = false;
+        let calculationText = '';
+        
+        // Применяем модификаторы в зависимости от типа бонуса
+        if (key === 'coin_production') {
+            // Производство монет = базовое × (коэф. счастья + общее ускорение/100)
+            finalValue = baseValue * (
+                globalStats.happinessCoef + 
+                globalStats.coin_acceleration / 100
+            );
+            showCalculation = true;
+            calculationText = `${baseValue} × (${globalStats.happinessCoef.toFixed(2)} + ${globalStats.coin_acceleration}%)`;
+        } else if (key === 'hammer_production') {
+            // Производство молотков = базовое × (коэф. счастья + общее ускорение/100)
+            finalValue = baseValue * (
+                globalStats.happinessCoef + 
+                globalStats.hammer_acceleration / 100
+            );
+            showCalculation = true;
+            calculationText = `${baseValue} × (${globalStats.happinessCoef.toFixed(2)} + ${globalStats.hammer_acceleration}%)`;
+        } else if (key === 'chrono_production') {
+            // Производство хроно = базовое × коэф. счастья
+            finalValue = baseValue * globalStats.happinessCoef;
+            showCalculation = true;
+            calculationText = `${baseValue} × ${globalStats.happinessCoef.toFixed(2)}`;
+        } else if (key === 'coin_acceleration' || key === 'hammer_acceleration') {
+            // Показываем только собственное ускорение здания
+            finalValue = baseValue;
+            showCalculation = false;
+        } else if (key === 'od_production') {
+            // Ёмкость КД без модификаций
+            finalValue = baseValue;
+            showCalculation = false;
+        } else if (key === 'blue_stats' || key === 'red_stats') {
+            // Статы без модификаций
+            finalValue = baseValue;
+            showCalculation = false;
+        } else if (key === 'happiness_production' || key === 'happiness_cost') {
+            // Счастье без модификаций
+            finalValue = baseValue;
+            showCalculation = false;
+        } else if (key === 'population' || key === 'population_cost') {
+            // Население без модификаций
+            finalValue = baseValue;
+            showCalculation = false;
+        }
+        
+        // Форматируем значения
+        let displayValue = '';
+        if (typeof finalValue === 'number') {
+            if (finalValue % 1 !== 0) {
+                displayValue = finalValue.toFixed(1);
+            } else {
+                displayValue = finalValue.toLocaleString('ru-RU');
+            }
+        } else {
+            displayValue = finalValue;
+        }
+        
+        // Добавляем строку в таблицу
+        content += `<tr>`;
+        content += `<th>${translatedKey}</th>`;
+        content += `<td class="${showCalculation ? 'highlight' : ''}">${displayValue}`;
+        if (showCalculation && baseValue !== finalValue) {
+            content += `<br><span class="base-value">(${calculationText})</span>`;
+        }
+        content += `</td>`;
+        content += `</tr>`;
+    }
+    
+    content += `</table>`;
+    
+    // Добавляем информацию о глобальных бонусах
+    content += `<div style="margin-top:15px; padding-top:10px; border-top:1px solid #ccc;">`;
+    content += `<strong>Глобальные бонусы:</strong><br>`;
+    content += `Коэффициент счастья: ${globalStats.happinessCoef.toFixed(2)} (${Math.round(globalStats.happinessPercent)}%)<br>`;
+    content += `Суммарное ускорение монет: +${globalStats.coin_acceleration}%<br>`;
+    content += `Суммарное ускорение молотков: +${globalStats.hammer_acceleration}%`;
+    content += `</div>`;
+    
+    document.getElementById('buildingInfoContent').innerHTML = content;
+    
+    // Позиционируем модальное окно в центре экрана
+    const modal = document.getElementById('buildingInfoModal');
+    modal.style.display = 'block';
+    modal.style.left = `${(window.innerWidth - modal.offsetWidth) / 2}px`;
+    modal.style.top = `${(window.innerHeight - modal.offsetHeight) / 2}px`;
+    makeDraggable(modal);
+}
+
+// НОВАЯ ФУНКЦИЯ: закрыть модальное окно данных здания
+function closeBuildingInfoModal() {
+    document.getElementById('buildingInfoModal').style.display = 'none';
+}
+
+// НОВАЯ ФУНКЦИЯ: рассчитать глобальные бонусы для модификаторов
+function calculateGlobalStats() {
+    let housingPopulation = 0;
+    let totalHappiness = 0;
+    let coinAcceleration = Number(townHallBonuses.coin_acceleration) || 0;
+    let hammerAcceleration = Number(townHallBonuses.hammer_acceleration) || 0;
+    
+    document.querySelectorAll('.figure').forEach(figure => {
+        const building = buildingData.find(b => b.name === figure.dataset.name);
+        if (building && building.name !== 'Ратуша') {
+            const left = parseInt(figure.style.left);
+            const top = parseInt(figure.style.top);
+            const width = parseInt(figure.style.width) / 30;
+            const height = parseInt(figure.style.height) / 30;
+            if (!isInGrayArea(left, top, width, height)) {
+                if (building.category === "Жилые") {
+                    housingPopulation += Number(building.bonuses.population) || 0;
+                }
+                totalHappiness += (Number(building.bonuses.happiness_production) || 0) - (Number(building.bonuses.happiness_cost) || 0);
+                coinAcceleration += Number(building.bonuses.coin_acceleration) || 0;
+                hammerAcceleration += Number(building.bonuses.hammer_acceleration) || 0;
+            }
+        }
+    });
+    
+    // Рассчитываем коэффициент счастья
+    let happinessPercent = 0;
+    if (housingPopulation > 0) {
+        happinessPercent = (totalHappiness / housingPopulation) * 100;
+    }
+    let happinessCoef;
+    if (happinessPercent < 21) {
+        happinessCoef = 0.2;
+    } else if (happinessPercent < 61) {
+        happinessCoef = 0.6;
+    } else if (happinessPercent < 81) {
+        happinessCoef = 0.8;
+    } else if (happinessPercent < 121) {
+        happinessCoef = 1;
+    } else if (happinessPercent < 141) {
+        happinessCoef = 1.1;
+    } else if (happinessPercent < 200) {
+        happinessCoef = 1.2;
+    } else {
+        happinessCoef = 1.5;
+    }
+    
+    return {
+        housingPopulation,
+        totalHappiness,
+        happinessPercent,
+        happinessCoef,
+        coin_acceleration: coinAcceleration,
+        hammer_acceleration: hammerAcceleration
+    };
+}
+
+
+
+
+
+
+function toggleHideMode() {
+const button = document.getElementById('hideRowButton');
+hideModeActive = !hideModeActive;
+if (hideModeActive) {
+button.style.backgroundColor = 'red';
+button.style.color = 'white';
+} else {
+button.style.backgroundColor = '';
+button.style.color = '';
+}
+}
+function showAllRows() {
+const rows = document.querySelectorAll('#statistics-table tbody tr');
+rows.forEach(row => {
+row.style.display = '';
+});
+hideModeActive = false;
+const button = document.getElementById('hideRowButton');
+button.style.backgroundColor = '';
+button.style.color = '';
+}
+document.getElementById('statistics-table').addEventListener('click', (e) => {
+if (!hideModeActive) return;
+const row = e.target.closest('tr');
+if (row) {
+row.style.display = 'none';
+}
+});
+
+
+function calculateBonuses() {
+    // Инициализируем статистику
+    const stats = {
+        population: 0,
+        housingPopulation: 0,
+        coins: 0,
+        hammers: 0,
+        chrono: 0,
+        happiness: 0,
+        od: 0,
+        blue: 0,
+        red: 0,
+        coin_acceleration: Number(townHallBonuses.coin_acceleration) || 0,
+        hammer_acceleration: Number(townHallBonuses.hammer_acceleration) || 0,
+        coin_cost: 0,
+        hammer_cost: 0,
+        chrono_cost: 0,
+        kd_capacity: Number(townHallBonuses.kd_capacity) || 200000
+    };
+
+    // Добавляем стартовые ресурсы из модального окна
+    stats.coin_cost += Number(townHallBonuses.coin_initial) || 0;
+    stats.hammer_cost += Number(townHallBonuses.hammer_initial) || 0;
+    stats.od += Number(townHallBonuses.od) || 0;
+
+    // ПЕРВЫЙ ПРОХОД: собираем ВСЁ (население, счастье, ускорения)
+    document.querySelectorAll('.figure').forEach(figure => {
+        const left = parseInt(figure.style.left);
+        const top = parseInt(figure.style.top);
+        const width = parseInt(figure.style.width) / 30;
+        const height = parseInt(figure.style.height) / 30;
+
+        if (isInGrayArea(left, top, width, height)) return;
+        
+        const building = buildingData.find(b => b.name === figure.dataset.name);
+        if (!building) return;
+        if (building.name === 'Ратуша') return;
+        
+        // === НАСЕЛЕНИЕ ===
+        // Жилые здания - добавляем в housingPopulation для расчёта счастья
+        if (building.category === "Жилые") {
+            const pop = Number(building.bonuses.population) || 0;
+            stats.housingPopulation += pop;
+            stats.population += pop;
+        }
+        
+        // Затраты населения (от военных и т.д.)
+        if (building.bonuses.population_cost) {
+            stats.population -= Number(building.bonuses.population_cost);
+        }
+        
+        // === СЧАСТЬЕ ===
+        stats.happiness += (Number(building.bonuses.happiness_production) || 0);
+        stats.happiness -= (Number(building.bonuses.happiness_cost) || 0);
+        
+        // === УСКОРЕНИЯ ===
+        stats.coin_acceleration += Number(building.bonuses.coin_acceleration) || 0;
+        stats.hammer_acceleration += Number(building.bonuses.hammer_acceleration) || 0;
+        
+        // === ЁМКОСТЬ КД / ОД ===
+        stats.kd_capacity += Number(building.bonuses.od_production) || 0;
+        stats.od += Number(building.bonuses.od_chas) || 0;
+        
+        // === СТАТЫ ===
+        stats.blue += Number(building.bonuses.blue_stats) || 0;
+        stats.red += Number(building.bonuses.red_stats) || 0;
+        
+        // === ЗАТРАТЫ ===
+        stats.coin_cost -= Number(building.bonuses.coin_cost) || 0;
+        stats.hammer_cost -= Number(building.bonuses.hammer_cost) || 0;
+        stats.chrono_cost -= Number(building.bonuses.chrono_cost) || 0;
+    });
+
+    // Выводим отладочную информацию
+    console.log("=== Сбор статистики ===");
+    console.log("Жилое население:", stats.housingPopulation);
+    console.log("Общее население:", stats.population);
+    console.log("Счастье:", stats.happiness);
+    console.log("Ускорение монет:", stats.coin_acceleration + "%");
+    console.log("Ускорение молотков:", stats.hammer_acceleration + "%");
+
+    // ТЕПЕРЬ рассчитываем глобальные коэффициенты с учётом СОБРАННОГО счастья И НАСЕЛЕНИЯ
+    const globalStats = calculateGlobalStatsWithValues(
+        stats.housingPopulation,
+        stats.happiness,
+        stats.coin_acceleration,
+        stats.hammer_acceleration
+    );
+
+    console.log("Процент счастья:", globalStats.happinessPercent.toFixed(1) + "%");
+    console.log("Коэффициент счастья:", globalStats.happinessCoef);
+
+    // ВТОРОЙ ПРОХОД: рассчитываем производство с правильными коэффициентами
+    document.querySelectorAll('.figure').forEach(figure => {
+        const left = parseInt(figure.style.left);
+        const top = parseInt(figure.style.top);
+        const width = parseInt(figure.style.width) / 30;
+        const height = parseInt(figure.style.height) / 30;
+
+        if (isInGrayArea(left, top, width, height)) return;
+        
+        const building = buildingData.find(b => b.name === figure.dataset.name);
+        if (!building) return;
+        if (building.name === 'Ратуша') return;
+
+        // Производство с учётом коэффициента счастья и ускорений
+        for (let key in building.bonuses) {
+            const baseValue = building.bonuses[key];
+            
+            if (key === 'coin_production') {
+                const value = baseValue * (globalStats.happinessCoef + globalStats.coin_acceleration / 100);
+                stats.coins += value;
+                console.log(`${building.name}: монеты = ${baseValue} × (${globalStats.happinessCoef.toFixed(2)} + ${globalStats.coin_acceleration}%) = ${Math.round(value)}`);
+            }
+            else if (key === 'hammer_production') {
+                const value = baseValue * (globalStats.happinessCoef + globalStats.hammer_acceleration / 100);
+                stats.hammers += value;
+                console.log(`${building.name}: молотки = ${baseValue} × (${globalStats.happinessCoef.toFixed(2)} + ${globalStats.hammer_acceleration}%) = ${Math.round(value)}`);
+            }
+            else if (key === 'chrono_production') {
+                const value = baseValue * globalStats.happinessCoef;
+                stats.chrono += value;
+            }
+        }
+    });
+
+    // Добавляем Ратушу
+    const townHallFigure = document.querySelector('.figure[data-name="Ратуша"]');
+    if (townHallFigure) {
+        const thLeft = parseInt(townHallFigure.style.left);
+        const thTop = parseInt(townHallFigure.style.top);
+        const thWidth = parseInt(townHallFigure.style.width) / 30;
+        const thHeight = parseInt(townHallFigure.style.height) / 30;
+        
+        if (!isInGrayArea(thLeft, thTop, thWidth, thHeight)) {
+            const townhallData = buildingData.find(b => b.name === 'Ратуша');
+            if (townhallData) {
+                stats.coins += Number(townhallData.bonuses.coin_production) || 0;
+                stats.hammers += Number(townhallData.bonuses.hammer_production) || 0;
+                stats.chrono += Number(townhallData.bonuses.chrono_production) || 0;
+                console.log("Ратуша: +50000 монет, +50000 молотков, +15 хроно");
+            }
+        }
+    }
+
+    console.log("=== ИТОГО ===");
+    console.log("Всего монет:", Math.round(stats.coins));
+    console.log("Всего молотков:", Math.round(stats.hammers));
+    console.log("Всего хроно:", Math.round(stats.chrono));
+
+    // ОТОБРАЖАЕМ РЕЗУЛЬТАТЫ
+    displayStats(stats, globalStats);
+}
+
+// Вспомогательная функция для расчёта глобальных коэффициентов
+function calculateGlobalStatsWithValues(housingPopulation, totalHappiness, coinAcceleration, hammerAcceleration) {
+    let happinessPercent = 0;
+    let happinessCoef;
+    
+    if (housingPopulation > 0) {
+        happinessPercent = (totalHappiness / housingPopulation) * 100;
+        
+        if (happinessPercent < 21) {
+            happinessCoef = 0.2;
+        } else if (happinessPercent < 61) {
+            happinessCoef = 0.6;
+        } else if (happinessPercent < 81) {
+            happinessCoef = 0.8;
+        } else if (happinessPercent < 121) {
+            happinessCoef = 1.0;
+        } else if (happinessPercent < 141) {
+            happinessCoef = 1.1;
+        } else if (happinessPercent < 200) {
+            happinessCoef = 1.2;
+        } else {
+            happinessCoef = 1.5;
+        }
+    } else {
+        // Если нет жилых зданий, коэффициент счастья = 1.0 (100%)
+        happinessPercent = 100;
+        happinessCoef = 1.0;
+    }
+    
+    return {
+        housingPopulation,
+        totalHappiness,
+        happinessPercent,
+        happinessCoef,
+        coin_acceleration: coinAcceleration,
+        hammer_acceleration: hammerAcceleration
+    };
+}
+
+// Функция отображения статистики
+function displayStats(stats, globalStats) {
+    const statElements = {
+        population: document.getElementById('stat-population'),
+        coins: document.getElementById('stat-coins'),
+        hammers: document.getElementById('stat-hammers'),
+        chrono: document.getElementById('stat-chrono'),
+        happiness: document.getElementById('stat-happiness'),
+        od: document.getElementById('stat-od'),
+        blue: document.getElementById('stat-blue'),
+        red: document.getElementById('stat-red'),
+        coin_acceleration: document.getElementById('stat-coin-acceleration'),
+        hammer_acceleration: document.getElementById('stat-hammer-acceleration'),
+        happiness_coef: document.getElementById('stat-happiness-coef'),
+        coin_cost: document.getElementById('stat-coin-cost'),
+        hammer_cost: document.getElementById('stat-hammer-cost'),
+        chrono_cost: document.getElementById('stat-chrono-cost'),
+        kd_capacity: document.getElementById('stat-kd-capacity')
+    };
+
+    for (let [key, element] of Object.entries(statElements)) {
+        if (!element) continue;
+        
+        if (key === 'population') {
+            const total = Math.round(stats.population).toLocaleString('ru-RU');
+            const housing = Math.round(stats.housingPopulation).toLocaleString('ru-RU');
+            element.textContent = `${housing}/${total}`;
+            element.classList.toggle('negative', stats.population < 0 || stats.housingPopulation < 0);
+        }
+        else if (key === 'happiness') {
+            const happinessValue = Math.round(stats.happiness).toLocaleString('ru-RU');
+            element.textContent = `${happinessValue} (${Math.round(globalStats.happinessPercent)}%)`;
+            element.classList.toggle('negative', stats.happiness < 0);
+        }
+        else if (key === 'happiness_coef') {
+            element.textContent = Math.round(globalStats.happinessCoef * 100).toLocaleString('ru-RU');
+            element.classList.toggle('negative', globalStats.happinessCoef < 0);
+        }
+        else {
+            const value = Math.round(stats[key]).toLocaleString('ru-RU');
+            element.textContent = value;
+            element.classList.toggle('negative', stats[key] < 0);
+        }
+    }
+}
+
+
+
+
+function clearAllXCells() {
+for (let i = 0; i < totalCells; i++) {
+const cell = grid.children[i];
+const row = Math.floor(i / 28) + 1;
+const col = (i % 28) + 1;
+let isGray = false;
+areas.forEach(area => {
+if (col >= area.colStart && col <= area.colEnd && row >= area.rowStart && row <= area.rowEnd) {
+isGray = true;
+}
+});
+if (!isGray && !cell.classList.contains('road') && !cell.classList.contains('boundary')) {
+cell.textContent = '';
+initialCellStates[i] = '';
+}
+}
+whiteCellsCount = countWhiteCells();
+calculateBonuses();
+}
+// Изменённая функция создания меню с новой системой выбора
+function createMenu() {
+const categories = [...new Set(buildingData.map(b => b.category))];
+categories.forEach((category, index) => {
+const tabContent = document.createElement('div');
+tabContent.id = `tab${index + 1}`;
+tabContent.classList.add('tab-content');
+if (index === 0) tabContent.classList.add('active');
+const ul = document.createElement('ul');
+ul.classList.add('building-list');
+buildingData.filter(b => b.category === category).forEach(building => {
+const li = document.createElement('li');
+const symbol = building.symbol || '';
+const symbol_color = building.symbol_color || '';
+// Используем только 'name' без 'size'
+li.innerHTML = `<span class="symbol ${symbol_color}">${symbol}</span><span class="name-size">${building.name}</span>`;
+// ИЗМЕНЕНО: обработчик клика на кнопку - выбор/отмена фигуры
+li.onclick = (e) => {
+e.stopPropagation();
+// Если уже выбрана эта же фигура - отменяем выбор
+if (selectedBuilding === building) {
+selectedBuilding = null;
+if (selectedLiElement) {
+selectedLiElement.classList.remove('active');
+selectedLiElement = null;
+}
+// Удаляем призрак
+if (ghostFigure) {
+ghostFigure.remove();
+ghostFigure = null;
+}
+grid.removeEventListener('mousemove', handleGhostMove);
+} else {
+// Отменяем предыдущий выбор (если есть)
+if (selectedLiElement) {
+selectedLiElement.classList.remove('active');
+}
+if (ghostFigure) {
+ghostFigure.remove();
+ghostFigure = null;
+}
+grid.removeEventListener('mousemove', handleGhostMove);
+// Выбираем новую фигуру
+selectedBuilding = building;
+selectedLiElement = li;
+li.classList.add('active');
+// Создаём призрак
+createGhostFigure();
+// Добавляем обработчик движения мыши для призрака
+grid.addEventListener('mousemove', handleGhostMove);
+}
+};
+if (building.name !== 'Расш') {
+const submenu = document.createElement('div');
+submenu.classList.add('submenu');
+let bonusesHtml = '';
+for (let key in building.bonuses) {
+const translatedKey = bonusTranslations[key] || key;
+bonusesHtml += `<div>${translatedKey}: ${building.bonuses[key]}</div>`;
+}
+submenu.innerHTML = bonusesHtml;
+li.appendChild(submenu);
+}
+ul.appendChild(li);
+});
+if (category === "Расширения") {
+const li = document.createElement('li');
+li.innerHTML = `<span class="symbol"></span><span class="name-size">Все расш.</span>`;
+li.onclick = clearAllXCells;
+ul.appendChild(li);
+}
+tabContent.appendChild(ul);
+tabContentContainer.appendChild(tabContent);
+});
+}
+// Функция создания призрачной фигуры
+function createGhostFigure() {
+if (!selectedBuilding || ghostFigure) return;
+const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+ghostFigure = document.createElement('div');
+ghostFigure.classList.add('ghost-figure');
+// Определяем базовый цвет категории для призрака
+let baseColor = '';
+switch(selectedBuilding.category) {
+case "Жилые": baseColor = 'yellow'; break;
+case "Молотки": baseColor = 'brown'; break;
+case "Товар": baseColor = 'plum'; break;
+case "Общест.": baseColor = 'pink'; break;
+case "Декор": baseColor = 'lightblue'; break;
+case "Воен.": baseColor = 'blue'; break;
+case "Расширения": baseColor = 'white'; break;
+default: baseColor = 'yellow';
+}
+// Определяем градацию цвета
+const symbolColor = selectedBuilding.symbol_color || 'yellow';
+let ghostColor = '';
+if (symbolColor === 'yellow') {
+ghostColor = baseColor + '-light';
+} else if (symbolColor === 'green') {
+ghostColor = baseColor + '-medium';
+} else if (symbolColor === 'red') {
+ghostColor = baseColor + '-dark';
+} else {
+ghostColor = baseColor + '-light';
+}
+ghostFigure.classList.add(ghostColor);
+ghostFigure.style.width = `${widthCells * 30}px`;
+ghostFigure.style.height = `${heightCells * 30}px`;
+ghostFigure.style.opacity = '0.5';
+// Текст призрака
+const text = document.createElement('div');
+const maxChars = Math.floor((widthCells * 30) / 8);
+const displayName = selectedBuilding.display_name || selectedBuilding.name;
+text.textContent = displayName.substring(0, maxChars);
+ghostFigure.appendChild(text);
+grid.appendChild(ghostFigure);
+}
+// Обработчик движения мыши для призрака - без проверки зон
+function handleGhostMove(e) {
+if (!ghostFigure || !selectedBuilding) return;
+const rect = grid.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
+// Вычисляем позицию в клетках и привязываем к сетке
+const col = Math.floor(x / 30);
+const row = Math.floor(y / 30);
+// Проверяем границы
+if (col < 0 || col >= 28 || row < 0 || row >= 28) {
+ghostFigure.style.display = 'none';
+return;
+}
+ghostFigure.style.display = 'flex';
+// Проверяем, что фигура поместится
+const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+if (col + widthCells > 28 || row + heightCells > 28) {
+ghostFigure.style.opacity = '0.2';
+return;
+} else {
+ghostFigure.style.opacity = '0.5';
+}
+// Позиционируем призрак (без проверки наложения и зон)
+ghostFigure.style.left = `${col * 30}px`;
+ghostFigure.style.top = `${row * 30}px`;
+}
+for (let i = 0; i < totalCells; i++) {
+const cell = document.createElement('div');
+cell.classList.add('cell');
+const row = Math.floor(i / 28) + 1;
+const col = (i % 28) + 1;
+cell.style.backgroundColor = '#fff';
+let isGray = false;
+areas.forEach(area => {
+if (col >= area.colStart && col <= area.colEnd && row >= area.rowStart && row <= area.rowEnd) {
+cell.style.backgroundColor = area.color;
+isGray = true;
+}
+});
+if (!isGray && !(
+(row >= 9 && row <= 20 && col >= 9 && col <= 20) ||
+(row >= 21 && row <= 24 && col >= 9 && col <= 20) ||
+(row >= 5 && row <= 8 && col >= 9 && col <= 24) ||
+(row >= 9 && row <= 16 && col >= 21 && col <= 24)
+) || (row >= 17 && row <= 24 && col >= 9 && col <= 20)) {
+cell.textContent = 'X';
+initialCellStates[i] = 'X';
+}
+if (row >= 21 && row <= 28 && col >= 1 && col <= 8 && !isGray) {
+cell.textContent = 'X';
+initialCellStates[i] = 'X';
+}
+grid.appendChild(cell);
+}
+// Обработчик клика на сетку для расстановки фигур - без проверки зон
+grid.addEventListener('click', (e) => {
+if (!selectedBuilding || deleteMode) return;
+// Проверяем, что кликнули именно на ячейку сетки, а не на фигуру
+const cell = e.target.closest('.cell');
+if (!cell) return;
+// Получаем координаты ячейки
+const rect = grid.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
+// Вычисляем позицию в клетках
+const col = Math.floor(x / 30);
+const row = Math.floor(y / 30);
+// Проверяем, что позиция в пределах сетки
+if (col < 0 || col >= 28 || row < 0 || row >= 28) return;
+// Проверяем, что фигура поместится на поле
+const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+if (col + widthCells > 28 || row + heightCells > 28) {
+alert(`Фигура не помещается на поле!`);
+return;
+}
+// Создаём фигуру на выбранной позиции (без проверки наложения и зон)
+createFigure(
+selectedBuilding.name,
+widthCells * 30,
+heightCells * 30,
+col * 30,
+row * 30
+);
+// Призрак остаётся активным для следующего размещения!
+});
+function createTownHall() {
+const townHall = document.createElement('div');
+townHall.classList.add('figure', 'townhall');
+townHall.style.width = `${7 * 30}px`;
+townHall.style.height = `${6 * 30}px`;
+townHall.style.left = `${(18 - 1) * 30}px`;
+townHall.style.top = `${(5 - 1) * 30}px`;
+townHall.dataset.name = 'Ратуша';
+townHall.style.color = 'black';
+const text = document.createElement('div');
+const maxChars = Math.floor((6 * 30) / 8);
+text.textContent = 'Ратуша'.substring(0, maxChars);
+townHall.appendChild(text);
+townHall.addEventListener('click', (e) => {
+tooltip.textContent = 'Ратуша';
+tooltip.style.display = 'block';
+tooltip.style.left = `${e.clientX + 15}px`;
+tooltip.style.top = `${e.clientY + 15}px`;
+});
+townHall.addEventListener('mouseleave', () => {
+tooltip.style.display = 'none';
+});
+grid.appendChild(townHall);
+addDragHandlers(townHall);
+return townHall;
+}
+const townHall = createTownHall();
+calculateBonuses();
+createMenu();
+function openQuantumGuide() {
+const imageUrl = "https://www.paypal.com/donate/?hosted_button_id=***";
+window.open(imageUrl, '_blank');
+}
+function saveTownHallBonuses() {
+townHallBonuses.od = Number(document.getElementById('townHall-od').value) || 0;
+townHallBonuses.coin_acceleration = Number(document.getElementById('townHall-coin-acceleration').value) || 0;
+townHallBonuses.hammer_acceleration = Number(document.getElementById('townHall-hammer-acceleration').value) || 0;
+townHallBonuses.coin_initial = Number(document.getElementById('townHall-coin-initial').value) || 0;
+townHallBonuses.hammer_initial = Number(document.getElementById('townHall-hammer-initial').value) || 0;
+townHallBonuses.kd_capacity = Number(document.getElementById('townHall-kd-capacity').value) || 200000;
+document.getElementById('townHallModal').style.display = 'none';
+calculateBonuses();
+}
+function closeTownHallModal() {
+document.getElementById('townHallModal').style.display = 'none';
+}
+function openTownHallModal() {
+const modal = document.getElementById('townHallModal');
+const bonusesButton = document.querySelector('.tab[onclick="openTownHallModal()"]');
+modal.style.display = 'block';
+const rect = bonusesButton.getBoundingClientRect();
+const offsetX = 15;
+const offsetY = 0;
+let modalLeft = rect.right + offsetX;
+let modalTop = rect.top + offsetY;
+const modalWidth = 300;
+const modalHeight = modal.offsetHeight || 200;
+if (modalLeft + modalWidth > window.innerWidth) {
+modalLeft = window.innerWidth - modalWidth - 10;
+}
+if (modalTop + modalHeight > window.innerHeight) {
+modalTop = window.innerHeight - modalHeight - 10;
+}
+if (modalLeft < 0) modalLeft = 10;
+if (modalTop < 0) modalTop = 10;
+modal.style.left = `${modalLeft}px`;
+modal.style.top = `${modalTop}px`;
+document.getElementById('townHall-od').value = townHallBonuses.od;
+document.getElementById('townHall-coin-acceleration').value = townHallBonuses.coin_acceleration;
+document.getElementById('townHall-hammer-acceleration').value = townHallBonuses.hammer_acceleration;
+document.getElementById('townHall-coin-initial').value = townHallBonuses.coin_initial;
+document.getElementById('townHall-hammer-initial').value = townHallBonuses.hammer_initial;
+document.getElementById('townHall-kd-capacity').value = townHallBonuses.kd_capacity;
+}
+document.addEventListener('click', (e) => {
+const modal = document.getElementById('townHallModal');
+const bonusesButton = document.querySelector('.tab[onclick="openTownHallModal()"]');
+if (modal.style.display === 'block' && !modal.contains(e.target) && !bonusesButton.contains(e.target)) {
+closeTownHallModal();
+}
+});
+
+
+function openStatisticsModal() {
+    const modal = document.getElementById('statisticsModal');
+    modal.style.display = 'block';
+
+    // Размеры окна (на случай, если offset ещё не посчитался)
+    const modalWidth = modal.offsetWidth || 400;   // примерная ширина
+    const modalHeight = modal.offsetHeight || 500; // примерная высота
+
+    // Позиция: справа с отступом 20–30 px от правого края
+    // сверху — фиксированный отступ 40–60 px от верхней границы экрана
+    modal.style.left = `${window.innerWidth - modalWidth - 30}px`;
+    modal.style.top  = '50px';   // ← вот это основное изменение
+
+    // Дополнительная защита: если окно всё-таки слишком высоко — прижимаем к 20 px
+    if (parseInt(modal.style.top) < 20) {
+        modal.style.top = '20px';
+    }
+
+    makeDraggable(modal);
+    calculateBonuses();
+}
+
+
+
+function closeStatisticsModal() {
+document.getElementById('statisticsModal').style.display = 'none';
+}
+function makeDraggable(element) {
+let isDragging = false;
+let offsetX, offsetY;
+const header = element.querySelector('.modal-header');
+if (!header) return;
+header.addEventListener('mousedown', (e) => {
+isDragging = true;
+offsetX = e.clientX - element.offsetLeft;
+offsetY = e.clientY - element.offsetTop;
+});
+document.addEventListener('mousemove', (e) => {
+if (isDragging) {
+element.style.left = `${e.clientX - offsetX}px`;
+element.style.top = `${e.clientY - offsetY}px`;
+}
+});
+document.addEventListener('mouseup', () => {
+isDragging = false;
+});
+}
+function toggleDeleteMode() {
+const deleteButton = document.getElementById('deleteButton');
+deleteMode = !deleteMode;
+if (deleteMode) {
+deleteButton.textContent = 'Отмена удаления';
+deleteButton.style.color = 'red';
+grid.classList.add('delete-mode');
+grid.addEventListener('click', handleDeleteClick);
+} else {
+deleteButton.textContent = 'Удалить здание';
+deleteButton.style.color = 'black';
+grid.classList.remove('delete-mode');
+grid.removeEventListener('click', handleDeleteClick);
+}
+}
+function handleDeleteClick(event) {
+const figure = event.target.closest('.figure');
+if (figure && figure.dataset.name !== 'Ратуша') {
+clearInterval(figure.dataset.blinkInterval);
+figure.remove();
+calculateBonuses();
+}
+}
+function isInGrayArea(x, y, width, height) {
+const colStart = Math.max(1, Math.floor(x / 30) + 1);
+const rowStart = Math.max(1, Math.floor(y / 30) + 1);
+const colEnd = Math.min(28, colStart + width - 1);
+const rowEnd = Math.min(28, rowStart + height - 1);
+for (let area of areas) {
+if (colEnd >= area.colStart && colStart <= area.colEnd && rowEnd >= area.rowStart && rowStart <= area.rowEnd) {
+return true;
+}
+}
+return false;
+}
+// Изменённая функция создания фигуры - добавляем перетаскивание для всех фигур
+function createFigure(name, widthPx, heightPx, left, top, isLoad = false) {
+console.log("createFigure called with:", {name, widthPx, heightPx, left, top, isLoad});
+// Для расширений используем специальную обработку
+if (name === 'Расш') {
+const figure = document.createElement('div');
+figure.classList.add('figure', 'white-light');
+figure.style.width = `${widthPx}px`;
+figure.style.height = `${heightPx}px`;
+figure.style.left = `${left}px`;
+figure.style.top = `${top}px`;
+figure.dataset.name = 'Расш';
+figure.style.color = 'black';
+const text = document.createElement('div');
+const maxChars = Math.floor((widthPx / 30) * 30 / 8);
+text.textContent = 'Расш'.substring(0, maxChars);
+figure.appendChild(text);
+
+
+
+figure.addEventListener('click', (e) => {
+tooltip.textContent = 'Расш';
+tooltip.style.display = 'block';
+tooltip.style.left = `${e.clientX + 15}px`;
+tooltip.style.top = `${e.clientY + 15}px`;
+});
+figure.addEventListener('mouseleave', () => {
+tooltip.style.display = 'none';
+});
+grid.appendChild(figure);
+addDragHandlers(figure);
+if (isLoad) {
+console.log("Расш загружено");
+}
+calculateBonuses();
+return figure;
+}
+// Для обычных зданий ищем в buildingData
+const selectedBuilding = buildingData.find(building => building.name === name);
+if (!selectedBuilding) {
+console.error(`Здание с именем "${name}" не найдено в buildingData`);
+return;
+}
+const [heightCells, widthCells] = selectedBuilding.size.split('x').map(Number);
+const finalName = selectedBuilding.name;
+const finalWidthPx = widthPx || widthCells * 30;
+const finalHeightPx = heightPx || heightCells * 30;
+const finalLeft = left !== undefined ? left : 30;
+const finalTop = top !== undefined ? top : 30;
+// Определяем базовый цвет категории
+let baseColor = '';
+let categoryPrefix = '';
+switch(selectedBuilding.category) {
+case "Жилые":
+baseColor = 'yellow';
+categoryPrefix = 'yellow';
+break;
+case "Молотки":
+baseColor = 'brown';
+categoryPrefix = 'brown';
+break;
+case "Товар":
+baseColor = 'plum';
+categoryPrefix = 'plum';
+break;
+case "Общест.":
+baseColor = 'blue';
+categoryPrefix = 'pink';
+break;
+case "Декор":
+baseColor = 'lightblue';
+categoryPrefix = 'lightblue';
+break;
+case "Воен.":
+baseColor = 'red';
+categoryPrefix = 'blue';
+break;
+case "Расширения":
+baseColor = 'white';
+categoryPrefix = 'white';
+break;
+default:
+baseColor = selectedBuilding.color || 'yellow';
+categoryPrefix = 'yellow';
+}
+// Определяем градацию цвета в зависимости от symbol_color
+const symbolColor = selectedBuilding.symbol_color || 'yellow';
+let colorClass = '';
+if (symbolColor === 'yellow') {
+colorClass = categoryPrefix + '-light';
+} else if (symbolColor === 'green') {
+colorClass = categoryPrefix + '-medium';
+} else if (symbolColor === 'red') {
+colorClass = categoryPrefix + '-dark';
+} else {
+colorClass = categoryPrefix + '-light';
+}
+const figure = document.createElement('div');
+figure.classList.add('figure', colorClass);
+figure.style.width = `${finalWidthPx}px`;
+figure.style.height = `${finalHeightPx}px`;
+figure.style.left = `${finalLeft}px`;
+figure.style.top = `${finalTop}px`;
+figure.dataset.name = finalName;
+const text = document.createElement('div');
+const maxChars = Math.floor((finalWidthPx / 30) * 30 / 8);
+// Используем display_name если есть, иначе name
+const displayName = selectedBuilding.display_name || finalName;
+text.textContent = displayName.substring(0, maxChars);
+figure.appendChild(text);
+
+
+
+
+figure.addEventListener('click', (e) => {
+if (finalName !== 'Ратуша') {
+showBuildingInfo(figure);
+} else {
+tooltip.textContent = finalName;
+tooltip.style.display = 'block';
+tooltip.style.left = `${e.clientX + 15}px`;
+tooltip.style.top = `${e.clientY + 15}px`;
+}
+});
+figure.addEventListener('mouseleave', () => {
+tooltip.style.display = 'none';
+});
+if (['Ратуша', 'Многоэтажный дом', 'Каркасный дом', 'Дом с гонтовой кр.', 'Особняк', 'Дом из песчаника', 'Городской особняк', 'Усадьба', 'Многоквартирный дом', 'Манор'].includes(finalName)) {
+figure.style.color = 'black';
+}
+grid.appendChild(figure);
+// Добавляем перетаскивание для ВСЕХ фигур (убрано условие isLoad)
+addDragHandlers(figure);
+// Для расширений при создании (не загрузке) очищаем X под ними
+if (!isLoad && finalName === 'Расш') {
+const isOverGray = isInGrayArea(finalLeft, finalTop, widthCells, heightCells);
+if (!isOverGray) {
+clearXUnderFigure(figure);
+figure.remove();
+whiteCellsCount = countWhiteCells();
+for (let y = finalTop / 30; y < finalTop / 30 + heightCells; y++) {
+for (let x = finalLeft / 30; x < finalLeft / 30 + widthCells; x++) {
+const cellIndex = y * 28 + x;
+if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+initialCellStates[cellIndex] = '';
+}
+}
+}
+}
+}
+calculateBonuses();
+console.log("Здание создано:", finalName, "категория:", selectedBuilding.category,
+"цвет:", colorClass, "symbol_color:", symbolColor, "отображаемое имя:", displayName);
+}
+function clearXUnderFigure(figure) {
+if (figure.dataset.name !== 'Расш') return;
+const left = parseInt(figure.style.left) / 30;
+const top = parseInt(figure.style.top) / 30;
+const width = parseInt(figure.style.width) / 30;
+const height = parseInt(figure.style.height) / 30;
+for (let y = top; y < top + height; y++) {
+for (let x = left; x < left + width; x++) {
+const cellIndex = y * 28 + x;
+if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+grid.children[cellIndex].textContent = '';
+}
+}
+}
+calculateBonuses();
+}
+function addDragHandlers(figure) {
+let isDragging = false;
+let offsetX, offsetY;
+function handleStart(clientX, clientY) {
+isDragging = true;
+offsetX = clientX - figure.offsetLeft;
+offsetY = clientY - figure.offsetTop;
+figure.style.cursor = 'grabbing';
+figure.style.zIndex = '20';
+}
+function handleMove(clientX, clientY) {
+if (!isDragging) return;
+// УБРАНО ограничение на движение внутри сетки
+// Теперь фигура может свободно выходить за пределы
+const newX = clientX - offsetX;
+const newY = clientY - offsetY;
+figure.style.left = `${newX}px`;
+figure.style.top = `${newY}px`;
+checkOverlap();
+}
+function handleEnd() {
+if (!isDragging) return;
+// Проверяем, находится ли фигура за пределами сетки
+const gridRect = grid.getBoundingClientRect();
+const figureRect = figure.getBoundingClientRect();
+const isOutsideGrid = (
+figureRect.right < gridRect.left ||
+figureRect.left > gridRect.right ||
+figureRect.bottom < gridRect.top ||
+figureRect.top > gridRect.bottom
+);
+// Если фигура за пределами сетки и это не Ратуша - удаляем её
+if (isOutsideGrid && figure.dataset.name !== 'Ратуша') {
+console.log("Удаляем здание:", figure.dataset.name);
+if (figure.dataset.blinkInterval) {
+clearInterval(figure.dataset.blinkInterval);
+}
+figure.remove();
+calculateBonuses();
+isDragging = false;
+return;
+}
+// Если внутри сетки - привязываем к сетке
+const snappedX = Math.round(figure.offsetLeft / 30) * 30;
+const snappedY = Math.round(figure.offsetTop / 30) * 30;
+figure.style.left = `${snappedX}px`;
+figure.style.top = `${snappedY}px`;
+figure.style.zIndex = '10';
+checkOverlap();
+if (figure.dataset.name === 'Расш') {
+const left = parseInt(figure.style.left) / 30;
+const top = parseInt(figure.style.top) / 30;
+const width = parseInt(figure.style.width) / 30;
+const height = parseInt(figure.style.height) / 30;
+const isOverGray = isInGrayArea(left * 30, top * 30, width, height);
+if (!isOverGray) {
+clearXUnderFigure(figure);
+figure.remove();
+whiteCellsCount = countWhiteCells();
+for (let y = top; y < top + height; y++) {
+for (let x = left; x < left + width; x++) {
+const cellIndex = y * 28 + x;
+if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+initialCellStates[cellIndex] = '';
+}
+}
+}
+}
+}
+calculateBonuses();
+isDragging = false;
+figure.style.cursor = 'grab';
+}
+function checkOverlap() {
+const figures = document.querySelectorAll('.figure');
+figures.forEach(fig => {
+const rect1 = fig.getBoundingClientRect();
+const left = parseInt(fig.style.left);
+const top = parseInt(fig.style.top);
+const width = parseInt(fig.style.width) / 30;
+const height = parseInt(fig.style.height) / 30;
+let blinkInterval = fig.dataset.blinkInterval;
+let hasOverlap = false;
+let hasXOverlap = false;
+let isInGray = isInGrayArea(left, top, width, height);
+figures.forEach(otherFig => {
+if (otherFig !== fig) {
+const rect2 = otherFig.getBoundingClientRect();
+const innerRect1 = {
+left: rect1.left + 1,
+right: rect1.right - 1,
+top: rect1.top + 1,
+bottom: rect1.bottom - 1
+};
+const innerRect2 = {
+left: rect2.left + 1,
+right: rect2.right - 1,
+top: rect2.top + 1,
+bottom: rect2.bottom - 1
+};
+if (!(innerRect1.right <= innerRect2.left || innerRect1.left >= innerRect2.right ||
+innerRect1.bottom <= innerRect2.top || innerRect1.top >= innerRect2.bottom)) {
+const overlapX = Math.min(rect1.right, rect2.right) - Math.max(rect1.left, rect2.left);
+const overlapY = Math.min(rect1.bottom, rect2.bottom) - Math.max(rect1.top, rect2.top);
+const overlapCells = Math.ceil(overlapX / 30) * Math.ceil(overlapY / 30);
+if (overlapCells >= 1 && !isInGrayArea(left, top, width, height) &&
+!isInGrayArea(parseInt(otherFig.style.left), parseInt(otherFig.style.top),
+parseInt(otherFig.style.width) / 30, parseInt(otherFig.style.height) / 30)) {
+hasOverlap = true;
+}
+}
+}
+});
+for (let y = top / 30; y < top / 30 + height; y++) {
+for (let x = left / 30; x < left / 30 + width; x++) {
+const cellIndex = y * 28 + x;
+if (cellIndex >= 0 && cellIndex < totalCells) {
+const cell = grid.children[cellIndex];
+if (cell.textContent === 'X' && !isInGrayArea(left, top, width, height)) {
+hasXOverlap = true;
+break;
+}
+}
+}
+if (hasXOverlap) break;
+}
+if (hasOverlap || hasXOverlap || isInGray) {
+if (!blinkInterval) {
+let isVisible = true;
+blinkInterval = setInterval(() => {
+fig.style.opacity = isVisible ? '0.3' : '1';
+isVisible = !isVisible;
+}, 500);
+fig.dataset.blinkInterval = blinkInterval;
+}
+} else if (blinkInterval) {
+clearInterval(blinkInterval);
+fig.style.opacity = '1';
+delete fig.dataset.blinkInterval;
+}
+});
+}
+figure.addEventListener('mousedown', (e) => {
+handleStart(e.clientX, e.clientY);
+e.preventDefault();
+});
+document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+document.addEventListener('mouseup', handleEnd);
+figure.addEventListener('touchstart', (e) => {
+const touch = e.touches[0];
+handleStart(touch.clientX, touch.clientY);
+e.preventDefault();
+});
+document.addEventListener('touchmove', (e) => {
+if (e.touches.length > 0) {
+const touch = e.touches[0];
+handleMove(touch.clientX, touch.clientY);
+e.preventDefault();
+}
+});
+document.addEventListener('touchend', handleEnd);
+}
+// Изменённая функция сброса фигур - также сбрасываем выбор и призрак
+function resetFigures() {
+console.log("resetFigures called");
+document.querySelectorAll('.figure').forEach(figure => {
+if (figure.dataset.name !== 'Ратуша') {
+clearInterval(figure.dataset.blinkInterval);
+figure.remove();
+}
+});
+// Сбрасываем выбор фигуры и удаляем призрак
+if (selectedLiElement) {
+selectedLiElement.classList.remove('active');
+}
+selectedBuilding = null;
+selectedLiElement = null;
+if (ghostFigure) {
+ghostFigure.remove();
+ghostFigure = null;
+}
+grid.removeEventListener('mousemove', handleGhostMove);
+for (let i = 0; i < totalCells; i++) {
+const cell = grid.children[i];
+const row = Math.floor(i / 28) + 1;
+const col = (i % 28) + 1;
+let isGray = false;
+areas.forEach(area => {
+if (col >= area.colStart && col <= area.colEnd && row >= area.rowStart && row <= area.rowEnd) {
+isGray = true;
+}
+});
+if (!isGray && !(
+(row >= 9 && row <= 20 && col >= 9 && col <= 20) ||
+(row >= 21 && row <= 24 && col >= 9 && col <= 20) ||
+(row >= 5 && row <= 8 && col >= 9 && col <= 24) ||
+(row >= 9 && row <= 16 && col >= 21 && col <= 24)
+) || (row >= 17 && row <= 24 && col >= 9 && col <= 20)) {
+if (!cell.classList.contains('road') && !cell.classList.contains('boundary')) {
+cell.textContent = initialCellStates[i];
+}
+} else {
+cell.textContent = '';
+initialCellStates[i] = '';
+}
+if (row >= 21 && row <= 28 && col >= 1 && col <= 8 && !isGray) {
+cell.textContent = initialCellStates[i];
+}
+}
+townHallBonuses = {
+od: 0,
+coin_acceleration: 0,
+hammer_acceleration: 0,
+coin_initial: 0,
+hammer_initial: 0,
+kd_capacity: 200000
+};
+whiteCellsCount = countWhiteCells();
+calculateBonuses();
+}
+
+
+function saveToFile() {
+const saveData = getSaveData();
+saveData.source = "Локальное сохранение";
+const jsonString = JSON.stringify(saveData, null, 2);
+const blob = new Blob([jsonString], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'kvaplan-g.txt';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
+
+
+
+
+const saveButton = document.getElementById('saveButton');
+function triggerFileInput() {
+const input = document.createElement('input');
+input.type = 'file';
+input.accept = '.txt';
+input.onchange = loadFromFile;
+input.click();
+}
+
+
+
+
+function countWhiteCells() {
+    let count = 0;
+    for (let i = 0; i < totalCells; i++) {
+        const cell = grid.children[i];
+        const row = Math.floor(i / 28) + 1;
+        const col = (i % 28) + 1;
+        
+        let isGray = false;
+        areas.forEach(area => {
+            if (col >= area.colStart && col <= area.colEnd && 
+                row >= area.rowStart && row <= area.rowEnd) {
+                isGray = true;
+            }
+        });
+        
+        if (!isGray && cell.textContent !== 'X') {
+            count++;
+        }
+    }
+    return count;
+}
+
+
+function loadFromFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            // Удаляем все здания кроме ратуши
+            document.querySelectorAll('.figure:not([data-name="Ратуша"])').forEach(fig => {
+                if (fig.dataset.blinkInterval) clearInterval(fig.dataset.blinkInterval);
+                fig.remove();
+            });
+
+            // Восстанавливаем состояние клеток и дорог
+            initialCellStates = data.initialCellStates || new Array(totalCells).fill('');
+            for (let i = 0; i < totalCells; i++) {
+                const cell = grid.children[i];
+                cell.textContent = data.cells?.[i]?.textContent || '';
+                if (data.cells?.[i]?.isRoad) {
+                    cell.classList.add('road');
+                    cell.classList.remove('boundary');
+                } else {
+                    cell.classList.remove('road');
+                }
+            }
+
+            // Восстанавливаем бонусы ратуши
+            townHallBonuses = data.townHallBonuses || {
+                od: 0,
+                coin_acceleration: 0,
+                hammer_acceleration: 0,
+                coin_initial: 0,
+                hammer_initial: 0,
+                kd_capacity: 200000
+            };
+
+            document.getElementById('townHall-od').value = townHallBonuses.od;
+            document.getElementById('townHall-coin-acceleration').value = townHallBonuses.coin_acceleration;
+            document.getElementById('townHall-hammer-acceleration').value = townHallBonuses.hammer_acceleration;
+            document.getElementById('townHall-coin-initial').value = townHallBonuses.coin_initial;
+            document.getElementById('townHall-hammer-initial').value = townHallBonuses.hammer_initial;
+
+            // Восстанавливаем позицию ратуши
+            const savedTownHall = data.figures?.find(fig => fig.name === "Ратуша");
+            if (savedTownHall) {
+                const townHallFigure = document.querySelector('.figure[data-name="Ратуша"]');
+                if (townHallFigure) {
+                    let left = Number(savedTownHall.left);
+                    let top = Number(savedTownHall.top);
+                    
+                    if (!isNaN(left) && !isNaN(top)) {
+                        // Привязываем к сетке
+                        left = Math.round(left / 30) * 30;
+                        top = Math.round(top / 30) * 30;
+                        
+                        townHallFigure.style.left = left + 'px';
+                        townHallFigure.style.top = top + 'px';
+                    }
+                }
+            }
+
+            // Создаём остальные здания
+            if (Array.isArray(data.figures)) {
+                data.figures.forEach(fig => {
+                    if (fig.name !== 'Ратуша') {
+                        createFigure(fig.name, fig.width, fig.height, fig.left, fig.top, true);
+                    }
+                });
+            }
+
+            // Финальные действия
+            whiteCellsCount = countWhiteCells();
+            document.querySelectorAll('.figure').forEach(figure => {
+                addDragHandlers(figure);
+            });
+            calculateBonuses();
+
+            // Для совместимости с твоей новой системой расширений
+            clearedCellsHistory = [];
+            if (document.getElementById('bldCountModal').style.display !== 'none') {
+                updateBldCount();
+            }
+
+        } catch (err) {
+            console.error("Ошибка при загрузке из файла:", err);
+          // alert  alert("Не удалось загрузить файл.\n\nВозможные причины:\n• Файл повреждён\n• Это не сохранение из редактора\n• Старый формат\n\nОшибка: " + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+
+
+
+function openFeedbackLink() {
+const url = "https://t.me/foehelp";
+window.open(url, '_blank');
+}
+function openBldCountModal() {
+updateBldCount();
+const modal = document.getElementById('bldCountModal');
+modal.style.display = 'block';
+modal.style.left = `${window.innerWidth - modal.offsetWidth - 330}px`;
+modal.style.top = `${(window.innerHeight - modal.offsetHeight) / 2}px`;
+}
+const bldCountModal = document.getElementById('bldCountModal');
+makeDraggable(bldCountModal);
+
+
+
+function updateBldCount() {
+    const map = {};
+    let currentExpansions = 0;
+    
+    document.querySelectorAll('.figure').forEach(fig => {
+        const name = fig.dataset.name;
+        if (name === 'Расш') {
+            currentExpansions++;
+        } else if (name !== 'Ратуша') {
+            map[name] = (map[name] || 0) + 1;
+        }
+    });
+    
+    const content = document.getElementById('bldCountContent');
+    let html = '';
+    
+    // Расширения: показываем общее количество поставленных + базовые 12
+    const totalWithBase = totalExpansionsPlaced + 12;
+    html += `<div style="background-color:#e3f4fd; padding:8px; margin-bottom:10px; border-radius:4px; border-left:3px solid #2196F3;">
+        <strong>Расширения:</strong><br>
+        Поставлено: <b>${totalExpansionsPlaced}</b><br>
+        Базовых: <b>12</b><br>
+        Всего открыто: <b>${totalWithBase}</b>
+    </div>`;
+    
+    // Остальные здания
+    html += Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .map(([n, c]) => `<div>${n}: <b>${c}</b></div>`)
+        .join('');
+    
+    content.innerHTML = html || '<div>Нет зданий</div>';
+}
+
+
+
+
+
+const originalCalc = calculateBonuses;
+calculateBonuses = function () {
+originalCalc();
+if (bldCountModal.style.display !== 'none') updateBldCount();
+};
+console.log("Скрипт загружен, пытаюсь привязать кнопку сохранения...");
+const saveBtn = document.getElementById('saveCloudBtn');
+if (saveBtn) {
+console.log("Кнопка найдена, привязываю событие");
+saveBtn.addEventListener('click', () => console.log("КНОПКА НАЖАТА!"));
+} else {
+console.error("Кнопка #saveCloudBtn НЕ НАЙДЕНА!");
+}
+function resetToInitialState() {
+if (confirm("Вернуть редактор в исходное состояние? Страница будет перезагружена.")) {
+location.reload();
+}
+}
+
+
+// === СИСТЕМА ВОЗВРАТА РАСШИРЕНИЙ ===
+
+// === ПОДСЧЁТ РАСШИРЕНИЙ + ВОЗВРАТ ТОЛЬКО ОТКРЫТЫХ ЗОН ===
+
+// История очищенных клеток расширениями
+let clearedCellsHistory = [];
+
+// Модифицируем очистку X под расширением — сохраняем историю
+const originalClearXUnderFigure = clearXUnderFigure;
+clearXUnderFigure = function(figure) {
+    if (figure.dataset.name !== 'Расш') return originalClearXUnderFigure(figure);
+    
+    const left = parseInt(figure.style.left) / 30;
+    const top = parseInt(figure.style.top) / 30;
+    const width = parseInt(figure.style.width) / 30;
+    const height = parseInt(figure.style.height) / 30;
+    
+    // Сохраняем информацию об очищенных клетках ДО очистки
+    const clearedCells = [];
+    for (let y = top; y < top + height; y++) {
+        for (let x = left; x < left + width; x++) {
+            const cellIndex = y * 28 + x;
+            if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+                const cell = grid.children[cellIndex];
+                if (cell.textContent === 'X') {
+                    clearedCells.push({index: cellIndex, x: x, y: y});
+                }
+            }
+        }
+    }
+    
+    // Выполняем оригинальную очистку
+    originalClearXUnderFigure(figure);
+    
+    // Сохраняем в историю
+    if (clearedCells.length > 0) {
+        clearedCellsHistory.push({
+            left: left,
+            top: top,
+            width: width,
+            height: height,
+            cells: clearedCells
+        });
+    }
+};
+
+// Функция возврата зон расширений (заполнение 'X' только в очищенных клетках)
+function restoreExpansionZones() {
+    let restoredCount = 0;
+    
+    // Восстанавливаем 'X' во всех сохранённых клетках
+    clearedCellsHistory.forEach(item => {
+        item.cells.forEach(cellInfo => {
+            const cell = grid.children[cellInfo.index];
+            if (cell.textContent === '') {
+                cell.textContent = 'X';
+                initialCellStates[cellInfo.index] = 'X';
+                restoredCount++;
+            }
+        });
+    });
+    
+    // Удаляем все фигуры расширений
+    document.querySelectorAll('.figure[data-name="Расш"]').forEach(fig => {
+        if (fig.dataset.blinkInterval) clearInterval(fig.dataset.blinkInterval);
+        fig.remove();
+    });
+    
+    // Очищаем историю
+    clearedCellsHistory = [];
+    
+    calculateBonuses();
+    
+    return restoredCount;
+}
+
+// Модифицируем функцию подсчёта зданий
+const originalUpdateBldCount = updateBldCount;
+updateBldCount = function() {
+    const map = {};
+    
+    // Считаем все фигуры (кроме Ратуши)
+    document.querySelectorAll('.figure').forEach(fig => {
+        const name = fig.dataset.name;
+        if (name !== 'Ратуша') {
+            map[name] = (map[name] || 0) + 1;
+        }
+    });
+    
+    // === СЧИТАЕМ ОТКРЫТЫЕ КЛЕТКИ ===
+    let openCellsCount = 0;
+    
+    // Проходим по всем клеткам поля
+    for (let i = 0; i < totalCells; i++) {
+        const cell = grid.children[i];
+        const row = Math.floor(i / 28) + 1;
+        const col = (i % 28) + 1;
+        
+        // Проверяем, не серая ли это зона
+        let isGray = false;
+        areas.forEach(area => {
+            if (col >= area.colStart && col <= area.colEnd && row >= area.rowStart && row <= area.rowEnd) {
+                isGray = true;
+            }
+        });
+        
+        // Если не серая зона и не 'X' - значит клетка открыта
+        if (!isGray && cell.textContent !== 'X') {
+            openCellsCount++;
+        }
+    }
+    
+    // === ВЫЧИСЛЯЕМ КОЛИЧЕСТВО РАСШИРЕНИЙ ===
+    // Базовая площадь: 12×16 = 192 клетки (12 базовых расширений)
+    // Каждое расширение открывает 4×4 = 16 клеток
+    const BASE_AREA = 192; // 12×16
+    const EXPANSION_SIZE = 16; // 4×4
+    
+    // Сколько клеток открыто сверх базовых
+    const extraCells = openCellsCount - BASE_AREA;
+    
+    // Количество поставленных расширений
+    let placedExpansions = 0;
+    if (extraCells > 0) {
+        placedExpansions = Math.round(extraCells / EXPANSION_SIZE);
+    }
+    
+    // Всего открыто (базовые 12 + поставленные)
+    const totalOpen = 12 + placedExpansions;
+    
+    // === ФОРМИРУЕМ ВЫВОД ===
+    const content = document.getElementById('bldCountContent');
+    let html = '';
+    
+    // Кнопка возврата зон
+    const restoreBtnStyle = placedExpansions > 0 ? 
+        'background-color:#d32f2f; color:white; cursor:pointer;' : 
+        'background-color:#bdbdbd; color:#757575; cursor:not-allowed;';
+    
+    html += `<div style="background-color:#e3f4fd; padding:12px; margin-bottom:10px; border-radius:4px; border-left:3px solid #2196F3;">
+        <strong>Расширения:</strong><br>
+        Поставлено: <b>${placedExpansions}</b><br>
+        Базовых: <b>12</b><br>
+        Всего открыто: <b>${totalOpen}</b><br>
+        <small style="color:#666;">Открыто клеток: ${openCellsCount} (база: ${BASE_AREA})</small><br>
+        <button id="restoreZonesBtn" style="margin-top:8px; padding:6px 12px; border:none; border-radius:4px; font-weight:bold; ${restoreBtnStyle}" 
+            ${placedExpansions > 0 ? '' : 'disabled'}>
+            ← Вернуть зоны расширений
+        </button>
+    </div>`;
+    
+    // Остальные здания
+    html += Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .map(([n, c]) => `<div>${n}: <b>${c}</b></div>`)
+        .join('');
+    
+    content.innerHTML = html || '<div>Нет зданий</div>';
+    
+    // Добавляем обработчик кнопки возврата
+    const restoreBtn = document.getElementById('restoreZonesBtn');
+    if (restoreBtn) {
+        restoreBtn.onclick = function() {
+            if (confirm(`⚠️ Вернуть все зоны расширений?\nЭто удалит все расширения и вернёт символ "X" в ранее открытые клетки.`)) {
+                const restored = restoreExpansionZones();
+                alert(`✅ Восстановлено ${restored} клеток!`);
+                updateBldCount();
+            }
+        };
+    }
+};
+
+// Модифицируем сброс
+const originalResetFigures = resetFigures;
+resetFigures = function() {
+    originalResetFigures();
+    clearedCellsHistory = [];
+};
+
+// Модифицируем загрузку из файла
+const originalLoadFromFile = loadFromFile;
+loadFromFile = function(event) {
+    originalLoadFromFile(event);
+    setTimeout(() => {
+        clearedCellsHistory = [];
+        if (document.getElementById('bldCountModal').style.display !== 'none') {
+            updateBldCount();
+        }
+    }, 100);
+};
+
+console.log('✅ Подсчёт расширений + возврат зон обновлён');
+
+
+
+// === ЗАМЕНА ОДИНАРНОГО КЛИКА НА ДВОЙНОЙ КЛИК (АЛЬТЕРНАТИВНЫЙ ВАРИАНТ) ===
+
+// Флаг для отслеживания времени последнего клика
+let lastClickTime = 0;
+let clickTimeout = null;
+const DOUBLE_CLICK_DELAY = 300; // Максимальная задержка между кликами для двойного клика
+
+// Переопределяем функцию showBuildingInfo
+const originalShowBuildingInfo = window.showBuildingInfo;
+window.showBuildingInfo = function(figure) {
+    const currentTime = Date.now();
+    const timeSinceLast = currentTime - lastClickTime;
+    
+    if (timeSinceLast < DOUBLE_CLICK_DELAY) {
+        // Двойной клик — показываем окно
+        clearTimeout(clickTimeout);
+        originalShowBuildingInfo(figure);
+    } else {
+        // Одинарный клик — запоминаем время, но НЕ показываем окно
+        lastClickTime = currentTime;
+        // Ничего не делаем — ждём возможный двойной клик
+    }
+};
+
+console.log('✅ Двойной клик активирован, одинарный клик отключён для зданий');
+
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    initGoogleDrive();
+    // ... остальной код
+});
+
+// Защита и отладка переключения табов
+if (typeof toggleTab !== 'function') {
+    console.error("toggleTab не является функцией! Восстанавливаем...");
+    
+    window.toggleTab = function(tabId) {
+        console.log("toggleTab вызван для:", tabId);
+        
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        const tab = document.querySelector(`.tab[onclick="toggleTab('${tabId}')"]`);
+        if (tab) tab.classList.add('active');
+        
+        const content = document.getElementById(tabId);
+        if (content) content.classList.add('active');
+    };
+} else {
+    console.log("toggleTab уже существует, всё ок");
+}
+
+// Функция сворачивания / разворачивания статистики
+function toggleStatisticsMinimize() {
+    const modal = document.getElementById('statisticsModal');
+    if (!modal) return;
+
+    const btn = document.getElementById('minimizeStatsBtn');
+    if (!btn) return;
+
+    if (modal.classList.contains('minimized')) {
+        // разворачиваем
+        modal.classList.remove('minimized');
+        btn.textContent = '−';
+        btn.title = 'Свернуть';
+    } else {
+        // сворачиваем
+        modal.classList.add('minimized');
+        btn.textContent = '+';     // можно поменять на '□' или '▼'
+        btn.title = 'Развернуть';
+    }
+}
+
+// Привязываем обработчик один раз при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    const minimizeBtn = document.getElementById('minimizeStatsBtn');
+    if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', toggleStatisticsMinimize);
+        console.log('Кнопка сворачивания статистики успешно привязана');
+    } else {
+        console.warn('Кнопка #minimizeStatsBtn не найдена');
+    }
+});
