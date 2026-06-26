@@ -6,21 +6,21 @@ let currentTrackIndex = 0;
 
 // Список твоих длинных треков
 const musicList = [
-    'https://foehelp.ru/game/songs/5.mp3',
-    'https://foehelp.ru/game/songs/6.mp3',
-    'https://foehelp.ru/game/songs/7.mp3',
-    'https://foehelp.ru/game/songs/8.mp3',
-    'https://foehelp.ru/game/songs/9.mp3',
-    'https://foehelp.ru/game/songs/10.mp3',
-    'https://foehelp.ru/game/songs/11.mp3',
-    'https://foehelp.ru/game/songs/12.mp3',
-    'https://foehelp.ru/game/songs/13.mp3',
-    'https://foehelp.ru/game/songs/14.mp3',
-    'https://foehelp.ru/game/songs/15.mp3',
-    'https://foehelp.ru/game/songs/2.mp3',
-    'https://foehelp.ru/game/songs/1.mp3',
-    'https://foehelp.ru/game/songs/3.mp3',
-   // 'https://foehelp.ru/game/songs/4.mp3',
+    '/game/songs/5.mp3',
+    '/game/songs/6.mp3',
+    '/game/songs/7.mp3',
+    '/game/songs/8.mp3',
+    '/game/songs/9.mp3',
+    '/game/songs/10.mp3',
+    '/game/songs/11.mp3',
+    '/game/songs/12.mp3',
+    '/game/songs/13.mp3',
+    '/game/songs/14.mp3',
+    '/game/songs/15.mp3',
+    '/game/songs/2.mp3',
+    '/game/songs/1.mp3',
+    '/game/songs/3.mp3',
+   // '/game/songs/4.mp3',
     
     
 ];

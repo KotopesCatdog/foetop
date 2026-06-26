@@ -1974,7 +1974,7 @@ function showHelpModal() {
 
 <hr>
             <p>🎨 <strong>Создавайте свои уровни тут:</strong><br>
-            <a href="https://foehelp.ru/game/avtogen.html" target="_blank" style="color: #4ecca3;">foehelp.ru/game/avtogen.html</a></p>
+            <a href="/game/avtogen.html" target="_blank" style="color: #4ecca3;">/game/avtogen.html</a></p>
             <p>📨 <strong>Присылайте мне:</strong><br>
             <a href="https://t.me/KotoPesCatDog" target="_blank" style="color: #ffaa44;">t.me/KotoPesCatDog</a></p>
 

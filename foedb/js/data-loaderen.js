@@ -1,5 +1,5 @@
 // === GLOBAL VARIABLES ===
-let currentJsonUrl = 'https://foehelp.ru/building.json';  // Current URL
+let currentJsonUrl = '/building.json';  // Current URL
 let dataLoadDate = null;  // Server file date
 
 // === UPDATE SERVER FILE DATE FUNCTION ===
