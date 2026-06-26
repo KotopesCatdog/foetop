@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Справочник Карт ФОЕ</title>
+   <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Справочник Карт континентов ФОЕ</h1>
+    <div class="header-actions">
+      <!-- Кнопка переключения режима -->
+      <button id="toggleMode" class="btn btn-primary">✏️ Режим редактирования</button>
+      
+    </div>
+  </header>
+
+  <!-- Вкладки эпох -->
+  <nav class="tabs" id="tabsContainer">
+    <!-- Вкладки будут создаваться динамически -->
+  </nav>
+
+  <div class="container">
+    <div class="map-wrapper">
+      <div class="map-container">
+        <img id="mainMap" src="" alt="Карта" style="cursor: grab; width: 100%; height: auto; display: none;">
+        <canvas id="highlightCanvas"></canvas>
+        <div id="tooltip" class="tooltip hidden"></div>
+        <div id="loadingMessage" class="loading-message">
+          <span>📖</span>
+          <p>Выберите эпоху для просмотра</p>
+        </div>
+        <div class="zoom-info" id="zoomInfo">100%</div>
+      </div>
+      
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <!-- Режим просмотра -->
+      <div id="viewMode" class="mode-panel">
+        <div class="search-box">
+          <input type="text" id="search" placeholder="🔍 Поиск провинции..." autocomplete="off">
+          <span class="search-count" id="searchCount">0</span>
+        </div>
+        
+        <div class="emoji-filters">
+          <button class="emoji-filter-btn active" data-emoji="all">Все</button>
+          <button class="emoji-filter-btn" data-emoji="💎">💎</button>
+          <button class="emoji-filter-btn" data-emoji="💢">💢</button>
+        </div>
+
+        <ul id="provinceList"></ul>
+        
+        <div class="sidebar-footer">
+  <span id="provinceCount">0 провинций</span>
+  <button id="resetView" class="btn btn-sm" title="Вернуть карту в исходное положение (Esc)">Сбросить масштаб</button>
+</div>
+      </div>
+
+      <!-- Режим редактирования -->
+      <div id="editMode" class="mode-panel" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>📚 Карты</h3>
+            <button id="addMapBtn" class="btn btn-primary btn-sm">➕</button>
+          </div>
+          <ul id="mapsList"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>🗺️ Редактор карты</h3>
+          </div>
+          <form id="mapForm" class="compact-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>ID</label>
+                <input type="text" id="mapIdInput" required placeholder="old_ages">
+              </div>
+              <div class="form-group">
+                <label>Название</label>
+                <input type="text" id="mapNameInput" required placeholder="Старые Земли">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Эпоха</label>
+                <input type="text" id="mapEraInput" required placeholder="Древняя эпоха">
+              </div>
+              <div class="form-group">
+                <label>Путь к картинке</label>
+                <input type="text" id="mapImageInput" required placeholder="data/Map.webp">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Описание</label>
+              <input type="text" id="mapDescriptionInput" placeholder="Описание карты...">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">💾 Сохранить</button>
+              <button type="button" id="deleteMapBtn" class="btn btn-danger btn-sm">🗑️</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel panel-province-editor">
+          <div class="panel-header">
+            <h3>📍 Провинции</h3>
+            <span id="provinceCountSmall">0</span>
+          </div>
+          
+          <form id="provinceForm" class="compact-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Название *</label>
+                <input type="text" id="provName" required placeholder="Название провинции">
+              </div>
+              <div class="form-group">
+                <label>Эмодзи</label>
+                <select id="provEmoji" class="emoji-select">
+                  <option value="">Без эмодзи</option>
+                  <option value="💎">💎</option>
+                  <option value="💢">💢</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Координаты</label>
+                <div class="coord-inputs">
+                  <input type="number" id="provX" placeholder="X" readonly>
+                  <input type="number" id="provY" placeholder="Y" readonly>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">➕ Добавить</button>
+              <button type="reset" class="btn btn-sm">Очистить</button>
+              <button type="button" id="cancelProvinceEdit" class="btn btn-sm" style="display:none;">Отменить</button>
+            </div>
+          </form>
+
+          <div class="province-search">
+            <input type="text" id="provSearch" placeholder="🔍 Поиск провинции...">
+          </div>
+          <ul id="provinceListEditor"></ul>
+        </div>
+
+        <div class="sidebar-footer">
+          <button id="saveData" class="btn btn-primary btn-sm">💾 Сохранить всё</button>
+          <button id="exportData" class="btn btn-sm">📥 Экспорт</button>
+          <button id="importData" class="btn btn-sm">📤 Импорт</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
