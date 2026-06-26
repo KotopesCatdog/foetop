@@ -4,7 +4,7 @@
       "id": "br_kolon",
       "name": "Бронза-Колон.",
       "era": "Бронза-Колон.",
-      "image": "data/Map_old_ages_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_old_ages_BG.webp",
       "description": "Бронза-Колон.",
       "provinces": [
         {
@@ -474,7 +474,7 @@
       "id": "map_1782240954554",
       "name": "Индус",
       "era": "Индустриальная",
-      "image": "data/Map_ind_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_ind_BG.webp",
       "description": "Индустриальная",
       "provinces": [
         {
@@ -590,7 +590,7 @@
       "id": "map_1782241195273",
       "name": "Прогресс",
       "era": "Прогресс",
-      "image": "data/Map_PE_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_PE_BG.webp",
       "description": "Прогресс",
       "provinces": [
         {
@@ -661,7 +661,7 @@
       "id": "map_1782288862832",
       "name": "Модерн",
       "era": "Модерн",
-      "image": "data/Map_ME_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_ME_BG.webp",
       "description": "Модерн",
       "provinces": [
         {
@@ -739,7 +739,7 @@
       "id": "map_1782289919514",
       "name": "Постмодерн",
       "era": "Постмодерн",
-      "image": "data/Map_PME_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_PME_BG.webp",
       "description": "Постмодерн",
       "provinces": [
         {
@@ -825,7 +825,7 @@
       "id": "map_1782290287571",
       "name": "Новейшее",
       "era": "Новейшее",
-      "image": "data/Map_CE_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_CE_BG.webp",
       "description": "Новейшее",
       "provinces": [
         {
@@ -911,7 +911,7 @@
       "id": "map_1782290393993",
       "name": "Завтра",
       "era": "Завтра",
-      "image": "data/Map_TE_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_TE_BG.webp",
       "description": "Завтра",
       "provinces": [
         {
@@ -1005,7 +1005,7 @@
       "id": "map_1782290557100",
       "name": "Будущее",
       "era": "Будущее",
-      "image": "data/Map_FE_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_FE_BG.webp",
       "description": "Будущее",
       "provinces": [
         {
@@ -1089,7 +1089,7 @@
       "id": "map_1782290681038",
       "name": "Арктика",
       "era": "Арктика",
-      "image": "data/Map_AF_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_AF_BG.webp",
       "description": "Арктика",
       "provinces": [
         {
@@ -1348,7 +1348,7 @@
       "id": "map_1782290785268",
       "name": "Океан 1",
       "era": "Океан 1",
-      "image": "data/Map_OF1_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_OF1_BG.webp",
       "description": "Океан 1",
       "provinces": [
         {
@@ -1590,7 +1590,7 @@
       "id": "map_1782290863669",
       "name": "Океан 2",
       "era": "Океан 2",
-      "image": "data/Map_OF2_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_OF2_BG.webp",
       "description": "Океан 2",
       "provinces": [
         {
@@ -1796,7 +1796,7 @@
       "id": "map_1782290931417",
       "name": "Океан 3",
       "era": "Океан 3",
-      "image": "data/Map_OF3_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_OF3_BG.webp",
       "description": "Океан 3",
       "provinces": [
         {
@@ -1868,7 +1868,7 @@
       "id": "map_1782291038022",
       "name": "Вирт 1",
       "era": "Вирт 1",
-      "image": "data/Map_VF1_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_VF1_BG.webp",
       "description": "Вирт 1",
       "provinces": [
         {
@@ -1977,7 +1977,7 @@
       "id": "map_1782291118408",
       "name": "Вирт 2",
       "era": "Вирт 2",
-      "image": "data/Map_VF2_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_VF2_BG.webp",
       "description": "Вирт 2",
       "provinces": [
         {
@@ -2087,7 +2087,7 @@
       "id": "map_1782291273633",
       "name": "Вирт 3",
       "era": "Вирт 3",
-      "image": "data/Map_VF3_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_VF3_BG.webp",
       "description": "Вирт 3",
       "provinces": [
         {
@@ -2207,7 +2207,7 @@
       "id": "map_1782300186018",
       "name": "Марс 1",
       "era": "Марс 1",
-      "image": "data/Map_SAM1_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAM1_BG.webp",
       "description": "Марс 1",
       "provinces": [
         {
@@ -2301,7 +2301,7 @@
       "id": "map_1782300254395",
       "name": "Марс 2",
       "era": "Марс 2",
-      "image": "data/Map_SAM2_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAM2_BG.webp",
       "description": "Марс 2",
       "provinces": [
         {
@@ -2427,7 +2427,7 @@
       "id": "map_1782300331012",
       "name": "Пояс 1",
       "era": "Пояс 1",
-      "image": "data/Map_SAAB1_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAAB1_BG.webp",
       "description": "Пояс 1",
       "provinces": [
         {
@@ -2540,7 +2540,7 @@
       "id": "map_1782301225411",
       "name": "Пояс 2",
       "era": "Пояс 2",
-      "image": "data/Map_SAAB2_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAAB2_BG.webp",
       "description": "Пояс 2",
       "provinces": [
         {
@@ -2677,7 +2677,7 @@
       "id": "map_1782301316949",
       "name": "Венера 1",
       "era": "Венера 1",
-      "image": "data/Map_SAV1_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAV1_BG.webp",
       "description": "Венера 1",
       "provinces": [
         {
@@ -2790,7 +2790,7 @@
       "id": "map_1782301387573",
       "name": "Венера 2",
       "era": "Венера 2",
-      "image": "data/Map_SAV2_BG.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAV2_BG.webp",
       "description": "Венера 2",
       "provinces": [
         {
@@ -2929,7 +2929,7 @@
       "id": "map_1782301473194",
       "name": "Юпитер 1",
       "era": "Юпитер 1",
-      "image": "data/Map_SAJM_BG1.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAJM_BG1.webp",
       "description": "Юпитер 1",
       "provinces": [
         {
@@ -3050,7 +3050,7 @@
       "id": "map_1782301550201",
       "name": "Юпитер 2",
       "era": "Юпитер 2",
-      "image": "data/Map_SAJM_BG2.webp",
+      "image": "https://foe-help.moy.su/data/Map_SAJM_BG2.webp",
       "description": "Юпитер 2",
       "provinces": [
         {
@@ -3188,7 +3188,7 @@
       "id": "map_1782301688656",
       "name": "Титан 1",
       "era": "Титан 1",
-      "image": "data/tit1.webp",
+      "image": "https://foe-help.moy.su/data/tit1.webp",
       "description": "Титан 1",
       "provinces": [
         {
@@ -3308,7 +3308,7 @@
       "id": "map_1782301768102",
       "name": "Титан 2",
       "era": "Титан 2",
-      "image": "data/tit2.webp",
+      "image": "https://foe-help.moy.su/data/tit2.webp",
       "description": "Титан 2",
       "provinces": [
         {
@@ -3445,7 +3445,7 @@
       "id": "map_1782302586471",
       "name": "Хаб 1",
       "era": "Хаб 1",
-      "image": "data/hub1.png",
+      "image": "https://foe-help.moy.su/data/hub1.png",
       "description": "Хаб 1",
       "provinces": [
         {
@@ -3563,7 +3563,7 @@
       "id": "map_1782319273421",
       "name": "Хаб 2",
       "era": "Хаб 2",
-      "image": "data/hub2.png",
+      "image": "https://foe-help.moy.su/data/hub2.png",
       "description": "Хаб 2",
       "provinces": [
         {
