@@ -215,6 +215,112 @@
     </div>
 </div>
 
+
+<!-- Спойлер 3: Расширение для браузера (русский) -->
+<div class="spoiler" id="spoilerExtRu">
+    <div class="spoiler-header">🧩 Политика конфиденциальности браузерного расширения FOEhelp</div>
+    <div class="spoiler-content">
+        <p class="date">Дата вступления в силу: 8 января 2026 г.</p>
+
+        <p>Расширение FOEhelp для Google Chrome предназначено исключительно для игроков <strong>Forge of Empires</strong> и работает только на страницах этой игры.</p>
+
+        <h2>1. Какие данные обрабатывает расширение</h2>
+        <p>Расширение <strong>не собирает и не передаёт</strong> никакие личные данные пользователя. Все данные обрабатываются локально в браузере.</p>
+
+        <div class="highlight">
+            <p><strong>Локальное хранилище (chrome.storage.local):</strong></p>
+            <ul>
+                <li>Настройки расширения (включён/выключен, параметры уведомлений)</li>
+                <li>Данные рейтинга гильдий (временно, до следующей загрузки)</li>
+                <li>Токены Telegram и URL Discord-вебхуков — хранятся <strong>только на вашем устройстве</strong> и никуда не передаются, кроме ваших собственных Telegram-бота или Discord-сервера</li>
+            </ul>
+        </div>
+
+        <h2>2. Доступ к странице игры</h2>
+        <p>Расширение запрашивает доступ к страницам <strong>forgeofempires.com</strong> исключительно для:</p>
+        <ul>
+            <li>Добавления кнопок и панелей в интерфейс FoE Helper</li>
+            <li>Перехвата игровых данных (рейтинги гильдий, статистика) для отображения в собственных окнах расширения</li>
+            <li>Инжекции модальных окон планировщиков и статистики</li>
+        </ul>
+        <p>Расширение <strong>не читает</strong> личные сообщения, платёжные данные или любую информацию за пределами игровых данных Forge of Empires.</p>
+
+        <h2>3. Передача данных третьим сторонам</h2>
+        <div class="highlight">
+            <p><strong>Telegram / Discord:</strong> если вы настроили уведомления, расширение отправляет игровые данные (информация о секторах GBG, сообщения инфобокса) <strong>только в ваш собственный Telegram-бот или Discord-сервер</strong> по адресу, который вы указали сами. Мы не имеем доступа к этим данным.</p>
+            <p><strong>Lightbase (Supabase):</strong> при добровольной загрузке рейтинга Guild Raids данные отправляются в общую анонимную базу данных на foehelp.ru. Загружаются только игровые данные (названия гильдий, очки, ранги) — без привязки к вашему аккаунту или личным данным.</p>
+        </div>
+
+        <h2>4. Разрешения расширения</h2>
+        <ul>
+            <li><strong>activeTab / scripting</strong> — для добавления интерфейса расширения на страницу игры по действию пользователя</li>
+            <li><strong>storage</strong> — для хранения настроек на вашем устройстве</li>
+            <li><strong>tabs</strong> — для определения текущего игрового мира (по URL вкладки)</li>
+            <li><strong>downloads</strong> — для сохранения экспортируемых файлов CSV/JSON на ваш компьютер</li>
+            <li><strong>clipboardWrite</strong> — для копирования данных по кнопке «Копировать»</li>
+        </ul>
+
+        <h2>5. Контакты</h2>
+        <div class="contact">
+            <p>Если у вас есть вопросы, пишите:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Спойлер 4: Browser Extension Privacy Policy (English) -->
+<div class="spoiler" id="spoilerExtEn">
+    <div class="spoiler-header">🌐 FOEhelp Browser Extension — Privacy Policy</div>
+    <div class="spoiler-content">
+        <p class="date">Effective Date: January 8, 2026</p>
+
+        <p>The FOEhelp Chrome extension is designed exclusively for <strong>Forge of Empires</strong> players and operates only on pages of this game.</p>
+
+        <h2>1. What data the extension processes</h2>
+        <p>The extension <strong>does not collect or transmit</strong> any personal user data. All data is processed locally in the browser.</p>
+
+        <div class="highlight">
+            <p><strong>Local storage (chrome.storage.local):</strong></p>
+            <ul>
+                <li>Extension settings (enabled/disabled, notification parameters)</li>
+                <li>Guild raid rankings data (temporarily, until the next capture)</li>
+                <li>Telegram tokens and Discord webhook URLs — stored <strong>only on your device</strong> and transmitted solely to your own Telegram bot or Discord server</li>
+            </ul>
+        </div>
+
+        <h2>2. Access to game pages</h2>
+        <p>The extension requests access to <strong>forgeofempires.com</strong> pages exclusively to:</p>
+        <ul>
+            <li>Add buttons and panels to the FoE Helper interface</li>
+            <li>Intercept in-game data (guild rankings, statistics) for display in extension windows</li>
+            <li>Inject modal windows for planners and statistics</li>
+        </ul>
+        <p>The extension <strong>does not read</strong> private messages, payment data, or any information outside of Forge of Empires game data.</p>
+
+        <h2>3. Data sharing with third parties</h2>
+        <div class="highlight">
+            <p><strong>Telegram / Discord:</strong> if you have configured notifications, the extension sends in-game data (GBG sector info, info box messages) <strong>only to your own Telegram bot or Discord server</strong> at the address you provided. We do not have access to this data.</p>
+            <p><strong>Lightbase (Supabase):</strong> when voluntarily uploading Guild Raids rankings, data is sent to a shared anonymous database at foehelp.ru. Only in-game data is uploaded (guild names, scores, ranks) — with no link to your account or personal information.</p>
+        </div>
+
+        <h2>4. Extension permissions</h2>
+        <ul>
+            <li><strong>activeTab / scripting</strong> — to add the extension interface to the game page upon user action</li>
+            <li><strong>storage</strong> — to store settings on your device</li>
+            <li><strong>tabs</strong> — to identify the current game world (by tab URL)</li>
+            <li><strong>downloads</strong> — to save exported CSV/JSON files to your computer</li>
+            <li><strong>clipboardWrite</strong> — to copy data via the "Copy" button</li>
+        </ul>
+
+        <h2>5. Contact</h2>
+        <div class="contact">
+            <p>If you have any questions, please contact us:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+
 <script>
     // Скрипт для работы спойлеров: клик по заголовку открывает/закрывает контент
     document.querySelectorAll('.spoiler-header').forEach(header => {
