@@ -5,6 +5,15 @@
 
 
 // Глобальные переменные
+// Текущий угол поворота карты (0, 90, 180, 270)
+let currentRotation = 0;
+
+// Возвращает [w, h] с учётом текущего поворота (нечётное кол-во поворотов — меняем местами)
+function getEffectiveSize(w, h) {
+  const turns = (currentRotation / 90) % 2;
+  return turns === 1 ? [h, w] : [w, h];
+}
+
 const grid = document.getElementById('grid');
 const tabContentContainer = document.getElementById('tab-content-container');
 const tooltip = document.getElementById('tooltip');
@@ -220,7 +229,7 @@ function createMenu() {
 function createGhostFigure() {
   if (!selectedBuilding || ghostFigure) return;
   
-  const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+  let [widthCells, heightCells] = getEffectiveSize(...selectedBuilding.size.split('x').map(Number));
   ghostFigure = document.createElement('div');
   ghostFigure.classList.add('ghost-figure');
   
@@ -279,7 +288,7 @@ function handleGhostMove(e) {
   
   ghostFigure.style.display = 'flex';
   
-  const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+  let [widthCells, heightCells] = getEffectiveSize(...selectedBuilding.size.split('x').map(Number));
   if (col + widthCells > 28 || row + heightCells > 28) {
     ghostFigure.style.opacity = '0.2';
     return;
@@ -1239,7 +1248,7 @@ function saveToFile() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'kvaplan-g.txt';
+  a.download = 'kvaplan.txt';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1952,7 +1961,10 @@ if (closeBonusesModalBtn) closeBonusesModalBtn.addEventListener('click', closeTo
   const cityProfileDeleteBtn = document.getElementById('cityProfileDeleteBtn');
   if (cityProfileDeleteBtn) cityProfileDeleteBtn.addEventListener('click', deleteCityProfile);
   
-  const feedbackBtn = document.getElementById('feedbackBtn');
+  const rotateBtn = document.getElementById('rotateBtn');
+  if (rotateBtn) rotateBtn.addEventListener('click', rotateView);
+
+    const feedbackBtn = document.getElementById('feedbackBtn');
   if (feedbackBtn) feedbackBtn.addEventListener('click', openFeedbackLink);
   
   const closeBuildingInfoBtn = document.getElementById('closeBuildingInfoBtn');
@@ -1964,7 +1976,129 @@ if (closeBonusesModalBtn) closeBonusesModalBtn.addEventListener('click', closeTo
   
   
   
-  // Обработчик кликов по сетке для расстановки зданий
+  
+// ============================================
+// ПОВОРОТ ВИДА КАРТЫ
+// ============================================
+
+// Исходные зоны (база для пересчёта)
+const areasOriginal = [
+  { colStart: 1, colEnd: 4, rowStart: 1, rowEnd: 16, color: '#ccc' },
+  { colStart: 5, colEnd: 8, rowStart: 1, rowEnd: 4,  color: '#ccc' },
+  { colStart: 25, colEnd: 28, rowStart: 1, rowEnd: 4, color: '#ccc' },
+  { colStart: 25, colEnd: 28, rowStart: 21, rowEnd: 28, color: '#ccc' }
+];
+
+
+// Поворот одной зоны на 90° по часовой (1-based, N=28)
+function rotateArea90CW(area, N) {
+  return {
+    colStart: N + 1 - area.rowEnd,
+    colEnd:   N + 1 - area.rowStart,
+    rowStart: area.colStart,
+    rowEnd:   area.colEnd,
+    color:    area.color
+  };
+}
+
+// Получить зоны для нужного угла
+function getRotatedAreas(deg) {
+  let result = areasOriginal.map(a => ({ ...a }));
+  const steps = ((deg / 90) % 4 + 4) % 4;
+  for (let i = 0; i < steps; i++) {
+    result = result.map(a => rotateArea90CW(a, 28));
+  }
+  return result;
+}
+
+// Повернуть позицию фигуры на 90° по часовой (пиксели, 0-based col/row)
+function rotateFigure90CW(left, top, widthPx, heightPx, N, cellSize) {
+  const col = left / cellSize;
+  const row = top / cellSize;
+  const w   = widthPx / cellSize;
+  const h   = heightPx / cellSize;
+
+  const newCol = row;
+  const newRow = (N - 1) - col - w + 1;
+
+  return {
+    left:   newCol * cellSize,
+    top:    newRow * cellSize,
+    width:  heightPx,   // w и h меняются местами
+    height: widthPx
+  };
+}
+
+function rotateView() {
+  const N = 28;
+  const CELL = 30;
+
+  // 0. Поворачиваем X-клетки (дорожки)
+  // Собираем все X-клетки, очищаем их, поворачиваем позицию, восстанавливаем
+  const xCells = [];
+  for (let i = 0; i < totalCells; i++) {
+    const cell = grid.children[i];
+    if (cell && cell.textContent === 'X') {
+      const row = Math.floor(i / N); // 0-based
+      const col = i % N;             // 0-based
+      xCells.push({ row, col });
+      cell.textContent = '';
+    }
+  }
+  xCells.forEach(({ row, col }) => {
+    // Поворот 90° по часовой (0-based): newCol = (N-1) - row, newRow = col
+    const newCol = row;
+    const newRow = (N - 1) - col;
+    const idx = newRow * N + newCol;
+    if (idx >= 0 && idx < totalCells) {
+      grid.children[idx].textContent = 'X';
+    }
+  });
+
+  // 1. Поворачиваем все фигуры
+  document.querySelectorAll('.figure').forEach(fig => {
+    const left   = parseInt(fig.style.left);
+    const top    = parseInt(fig.style.top);
+    const width  = parseInt(fig.style.width);
+    const height = parseInt(fig.style.height);
+
+    const r = rotateFigure90CW(left, top, width, height, N, CELL);
+    fig.style.left   = r.left   + 'px';
+    fig.style.top    = r.top    + 'px';
+    fig.style.width  = r.width  + 'px';
+    fig.style.height = r.height + 'px';
+  });
+
+  // 2. Обновляем глобальный массив зон
+  currentRotation = (currentRotation + 270) % 360;
+  const newAreas = getRotatedAreas(currentRotation);
+  areas.length = 0;
+  newAreas.forEach(a => areas.push(a));
+
+  // 3. Перекрашиваем ячейки сетки
+  for (let i = 0; i < totalCells; i++) {
+    const cell = grid.children[i];
+    if (!cell) continue;
+    const row = Math.floor(i / N) + 1;
+    const col = (i % N) + 1;
+
+    let inGray = false;
+    for (const area of areas) {
+      if (col >= area.colStart && col <= area.colEnd &&
+          row >= area.rowStart && row <= area.rowEnd) {
+        inGray = true;
+        break;
+      }
+    }
+    cell.style.backgroundColor = inGray ? '#ccc' : '#fff';
+  }
+
+  // 4. Обновляем счётчики
+  if (typeof updateBldCount === 'function') updateBldCount();
+  if (typeof calculateBonuses === 'function') calculateBonuses();
+}
+
+// Обработчик кликов по сетке для расстановки зданий
 // Обработчик кликов по сетке для расстановки зданий
 grid.addEventListener('click', (e) => {
   // Если включен режим удаления - ничего не делаем
@@ -1985,7 +2119,7 @@ grid.addEventListener('click', (e) => {
   
   if (col < 0 || col >= 28 || row < 0 || row >= 28) return;
   
-  const [widthCells, heightCells] = selectedBuilding.size.split('x').map(Number);
+  let [widthCells, heightCells] = getEffectiveSize(...selectedBuilding.size.split('x').map(Number));
   if (col + widthCells > 28 || row + heightCells > 28) {
     alert(`Фигура не помещается на поле!`);
     return;
