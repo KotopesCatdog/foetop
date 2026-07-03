@@ -23,8 +23,8 @@ box-sizing: border-box;
 .thick-right { border-right: 2px solid #000; }
 .thick-bottom { border-bottom: 2px solid #000; }
 .thick-both { border-right: 2px solid #000; border-bottom: 2px solid #000; }
-.input-container { margin-left: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; width: 300px; }
-textarea { width: 100%; height: 200px; margin-bottom: 10px; }
+.input-container { margin-left: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; width: 320px; } /* Увеличил ширину */
+textarea { width: 100%; height: 200px; margin-bottom: 10px; box-sizing: border-box; }
 .button-container { display: flex; flex-direction: column; gap: 5px; }
 .button-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
 .button-row button { flex: 1; padding: 5px 10px; font-size: 14px; cursor: pointer; }
@@ -115,6 +115,67 @@ z-index: 10;
 .error-message {
     color: #721c24; background-color: #f8d7da; padding: 10px; border-radius: 4px; margin: 10px 0; text-align: center;
 }
+
+/* --- Стили для поиска (исправленные) --- */
+.search-container {
+    margin-top: 10px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    box-sizing: border-box;
+}
+.search-container input {
+    flex: 1;
+    min-width: 0; /* важно для сжатия */
+    padding: 5px 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    outline: none;
+    box-sizing: border-box;
+}
+.search-container input:focus {
+    border-color: #4285F4;
+}
+.search-container button {
+    padding: 5px 12px;
+    font-size: 14px;
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.search-container button:hover {
+    background-color: #3367d6;
+}
+.search-container .search-clear {
+    background-color: #6c757d;
+}
+.search-container .search-clear:hover {
+    background-color: #5a6268;
+}
+.search-result {
+    font-size: 13px;
+    color: #555;
+    margin-top: 4px;
+    padding-left: 8px;
+}
+/* Подсветка найденных фигур */
+.figure.search-highlight {
+    outline: 4px solid #ff5722;
+    outline-offset: 2px;
+    z-index: 20;
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.7);
+    transition: outline 0.15s ease;
+}
 </style>
 </head>
 
@@ -125,6 +186,15 @@ z-index: 10;
 <div class="input-container">
 <a href="/cityplanhelp.html" class="instruction-link" target="_blank">⛄⛄⛄Инструкция⛄⛄⛄</a>
 <textarea id="data-input"></textarea>
+
+<!-- НОВЫЙ БЛОК ПОИСКА (исправленный) -->
+<div class="search-container">
+    <input type="text" id="search-input" placeholder="Поиск по названию" minlength="3">
+    <button id="search-btn">Найти</button>
+    <button class="search-clear" id="search-clear-btn">Сброс</button>
+</div>
+<div id="search-result" class="search-result"></div>
+
 <div class="button-container">
 <div class="button-row">
 <button onclick="placeFigures()">Старт</button>
@@ -184,13 +254,12 @@ z-index: 10;
 
 <script>
 // === Google Drive интеграция ===
-const GOOGLE_CLIENT_ID = '983813195278-dlgsdjjhi0iptrrstofk240e5eddldm8.apps.googleusercontent.com'; // твой рабочий Client ID
+const GOOGLE_CLIENT_ID = '983813195278-dlgsdjjhi0iptrrstofk240e5eddldm8.apps.googleusercontent.com';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let tokenClient;
 let accessToken = null;
 
-// Инициализация
 function initGoogleDrive() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
@@ -201,7 +270,6 @@ function initGoogleDrive() {
   });
 }
 
-// Авторизация
 function googleAuth() {
   if (accessToken) return Promise.resolve(accessToken);
 
@@ -215,7 +283,6 @@ function googleAuth() {
   });
 }
 
-// Сбор данных для сохранения
 function getSaveData() {
   const figures = [];
   document.querySelectorAll('.figure').forEach(fig => {
@@ -231,7 +298,6 @@ function getSaveData() {
   return { figures, timestamp: Date.now(), type: "cityplan" };
 }
 
-// Сохранение в Google Drive
 async function saveToGoogleDrive() {
   const defaultName = "Город " + new Date().toLocaleDateString('ru-RU');
   const name = prompt("Имя файла в Google Drive:", defaultName);
@@ -269,7 +335,6 @@ async function saveToGoogleDrive() {
   }
 }
 
-// Загрузка из Google Drive через Picker
 function loadFromGoogleDrive() {
   googleAuth().then(() => {
     const view = new google.picker.View(google.picker.ViewId.DOCS);
@@ -286,7 +351,7 @@ function loadFromGoogleDrive() {
           })
           .then(res => res.json())
           .then(jsonData => {
-            resetFigures(true); // true = загрузка, не создавать ратушу автоматически
+            resetFigures(true);
 
             jsonData.figures.forEach(f => {
               const figure = document.createElement('div');
@@ -323,39 +388,30 @@ function loadFromGoogleDrive() {
   }).catch(() => alert("Ошибка авторизации"));
 }
 
-// Запуск инициализации Google
 window.addEventListener('load', initGoogleDrive);
 
-// === Здесь начинается твой оригинальный код (создание грида и функций) ===
+// === ОСНОВНОЙ КОД ===
 
 const grid = document.getElementById('grid');
 const spaceUnderButtons = document.getElementById('space-under-buttons');
 const tooltip = document.getElementById('tooltip');
 const roadResult = document.getElementById('road-result');
 const totalCells = 72 * 72;
-const gridWidth = 72 * 20; // 1440px
-const gridHeight = 72 * 20; // 1440px
+const gridWidth = 72 * 20;
+const gridHeight = 72 * 20;
 const areas = [
 { colStart: 1, colEnd: 16, rowStart: 1, rowEnd: 8, color: '#ccc' },
-
 { colStart: 1, colEnd: 8, rowStart: 9, rowEnd: 24, color: '#ccc' },
-
 { colStart: 61, colEnd: 72, rowStart: 1, rowEnd: 8, color: '#ccc' },
-
 { colStart: 69, colEnd: 72, rowStart: 9, rowEnd: 24, color: '#ccc' },
-
 { colStart: 69, colEnd: 72, rowStart: 37, rowEnd: 72, color: '#ccc' },
-
 { colStart: 65, colEnd: 72, rowStart: 59, rowEnd: 64, color: '#ccc' },
-
 { colStart: 57, colEnd: 72, rowStart: 65, rowEnd: 72, color: '#ccc' },
-
 { colStart: 65, colEnd: 68, rowStart: 57, rowEnd: 61, color: '#ccc' },
-
 { colStart: 1, colEnd: 8, rowStart: 65, rowEnd: 72, color: '#ccc' },
 { colStart: 9, colEnd: 16, rowStart: 68, rowEnd: 72, color: '#ccc' }
 ];
-let boundaryState = 0; // 0 - неактивно, 1 - рисование, 2 - удаление
+let boundaryState = 0;
 let isDrawing = false;
 for (let i = 0; i < totalCells; i++) {
 const cell = document.createElement('div');
@@ -383,7 +439,7 @@ grid.appendChild(cell);
 }
 function checkOverlapsAndGray() {
 const figures = document.querySelectorAll('.figure');
-figures.forEach(figure => figure.classList.remove('blinking', 'yellow-outline')); // Reset blinking and yellow outline
+figures.forEach(figure => figure.classList.remove('blinking', 'yellow-outline'));
 const whiteFigures = Array.from(figures).filter(figure => {
 const x = Math.round(figure.offsetLeft / 20);
 const y = Math.round(figure.offsetTop / 20);
@@ -690,12 +746,11 @@ e.preventDefault();
 }
 
 function resetFigures(isLoad = false) {
-    // Удаляем все фигуры
     document.querySelectorAll('.figure').forEach(figure => figure.remove());
-
     roadResult.textContent = '';
-
-    // Создаём ратушу ТОЛЬКО если это не загрузка данных
+    // Сбрасываем поиск
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-result').textContent = '';
     if (!isLoad) {
         placeDefaultRatusha();
     }
@@ -737,7 +792,55 @@ resultText += `${efficiency.toFixed(2)}%`;
 }
 roadResult.textContent = resultText;
 }
+
+// ====== ФУНКЦИИ ПОИСКА ======
+function searchFigures() {
+    const input = document.getElementById('search-input');
+    const query = input.value.trim();
+    const resultSpan = document.getElementById('search-result');
+
+    // Убираем старую подсветку
+    document.querySelectorAll('.figure.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+
+    if (query.length < 3) {
+        resultSpan.textContent = 'Введите минимум 3 символа';
+        return;
+    }
+
+    const figures = document.querySelectorAll('.figure');
+    const found = [];
+    const lowerQuery = query.toLowerCase();
+
+    figures.forEach(fig => {
+        const name = (fig.dataset.name || '').toLowerCase();
+        if (name.includes(lowerQuery)) {
+            found.push(fig);
+            fig.classList.add('search-highlight');
+        }
+    });
+
+    if (found.length === 0) {
+        resultSpan.textContent = `По запросу "${query}" ничего не найдено.`;
+    } else {
+        resultSpan.textContent = `Найдено фигур: ${found.length} (название содержит "${query}")`;
+    }
+}
+
+function clearSearch() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-result').textContent = '';
+    document.querySelectorAll('.figure.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+}
+
+// Подключаем обработчики для поиска
+document.getElementById('search-btn').addEventListener('click', searchFigures);
+document.getElementById('search-clear-btn').addEventListener('click', clearSearch);
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        searchFigures();
+    }
+});
+
 </script>
 </body>
 </html>
-
