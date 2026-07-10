@@ -449,92 +449,236 @@
     </script>
 
     <!-- Фрагменты -->
-    <div id="fragmentsModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.80); overflow-y:auto; padding:20px;">
-        <div style="max-width:860px; margin:0 auto; background:#222; border:1px solid #3a7bd5; border-radius:16px; overflow:hidden; position:relative;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(58,123,213,0.15); border-bottom:1px solid #3a7bd5;">
-                <span style="color:#3a7bd5; font-weight:700; font-size:16px;" data-i18n="db_fragments_modal_title">🔍 Источники фрагментов</span>
-                <button onclick="closeFragmentsModal()" style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
-            </div>
-            <div style="padding:20px; font-family:Arial,sans-serif; color:#eee;">
-                <input type="text" id="fragSearch" data-i18n-placeholder="db_frag_search_placeholder"
-                    style="width:100%;padding:10px;margin-bottom:10px;border-radius:4px;border:1px solid #555;background:#333;color:white;box-sizing:border-box;">
-                <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-                    <button id="fragToggleAll" data-i18n="db_frag_expand_all"
-                        style="padding:6px 12px;background:rgba(255,255,255,0.1);color:white;border:1px solid #555;border-radius:4px;cursor:pointer;">Развернуть все</button>
-                    <button id="fragRatingBtn" data-i18n="db_frag_rating_btn"
-                        style="padding:6px 12px;background:rgba(255,165,0,0.15);color:white;border:1px solid #ffa500;border-radius:4px;cursor:pointer;">🏆 Рейтинг зданий</button>
+<div id="fragmentsModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.80); overflow-y:auto; padding:20px;">
+    <div style="max-width:860px; margin:0 auto; background:#222; border:1px solid #3a7bd5; border-radius:16px; overflow:hidden; position:relative;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(58,123,213,0.15); border-bottom:1px solid #3a7bd5;">
+            <span style="color:#3a7bd5; font-weight:700; font-size:16px;" data-i18n="db_fragments_modal_title">🔍 Источники фрагментов</span>
+            <button onclick="closeFragmentsModal()" style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
+        </div>
+        <div style="padding:20px; font-family:Arial,sans-serif; color:#eee;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                <div style="flex:1; min-width:200px;">
+                    <input type="text" id="fragSearch" data-i18n-placeholder="db_frag_search_placeholder"
+                        style="width:100%;padding:10px;border-radius:4px;border:1px solid #555;background:#333;color:white;box-sizing:border-box;"
+                        placeholder="Поиск...">
                 </div>
-                <div id="fragLoading" style="display:none;text-align:center;color:#ffd700;padding:10px;font-family:monospace;background:rgba(0,0,0,0.5);border-radius:8px;"></div>
-                <div id="fragResults"></div>
+                <div style="flex:1; min-width:200px;">
+                    <input type="text" id="fragExcludeSearch" data-i18n-placeholder="db_frag_exclude_placeholder"
+                        style="width:100%;padding:10px;border-radius:4px;border:1px solid #555;background:#333;color:white;box-sizing:border-box;"
+                        placeholder="Исключить слова (мин. 3 симв.)...">
+                </div>
             </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                <button id="fragToggleAll" data-i18n="db_frag_expand_all"
+                    style="padding:6px 12px;background:rgba(255,255,255,0.1);color:white;border:1px solid #555;border-radius:4px;cursor:pointer;">Развернуть все</button>
+                <button id="fragRatingBtn" data-i18n="db_frag_rating_btn"
+                    style="padding:6px 12px;background:rgba(255,165,0,0.15);color:white;border:1px solid #ffa500;border-radius:4px;cursor:pointer;">🏆 Рейтинг зданий</button>
+            </div>
+            <div id="fragLoading" style="display:none;text-align:center;color:#ffd700;padding:10px;font-family:monospace;background:rgba(0,0,0,0.5);border-radius:8px;"></div>
+            <div id="fragResults"></div>
         </div>
     </div>
+</div>
 
-    <style>
-        .frag-building { border-bottom:1px solid #444; padding:10px 0; cursor:pointer; }
-        .frag-building-header { font-weight:bold; color:#4fc3f7; display:flex; align-items:center; }
-        .frag-building-header::before { content:"▶ "; margin-right:6px; }
-        .frag-building.open .frag-building-header::before { content:"▼ "; }
-        .frag-rewards { margin-top:8px; padding-left:24px; display:none; color:#ccc; }
-        .frag-building.open .frag-rewards { display:block; }
-        .frag-reward-item { margin:4px 0; }
-        #fragmentsModal mark { background-color:#ffeb3b; color:#000; padding:0 2px; border-radius:2px; }
-    </style>
+<style>
+    .frag-building { border-bottom:1px solid #444; padding:10px 0; cursor:pointer; }
+    .frag-building-header { font-weight:bold; color:#4fc3f7; display:flex; align-items:center; }
+    .frag-building-header::before { content:"▶ "; margin-right:6px; }
+    .frag-building.open .frag-building-header::before { content:"▼ "; }
+    .frag-rewards { margin-top:8px; padding-left:24px; display:none; color:#ccc; }
+    .frag-building.open .frag-rewards { display:block; }
+    .frag-reward-item { margin:4px 0; }
+    #fragmentsModal mark { background-color:#ffeb3b; color:#000; padding:0 2px; border-radius:2px; }
+    .frag-excluded { opacity:0.4; }
+</style>
 
-    <!-- Весь JS фрагментов остаётся без изменений — он генерирует UI динамически -->
-    <!-- Строки в JS переведены через window._i18nT ниже -->
-    <script>
-    // Мост: i18n для динамически создаваемых строк в JS
-    // Скрипт фрагментов использует window._i18nT для получения переводов
-    window._i18nT = {};
-    const _origI18nApply = typeof i18nApply !== 'undefined' ? i18nApply : null;
-    </script>
-
-    <script src="/js/i18n.js"></script>
-
-    <!-- Скрипт фрагментов (оригинальный, без изменений) -->
-    <script>
-    (function() {
-        let fragBuildingsList = [];
-        let fragFragmentIndex = {};
-        let fragAllExpanded = false;
-        let fragInitialized = false;
-        let fragMode = 'list';
-        let fragRatingFragId = null;
-        let fragPerTile = false;
-        const SEARCH_ALIASES = { 'риф': ['завершите особое производство', 'rush_event_buildings_instant'] };
-        const ERAS_TO_CHECK = ['AllAge','BronzeAge','IronAge','EarlyMiddleAge','HighMiddleAge','LateMiddleAge','ColonialAge','IndustrialAge','ProgressiveEra','ModernEra','PostModernEra','ContemporaryEra','TomorrowEra','FutureEra','ArcticFuture','OceanicFuture','VirtualFuture','SpaceAgeMars','SpaceAgeAsteroidBelt','SpaceAgeVenus','SpaceAgeJupiterMoon','SpaceAgeTitan'];
-        const FRAGMENT_PATTERNS = ['fragment','rush_event','rush_buildings','renovation_kit','one_up_kit','upgrade_kit','selection_kit','mass_self_aid','self_aid_kit','building_','coin_boost','attacker_boost','defence_attacker','store_building','blueprint_box'];
-        function t(key, fallback) { return (window._i18nT && window._i18nT[key]) || fallback || key; }
-        function isFragmentId(id) { if (!id) return false; return FRAGMENT_PATTERNS.some(p => id.toLowerCase().includes(p)); }
-        function findRewardInLookup(rewardId, metaData, era) { try { if (!metaData.components) return null; for (const e of [era, 'AllAge']) { const comp = metaData.components[e]; if (comp && comp.lookup && comp.lookup.rewards) { const rewards = comp.lookup.rewards; if (rewards[rewardId]) return rewards[rewardId]; for (const key in rewards) { const item = rewards[key]; if (item.type === 'chest' && item.possible_rewards) { for (const p of item.possible_rewards) if (p.reward && p.reward.id === rewardId) return p.reward; } } } } } catch(e) {} return null; }
-        function normalizeFragName(name) { if (!name) return name; return name.replace(/^(Фрагмент)\s*:\s*/i, '$1 ').trim(); }
-        function parseFragmentName(fullName) { if (!fullName) return { baseName: fullName, amount: 1 }; const match = fullName.match(/^(.*?)\s*[xх×]\s*(\d+)\s*$/i); if (match) return { baseName: normalizeFragName(match[1].trim()), amount: parseInt(match[2], 10) }; return { baseName: normalizeFragName(fullName.trim()), amount: 1 }; }
-        function getFragmentNameAndAmount(rewardId, metaData, era) { let idAmount = null; let lookupId = rewardId; const idParts = rewardId.split('#'); if (idParts.length === 3 && !isNaN(idParts[2])) { idAmount = parseInt(idParts[2], 10); lookupId = idParts[0] + '#' + idParts[1]; } const lookup = findRewardInLookup(rewardId, metaData, era) || findRewardInLookup(lookupId, metaData, era) || findRewardInLookup(idParts[1] || rewardId, metaData, era); let fullName = rewardId; let lookupAmount = null; if (lookup) { if (lookup.amount != null && lookup.amount > 0) lookupAmount = lookup.amount; if (lookup.subType === 'fragment') fullName = lookup.name || (lookup.assembledReward ? lookup.assembledReward.name : 'Фрагмент'); else if (lookup.type === 'blueprint' || lookup.subType === 'reward_item') fullName = lookup.name; else if (lookup.name) fullName = lookup.subType !== 'reward_item' ? lookup.name.replace(/^\+?\d+\s*/,'') : lookup.name; } else if (rewardId.includes('fragment')) { fullName = 'Фрагмент (' + (idParts[1] || rewardId) + ')'; } const { baseName, amount: nameAmount } = parseFragmentName(fullName); const amount = idAmount || lookupAmount || nameAmount; return { baseName, amount }; }
-        function getBuildingSize(metaData) { try { const comp = metaData.components?.AllAge; if (comp?.placement?.size) { const x = comp.placement.size.x || 0; const y = comp.placement.size.y || 0; if (x && y) { const area = x * y; const road = comp.streetConnectionRequirement?.requiredLevel ?? 0; if (road > 0) return area + Math.min(x, y) / 2; return area; } } for (const era of ERAS_TO_CHECK) { const c = metaData.components?.[era]; if (c?.placement?.size) { const x = c.placement.size.x || 0; const y = c.placement.size.y || 0; if (x && y) return x * y; } if (c?.placement) { const w = c.placement.width || c.placement.x || 0; const h = c.placement.height || c.placement.y || 0; if (w && h) return w * h; } } } catch(e) {} return null; }
-        function calcFragsPerDay(opt, metaData, era) { const result = new Map(); const cycleSec = opt.time || opt.duration || opt.production_time || 0; if (!cycleSec) return result; const cyclesPerDay = 86400 / cycleSec; if (!Array.isArray(opt.products)) return result; opt.products.forEach(prod => { if (prod.type === 'genericReward' && prod.reward?.id && isFragmentId(prod.reward.id)) { const { baseName, amount } = getFragmentNameAndAmount(prod.reward.id, metaData, era); const dc = prod.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: prod.reward.id, avgPerDay: avg }); } if (prod.type === 'random' && Array.isArray(prod.products)) { prod.products.forEach(rp => { const id = rp.product?.reward?.id; if (!id || !isFragmentId(id)) return; const { baseName, amount } = getFragmentNameAndAmount(id, metaData, era); const dc = rp.chance != null ? rp.chance : rp.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: id, avgPerDay: avg }); }); } }); return result; }
-        let fragRatingSortCol = 'perDay';
-        let fragRatingSortAsc = false;
-        window.openFragmentsModal = function() {
-            document.getElementById('fragmentsModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            if (!fragInitialized) {
-                fragInitialized = true;
-                document.getElementById('fragSearch').addEventListener('input', () => { fragMode === 'list' ? fragRenderList() : fragRenderRatingSearch(); });
-                document.getElementById('fragToggleAll').addEventListener('click', function() { const items = document.querySelectorAll('.frag-building'); if (fragAllExpanded) { items.forEach(b => b.classList.remove('open')); this.textContent = t('db_frag_expand_all','Развернуть все'); } else { items.forEach(b => b.classList.add('open')); this.textContent = t('db_frag_collapse_all','Свернуть все'); } fragAllExpanded = !fragAllExpanded; });
-                document.getElementById('fragRatingBtn').addEventListener('click', () => { fragMode = fragMode === 'list' ? 'rating' : 'list'; fragUpdateModeUI(); });
+<!-- Скрипт фрагментов (обновленный) -->
+<script>
+(function() {
+    let fragBuildingsList = [];
+    let fragFragmentIndex = {};
+    let fragAllExpanded = false;
+    let fragInitialized = false;
+    let fragMode = 'list';
+    let fragRatingFragId = null;
+    let fragPerTile = false;
+    const SEARCH_ALIASES = { 'риф': ['завершите особое производство', 'rush_event_buildings_instant'] };
+    const ERAS_TO_CHECK = ['AllAge','BronzeAge','IronAge','EarlyMiddleAge','HighMiddleAge','LateMiddleAge','ColonialAge','IndustrialAge','ProgressiveEra','ModernEra','PostModernEra','ContemporaryEra','TomorrowEra','FutureEra','ArcticFuture','OceanicFuture','VirtualFuture','SpaceAgeMars','SpaceAgeAsteroidBelt','SpaceAgeVenus','SpaceAgeJupiterMoon','SpaceAgeTitan'];
+    const FRAGMENT_PATTERNS = ['fragment','rush_event','rush_buildings','renovation_kit','one_up_kit','upgrade_kit','selection_kit','mass_self_aid','self_aid_kit','building_','coin_boost','attacker_boost','defence_attacker','store_building','blueprint_box'];
+    
+    function t(key, fallback) { return (window._i18nT && window._i18nT[key]) || fallback || key; }
+    function isFragmentId(id) { if (!id) return false; return FRAGMENT_PATTERNS.some(p => id.toLowerCase().includes(p)); }
+    function findRewardInLookup(rewardId, metaData, era) { try { if (!metaData.components) return null; for (const e of [era, 'AllAge']) { const comp = metaData.components[e]; if (comp && comp.lookup && comp.lookup.rewards) { const rewards = comp.lookup.rewards; if (rewards[rewardId]) return rewards[rewardId]; for (const key in rewards) { const item = rewards[key]; if (item.type === 'chest' && item.possible_rewards) { for (const p of item.possible_rewards) if (p.reward && p.reward.id === rewardId) return p.reward; } } } } } catch(e) {} return null; }
+    function normalizeFragName(name) { if (!name) return name; return name.replace(/^(Фрагмент)\s*:\s*/i, '$1 ').trim(); }
+    function parseFragmentName(fullName) { if (!fullName) return { baseName: fullName, amount: 1 }; const match = fullName.match(/^(.*?)\s*[xх×]\s*(\d+)\s*$/i); if (match) return { baseName: normalizeFragName(match[1].trim()), amount: parseInt(match[2], 10) }; return { baseName: normalizeFragName(fullName.trim()), amount: 1 }; }
+    function getFragmentNameAndAmount(rewardId, metaData, era) { let idAmount = null; let lookupId = rewardId; const idParts = rewardId.split('#'); if (idParts.length === 3 && !isNaN(idParts[2])) { idAmount = parseInt(idParts[2], 10); lookupId = idParts[0] + '#' + idParts[1]; } const lookup = findRewardInLookup(rewardId, metaData, era) || findRewardInLookup(lookupId, metaData, era) || findRewardInLookup(idParts[1] || rewardId, metaData, era); let fullName = rewardId; let lookupAmount = null; if (lookup) { if (lookup.amount != null && lookup.amount > 0) lookupAmount = lookup.amount; if (lookup.subType === 'fragment') fullName = lookup.name || (lookup.assembledReward ? lookup.assembledReward.name : 'Фрагмент'); else if (lookup.type === 'blueprint' || lookup.subType === 'reward_item') fullName = lookup.name; else if (lookup.name) fullName = lookup.subType !== 'reward_item' ? lookup.name.replace(/^\+?\d+\s*/,'') : lookup.name; } else if (rewardId.includes('fragment')) { fullName = 'Фрагмент (' + (idParts[1] || rewardId) + ')'; } const { baseName, amount: nameAmount } = parseFragmentName(fullName); const amount = idAmount || lookupAmount || nameAmount; return { baseName, amount }; }
+    function getBuildingSize(metaData) { try { const comp = metaData.components?.AllAge; if (comp?.placement?.size) { const x = comp.placement.size.x || 0; const y = comp.placement.size.y || 0; if (x && y) { const area = x * y; const road = comp.streetConnectionRequirement?.requiredLevel ?? 0; if (road > 0) return area + Math.min(x, y) / 2; return area; } } for (const era of ERAS_TO_CHECK) { const c = metaData.components?.[era]; if (c?.placement?.size) { const x = c.placement.size.x || 0; const y = c.placement.size.y || 0; if (x && y) return x * y; } if (c?.placement) { const w = c.placement.width || c.placement.x || 0; const h = c.placement.height || c.placement.y || 0; if (w && h) return w * h; } } } catch(e) {} return null; }
+    function calcFragsPerDay(opt, metaData, era) { const result = new Map(); const cycleSec = opt.time || opt.duration || opt.production_time || 0; if (!cycleSec) return result; const cyclesPerDay = 86400 / cycleSec; if (!Array.isArray(opt.products)) return result; opt.products.forEach(prod => { if (prod.type === 'genericReward' && prod.reward?.id && isFragmentId(prod.reward.id)) { const { baseName, amount } = getFragmentNameAndAmount(prod.reward.id, metaData, era); const dc = prod.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: prod.reward.id, avgPerDay: avg }); } if (prod.type === 'random' && Array.isArray(prod.products)) { prod.products.forEach(rp => { const id = rp.product?.reward?.id; if (!id || !isFragmentId(id)) return; const { baseName, amount } = getFragmentNameAndAmount(id, metaData, era); const dc = rp.chance != null ? rp.chance : rp.dropChance; const chance = (dc != null && dc > 0) ? (dc > 1 ? dc / 100 : dc) : 1; const avg = amount * chance * cyclesPerDay; const cur = result.get(baseName); if (!cur || avg > cur.avgPerDay) result.set(baseName, { fragId: id, avgPerDay: avg }); }); } }); return result; }
+    let fragRatingSortCol = 'perDay';
+    let fragRatingSortAsc = false;
+    
+    // Функция для проверки, содержит ли строка хотя бы одно слово из списка исключений
+    function hasExcludeWord(text, excludeWords) {
+        if (!excludeWords || excludeWords.length === 0) return false;
+        const lowerText = text.toLowerCase();
+        return excludeWords.some(word => lowerText.includes(word.toLowerCase()));
+    }
+    
+    // Функция для получения списка слов исключения из поля ввода
+    function getExcludeWords() {
+        const input = document.getElementById('fragExcludeSearch');
+        if (!input) return [];
+        const val = input.value.trim();
+        if (!val) return [];
+        // Разбиваем по пробелам, запятым, точкам с запятой
+        // И фильтруем слова длиной МИНИМУМ 3 символа
+        return val.split(/[\s,;]+/)
+            .filter(w => w.length >= 3); // ← ИЗМЕНЕНИЕ: минимум 3 символа
+    }
+    
+    window.openFragmentsModal = function() {
+        document.getElementById('fragmentsModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        if (!fragInitialized) {
+            fragInitialized = true;
+            document.getElementById('fragSearch').addEventListener('input', () => { fragMode === 'list' ? fragRenderList() : fragRenderRatingSearch(); });
+            document.getElementById('fragExcludeSearch').addEventListener('input', () => { fragMode === 'list' ? fragRenderList() : fragRenderRatingSearch(); });
+            document.getElementById('fragToggleAll').addEventListener('click', function() { const items = document.querySelectorAll('.frag-building'); if (fragAllExpanded) { items.forEach(b => b.classList.remove('open')); this.textContent = t('db_frag_expand_all','Развернуть все'); } else { items.forEach(b => b.classList.add('open')); this.textContent = t('db_frag_collapse_all','Свернуть все'); } fragAllExpanded = !fragAllExpanded; });
+            document.getElementById('fragRatingBtn').addEventListener('click', () => { fragMode = fragMode === 'list' ? 'rating' : 'list'; fragUpdateModeUI(); });
+        }
+        fragLoadData();
+    };
+    window.closeFragmentsModal = function() { document.getElementById('fragmentsModal').style.display = 'none'; document.body.style.overflow = ''; };
+    
+    function fragUpdateModeUI() { const btn = document.getElementById('fragRatingBtn'); const toggleAllBtn = document.getElementById('fragToggleAll'); const searchEl = document.getElementById('fragSearch'); const excludeEl = document.getElementById('fragExcludeSearch'); if (fragMode === 'rating') { btn.style.background = 'rgba(255,165,0,0.3)'; btn.textContent = t('db_frag_back_btn','← Список'); toggleAllBtn.style.display = 'none'; searchEl.placeholder = t('db_frag_search_placeholder_rating','Поиск фрагмента...'); excludeEl.style.display = 'none'; fragRatingFragId = null; fragRenderRatingSearch(); } else { btn.style.background = 'rgba(255,165,0,0.15)'; btn.textContent = t('db_frag_rating_btn','🏆 Рейтинг зданий'); toggleAllBtn.style.display = ''; searchEl.placeholder = t('db_frag_search_placeholder','Поиск: здание или фрагмент'); excludeEl.style.display = ''; fragRenderList(); } }
+    
+    async function fragLoadData() { const loadingDiv = document.getElementById('fragLoading'); if (!window.localFileData) { document.getElementById('fragResults').innerHTML = `<p style="color:#ffd700;padding:20px;text-align:center;">${t('db_frag_no_file','📂 Сначала загрузите JSON файл')}</p>`; return; } if (fragBuildingsList.length > 0) { fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); return; } loadingDiv.style.display = 'block'; loadingDiv.innerHTML = t('db_frag_loading','🔄 Анализ фрагментов...'); document.getElementById('fragResults').innerHTML = ''; const entities = Array.isArray(window.localFileData) ? window.localFileData : Object.values(window.localFileData); fragBuildingsList = []; fragFragmentIndex = {}; entities.forEach(metaData => { if (!metaData || !metaData.id || !metaData.name) return; const size = getBuildingSize(metaData); const bestPerDay = new Map(); ERAS_TO_CHECK.forEach(era => { const comp = metaData.components?.[era]; if (!comp?.production?.options) return; comp.production.options.forEach(opt => { const dayMap = calcFragsPerDay(opt, metaData, era); dayMap.forEach(({ fragId, avgPerDay }, baseName) => { const cur = bestPerDay.get(baseName); if (!cur || avgPerDay > cur.perDay) bestPerDay.set(baseName, { fragId, perDay: avgPerDay }); }); }); }); if (bestPerDay.size === 0) return; const rewards = []; bestPerDay.forEach(({ fragId, perDay }, baseName) => { const perDayPerTile = size ? perDay / size : null; rewards.push({ id: fragId, name: baseName, perDay, perDayPerTile }); if (!fragFragmentIndex[baseName]) fragFragmentIndex[baseName] = { name: baseName, buildings: [] }; fragFragmentIndex[baseName].buildings.push({ id: metaData.id, name: metaData.name, size, perDay, perDayPerTile }); }); fragBuildingsList.push({ id: metaData.id, name: metaData.name, size, rewards }); }); fragBuildingsList.sort((a,b) => a.name.localeCompare(b.name,'ru')); loadingDiv.style.display = 'none'; fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); }
+    
+    function fragRenderList() { 
+        const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); 
+        const excludeWords = getExcludeWords();
+        const resultsDiv = document.getElementById('fragResults'); 
+        if (!resultsDiv) return; 
+        resultsDiv.innerHTML = ''; 
+        const aliases = SEARCH_ALIASES[query] || []; 
+        const allQ = [query, ...aliases].filter(Boolean); 
+        
+        const filtered = fragBuildingsList.filter(b => {
+            // Проверяем, содержит ли имя здания слово из исключений
+            if (hasExcludeWord(b.name, excludeWords)) return false;
+            
+            // Проверяем, содержит ли хотя бы один фрагмент слово из исключений
+            const hasExcludedReward = b.rewards.some(r => hasExcludeWord(r.name, excludeWords));
+            if (hasExcludedReward) return false;
+            
+            // Проверяем поисковый запрос
+            if (!allQ.length) return true;
+            return allQ.some(q => b.name.toLowerCase().includes(q)) || 
+                   b.rewards.some(r => allQ.some(q => r.name.toLowerCase().includes(q)));
+        });
+        
+        if (!filtered.length) { 
+            resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found','Ничего не найдено.')}</p>`; 
+            return; 
+        } 
+        
+        const hl = text => { 
+            // Сначала выделяем слова исключения серым цветом (показываем, что они исключены)
+            let result = text;
+            for (const w of excludeWords) {
+                if (w && text.toLowerCase().includes(w.toLowerCase())) {
+                    const regex = new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+                    result = result.replace(regex, '<span style="color:#ff6b6b;text-decoration:line-through;">$1</span>');
+                }
             }
-            fragLoadData();
+            // Потом выделяем поисковые слова
+            for (const q of allQ) {
+                if (q && result.toLowerCase().includes(q)) {
+                    const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+                    result = result.replace(regex, '<mark>$1</mark>');
+                }
+            }
+            return result;
         };
-        window.closeFragmentsModal = function() { document.getElementById('fragmentsModal').style.display = 'none'; document.body.style.overflow = ''; };
-        function fragUpdateModeUI() { const btn = document.getElementById('fragRatingBtn'); const toggleAllBtn = document.getElementById('fragToggleAll'); const searchEl = document.getElementById('fragSearch'); if (fragMode === 'rating') { btn.style.background = 'rgba(255,165,0,0.3)'; btn.textContent = t('db_frag_back_btn','← Список'); toggleAllBtn.style.display = 'none'; searchEl.placeholder = t('db_frag_search_placeholder_rating','Поиск фрагмента...'); fragRatingFragId = null; fragRenderRatingSearch(); } else { btn.style.background = 'rgba(255,165,0,0.15)'; btn.textContent = t('db_frag_rating_btn','🏆 Рейтинг зданий'); toggleAllBtn.style.display = ''; searchEl.placeholder = t('db_frag_search_placeholder','Поиск: здание или фрагмент'); fragRenderList(); } }
-        async function fragLoadData() { const loadingDiv = document.getElementById('fragLoading'); if (!window.localFileData) { document.getElementById('fragResults').innerHTML = `<p style="color:#ffd700;padding:20px;text-align:center;">${t('db_frag_no_file','📂 Сначала загрузите JSON файл')}</p>`; return; } if (fragBuildingsList.length > 0) { fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); return; } loadingDiv.style.display = 'block'; loadingDiv.innerHTML = t('db_frag_loading','🔄 Анализ фрагментов...'); document.getElementById('fragResults').innerHTML = ''; const entities = Array.isArray(window.localFileData) ? window.localFileData : Object.values(window.localFileData); fragBuildingsList = []; fragFragmentIndex = {}; entities.forEach(metaData => { if (!metaData || !metaData.id || !metaData.name) return; const size = getBuildingSize(metaData); const bestPerDay = new Map(); ERAS_TO_CHECK.forEach(era => { const comp = metaData.components?.[era]; if (!comp?.production?.options) return; comp.production.options.forEach(opt => { const dayMap = calcFragsPerDay(opt, metaData, era); dayMap.forEach(({ fragId, avgPerDay }, baseName) => { const cur = bestPerDay.get(baseName); if (!cur || avgPerDay > cur.perDay) bestPerDay.set(baseName, { fragId, perDay: avgPerDay }); }); }); }); if (bestPerDay.size === 0) return; const rewards = []; bestPerDay.forEach(({ fragId, perDay }, baseName) => { const perDayPerTile = size ? perDay / size : null; rewards.push({ id: fragId, name: baseName, perDay, perDayPerTile }); if (!fragFragmentIndex[baseName]) fragFragmentIndex[baseName] = { name: baseName, buildings: [] }; fragFragmentIndex[baseName].buildings.push({ id: metaData.id, name: metaData.name, size, perDay, perDayPerTile }); }); fragBuildingsList.push({ id: metaData.id, name: metaData.name, size, rewards }); }); fragBuildingsList.sort((a,b) => a.name.localeCompare(b.name,'ru')); loadingDiv.style.display = 'none'; fragMode === 'rating' ? fragRenderRatingSearch() : fragRenderList(); }
-        function fragRenderList() { const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); const resultsDiv = document.getElementById('fragResults'); if (!resultsDiv) return; resultsDiv.innerHTML = ''; const aliases = SEARCH_ALIASES[query] || []; const allQ = [query, ...aliases].filter(Boolean); const filtered = fragBuildingsList.filter(b => !allQ.length || allQ.some(q => b.name.toLowerCase().includes(q)) || b.rewards.some(r => allQ.some(q => r.name.toLowerCase().includes(q)))); if (!filtered.length) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found','Ничего не найдено.')}</p>`; return; } const hl = text => { for (const q of allQ) { if (q && text.toLowerCase().includes(q)) return text.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>'); } return text; }; filtered.forEach(b => { const div = document.createElement('div'); div.className = 'frag-building'; div.innerHTML = `<div class="frag-building-header">${hl(b.name)}</div><div class="frag-rewards">${b.rewards.map(r=>`<div class="frag-reward-item">${hl(r.name)}</div>`).join('')}</div>`; div.querySelector('.frag-building-header').addEventListener('click', () => div.classList.toggle('open')); resultsDiv.appendChild(div); }); }
-        function fragRenderRatingSearch() { const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); const resultsDiv = document.getElementById('fragResults'); if (!resultsDiv) return; if (!query) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_hint','Введите название фрагмента...')}</p>`; return; } const matches = Object.entries(fragFragmentIndex).filter(([baseName]) => baseName.toLowerCase().includes(query)).sort((a,b) => a[0].localeCompare(b[0],'ru')); if (!matches.length) { resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found_rating','Фрагменты не найдены.')}</p>`; return; } resultsDiv.innerHTML = ''; const hint = document.createElement('p'); hint.style.cssText = 'color:#aaa;font-size:12px;margin:0 0 8px;'; hint.textContent = t('db_frag_hint','Нажмите на фрагмент чтобы увидеть рейтинг зданий:'); resultsDiv.appendChild(hint); matches.forEach(([fragId, frag]) => { const btn = document.createElement('div'); btn.style.cssText = 'padding:8px 12px;margin:4px 0;background:rgba(58,123,213,0.15);border:1px solid #3a7bd5;border-radius:6px;cursor:pointer;color:#7ec8e3;transition:background 0.2s;'; btn.textContent = frag.name; btn.onmouseover = () => btn.style.background = 'rgba(58,123,213,0.35)'; btn.onmouseout = () => btn.style.background = 'rgba(58,123,213,0.15)'; btn.addEventListener('click', () => { fragRatingFragId = fragId; fragRenderRatingTable(); }); resultsDiv.appendChild(btn); }); }
-        function fragRenderRatingTable() { const resultsDiv = document.getElementById('fragResults'); const frag = fragFragmentIndex[fragRatingFragId]; if (!frag || !resultsDiv) return; const sorted = [...frag.buildings].sort((a, b) => { const av = fragRatingSortCol === 'perDayPerTile' ? (a.perDayPerTile || 0) : a.perDay; const bv = fragRatingSortCol === 'perDayPerTile' ? (b.perDayPerTile || 0) : b.perDay; return fragRatingSortAsc ? av - bv : bv - av; }); const fmt = n => n != null && n > 0 ? n.toFixed(2) : '—'; const arrow = col => fragRatingSortCol === col ? (fragRatingSortAsc ? ' ▲' : ' ▼') : ' ⇅'; const thStyle = `padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;`; const thActive = `color:#ffd700;`; resultsDiv.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:#7ec8e3;font-weight:bold;">${frag.name}</span><span style="color:#aaa;font-size:12px;">${sorted.length} ${t('db_top_buildings_count','зданий')}</span></div><table id="fragRatingTable" style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="border-bottom:1px solid #444;"><th style="${thStyle}color:#aaa;">#</th><th style="${thStyle}text-align:left;color:#aaa;">Здание</th><th id="thPerDay" style="${thStyle}text-align:right;${fragRatingSortCol==='perDay'?thActive:'color:#aaa;}'}">📦 /сутки${arrow('perDay')}</th><th id="thPerTile" style="${thStyle}text-align:right;${fragRatingSortCol==='perDayPerTile'?thActive:'color:#aaa;'}">📐 /сутки/кл.${arrow('perDayPerTile')}</th></tr></thead><tbody>${sorted.map((b,i) => `<tr style="border-bottom:1px solid #333;${i===0?'color:#ffd700;':''}"><td style="padding:5px 8px;color:#666;">${i+1}</td><td style="padding:5px 8px;">${b.name}${b.size ? ` <span style="color:#666;font-size:11px;">(${b.size}кл)</span>` : ''}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDay)}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDayPerTile)}</td></tr>`).join('')}</tbody></table>`; document.getElementById('thPerDay').addEventListener('click', () => { if (fragRatingSortCol === 'perDay') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDay'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); document.getElementById('thPerTile').addEventListener('click', () => { if (fragRatingSortCol === 'perDayPerTile') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDayPerTile'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); }
-        document.addEventListener('click', e => { if (e.target.id === 'fragmentsModal') window.closeFragmentsModal(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('fragmentsModal')?.style.display === 'block') window.closeFragmentsModal(); });
-    })();
-    </script>
+        
+        filtered.forEach(b => { 
+            const div = document.createElement('div'); 
+            div.className = 'frag-building'; 
+            // Проверяем, есть ли исключения в имени здания
+            const hasExcludedInName = hasExcludeWord(b.name, excludeWords);
+            const hasExcludedInRewards = b.rewards.some(r => hasExcludeWord(r.name, excludeWords));
+            if (hasExcludedInName || hasExcludedInRewards) {
+                div.classList.add('frag-excluded');
+            }
+            
+            div.innerHTML = `<div class="frag-building-header">${hl(b.name)}</div><div class="frag-rewards">${b.rewards.map(r=>`<div class="frag-reward-item">${hl(r.name)}</div>`).join('')}</div>`; 
+            div.querySelector('.frag-building-header').addEventListener('click', () => div.classList.toggle('open')); 
+            resultsDiv.appendChild(div); 
+        }); 
+    }
+    
+    function fragRenderRatingSearch() { 
+        const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase(); 
+        const excludeWords = getExcludeWords();
+        const resultsDiv = document.getElementById('fragResults'); 
+        if (!resultsDiv) return; 
+        if (!query) { 
+            resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_hint','Введите название фрагмента...')}</p>`; 
+            return; 
+        } 
+        const matches = Object.entries(fragFragmentIndex)
+            .filter(([baseName]) => {
+                // Проверяем исключения
+                if (hasExcludeWord(baseName, excludeWords)) return false;
+                return baseName.toLowerCase().includes(query);
+            })
+            .sort((a,b) => a[0].localeCompare(b[0],'ru')); 
+        if (!matches.length) { 
+            resultsDiv.innerHTML = `<p style="color:#aaa;padding:10px;">${t('db_frag_not_found_rating','Фрагменты не найдены.')}</p>`; 
+            return; 
+        } 
+        resultsDiv.innerHTML = ''; 
+        const hint = document.createElement('p'); 
+        hint.style.cssText = 'color:#aaa;font-size:12px;margin:0 0 8px;'; 
+        hint.textContent = t('db_frag_hint','Нажмите на фрагмент чтобы увидеть рейтинг зданий:'); 
+        resultsDiv.appendChild(hint); 
+        matches.forEach(([fragId, frag]) => { 
+            const btn = document.createElement('div'); 
+            btn.style.cssText = 'padding:8px 12px;margin:4px 0;background:rgba(58,123,213,0.15);border:1px solid #3a7bd5;border-radius:6px;cursor:pointer;color:#7ec8e3;transition:background 0.2s;'; 
+            btn.textContent = frag.name; 
+            btn.onmouseover = () => btn.style.background = 'rgba(58,123,213,0.35)'; 
+            btn.onmouseout = () => btn.style.background = 'rgba(58,123,213,0.15)'; 
+            btn.addEventListener('click', () => { fragRatingFragId = fragId; fragRenderRatingTable(); }); 
+            resultsDiv.appendChild(btn); 
+        }); 
+    }
+    
+    function fragRenderRatingTable() { 
+        const resultsDiv = document.getElementById('fragResults'); 
+        const frag = fragFragmentIndex[fragRatingFragId]; 
+        if (!frag || !resultsDiv) return; 
+        const excludeWords = getExcludeWords();
+        
+        // Фильтруем здания, исключая те, у которых имя содержит слово из исключений
+        const filteredBuildings = frag.buildings.filter(b => !hasExcludeWord(b.name, excludeWords));
+        
+        const sorted = [...filteredBuildings].sort((a, b) => { 
+            const av = fragRatingSortCol === 'perDayPerTile' ? (a.perDayPerTile || 0) : a.perDay; 
+            const bv = fragRatingSortCol === 'perDayPerTile' ? (b.perDayPerTile || 0) : b.perDay; 
+            return fragRatingSortAsc ? av - bv : bv - av; 
+        }); 
+        const fmt = n => n != null && n > 0 ? n.toFixed(2) : '—'; 
+        const arrow = col => fragRatingSortCol === col ? (fragRatingSortAsc ? ' ▲' : ' ▼') : ' ⇅'; 
+        const thStyle = `padding:6px 8px;cursor:pointer;user-select:none;white-space:nowrap;`; 
+        const thActive = `color:#ffd700;`; 
+        resultsDiv.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:#7ec8e3;font-weight:bold;">${frag.name}</span><span style="color:#aaa;font-size:12px;">${sorted.length} ${t('db_top_buildings_count','зданий')}</span></div><table id="fragRatingTable" style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="border-bottom:1px solid #444;"><th style="${thStyle}color:#aaa;">#</th><th style="${thStyle}text-align:left;color:#aaa;">Здание</th><th id="thPerDay" style="${thStyle}text-align:right;${fragRatingSortCol==='perDay'?thActive:'color:#aaa;}'}">📦 /сутки${arrow('perDay')}</th><th id="thPerTile" style="${thStyle}text-align:right;${fragRatingSortCol==='perDayPerTile'?thActive:'color:#aaa;'}">📐 /сутки/кл.${arrow('perDayPerTile')}</th></tr></thead><tbody>${sorted.map((b,i) => `<tr style="border-bottom:1px solid #333;${i===0?'color:#ffd700;':''}"><td style="padding:5px 8px;color:#666;">${i+1}</td><td style="padding:5px 8px;">${b.name}${b.size ? ` <span style="color:#666;font-size:11px;">(${b.size}кл)</span>` : ''}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDay)}</td><td style="padding:5px 8px;text-align:right;font-family:monospace;">${fmt(b.perDayPerTile)}</td></tr>`).join('')}</tbody></table>`; 
+        document.getElementById('thPerDay').addEventListener('click', () => { if (fragRatingSortCol === 'perDay') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDay'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); 
+        document.getElementById('thPerTile').addEventListener('click', () => { if (fragRatingSortCol === 'perDayPerTile') fragRatingSortAsc = !fragRatingSortAsc; else { fragRatingSortCol = 'perDayPerTile'; fragRatingSortAsc = false; } fragRenderRatingTable(); }); 
+    }
+    
+    document.addEventListener('click', e => { if (e.target.id === 'fragmentsModal') window.closeFragmentsModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('fragmentsModal')?.style.display === 'block') window.closeFragmentsModal(); });
+})();
+</script>
 </body>
 </html>
