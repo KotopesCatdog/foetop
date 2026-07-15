@@ -29,7 +29,7 @@
             z-index: 1;
         }
 
-        /* === Падающие звёзды (адаптация из popup) === */
+        /* === Падающие звёзды === */
         .star-field {
             position: fixed;
             top: 0;
@@ -70,7 +70,7 @@
             letter-spacing: 4px;
             color: #00ffff;
             text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 40px #008080;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             font-family: 'Courier New', monospace;
             animation: neonBlink 3s infinite alternate;
         }
@@ -84,14 +84,14 @@
             97% { opacity: 1; }
         }
 
-        /* Главный контейнер (Эффект матового стекла / Glassmorphism) */
+        /* Главный контейнер */
         .menu-container {
             display: flex;
             flex-direction: column;
             gap: 16px;
             width: 100%;
-            max-width: 420px;
-            padding: 40px 30px;
+            max-width: 1000px;
+            padding: 36px 30px 30px;
             background: rgba(7, 15, 35, 0.65);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
@@ -105,10 +105,18 @@
             z-index: 2;
         }
 
-        /* Кнопки будущего — Киберпанк стиль */
+        /* Сетка кнопок 3 колонки, 6 рядов */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+
+        /* Кнопки — широкие и низкие, ОДИНАКОВЫЙ ЦВЕТ ДЛЯ ВСЕХ */
         .menu-btn {
             position: relative;
-            padding: 14px 24px;
+            padding: 1px 48px;
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 1px;
@@ -121,9 +129,24 @@
             overflow: hidden;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+            min-height: 44px;
+            white-space: nowrap;
         }
 
-        /* Эффект глянцевого блеска при наведении */
+        /* Для кнопок с длинным текстом — разрешаем перенос */
+        .menu-btn.wrap-text {
+            white-space: normal;
+        }
+
+        .menu-btn[href] {
+            cursor: pointer;
+        }
+
+        /* Эффект глянцевого блеска при наведении (ОДИНАКОВЫЙ ДЛЯ ВСЕХ) */
         .menu-btn::before {
             content: '';
             position: absolute;
@@ -149,15 +172,68 @@
             transform: translateY(-1px) scale(1);
         }
 
-        /* Кнопка Telegram (Особый акцент) */
-        .menu-btn[data-i18n="index_btn_questions"] {
-            background: linear-gradient(135deg, rgba(26, 145, 218, 0.7) 0%, rgba(15, 80, 120, 0.8) 100%);
-            border-color: rgba(29, 161, 242, 0.5);
+        /* Блоки с дополнительными кнопками (расширения) */
+        .extension-block {
+            margin-top: 4px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 255, 255, 0.15);
         }
-        .menu-btn[data-i18n="index_btn_questions"]:hover {
-            background: linear-gradient(135deg, #1da1f2 0%, #1070aa 100%);
-            border-color: #1da1f2;
-            box-shadow: 0 0 25px rgba(29, 161, 242, 0.6);
+
+        .block-title {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            color: #8aa8c9;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .extension-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        /* В блоках расширений — такие же широкие и низкие кнопки */
+        .extension-row .menu-btn {
+            padding: 2px 48px;
+            font-size: 18px;
+            min-height: 44px;
+            white-space: nowrap;
+        }
+
+       /* Блок с широкими кнопками в одну колонку */
+.extension-row-single {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.extension-row-single .menu-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 48px;
+    min-height: 44px;
+    white-space: nowrap;
+    text-align: center;
+    box-sizing: border-box; /* главное! */
+}
+
+        /* Заглушка (пустая кнопка) */
+        .menu-btn.placeholder {
+            background: rgba(40, 50, 70, 0.4);
+            border-color: rgba(100, 140, 180, 0.2);
+            color: #6688aa;
+            box-shadow: none;
+            cursor: default;
+            pointer-events: none;
+        }
+        .menu-btn.placeholder::before {
+            display: none;
         }
 
         /* Переключатель языков */
@@ -165,7 +241,7 @@
             display: flex;
             justify-content: center;
             gap: 12px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .lang-switcher button {
@@ -191,7 +267,7 @@
 
         /* Футер */
         .footer-text {
-            margin-top: 15px;
+            margin-top: 12px;
             text-align: center;
             font-size: 13px;
             color: #7a8a99;
@@ -211,36 +287,124 @@
             text-shadow: 0 0 8px #00ddff;
         }
         
-        /* адаптивность поля звёзд */
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .menu-container {
-                padding: 28px 20px;
+                padding: 24px 16px;
+                max-width: 100%;
             }
             .title {
-                font-size: 32px;
+                font-size: 30px;
+            }
+            .btn-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .extension-row {
+                grid-template-columns: 1fr;
+            }
+            .menu-btn {
+                font-size: 16px;
+                padding: 8px 24px;
+                min-height: 40px;
+                white-space: normal;
+            }
+            .extension-row .menu-btn {
+                font-size: 16px;
+                padding: 8px 24px;
+                min-height: 40px;
+                white-space: normal;
+            }
+            .extension-row-single .menu-btn {
+                font-size: 16px;
+                padding: 8px 24px;
+                min-height: 40px;
+                white-space: normal;
+            }
+        }
+        @media (max-width: 420px) {
+            .btn-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .menu-btn {
+                font-size: 14px;
+                padding: 8px 16px;
+                min-height: 38px;
+            }
+            .extension-row .menu-btn {
+                font-size: 14px;
+                padding: 8px 16px;
+                min-height: 38px;
+            }
+            .extension-row-single .menu-btn {
+                font-size: 14px;
+                padding: 8px 16px;
+                min-height: 38px;
             }
         }
     </style>
 </head>
 <body>
     
+    
     <div class="star-field" id="starField"></div>
 
     <div class="menu-container">
         <div class="title">FOEHELP</div>
-        <a href="/foedb/" target="_blank" class="menu-btn" data-i18n="param_btn_foedb">База Зданий FoE</a>
-        <a href="/events/" target="_self" class="menu-btn" data-i18n="index_btn_events">Ивенты</a>
-        <a href="/kva/" target="_self" class="menu-btn" data-i18n="index_btn_quanta">Кванты</a>
-        <a href="/param/" target="_self" class="menu-btn" data-i18n="index_btn_params">Параметры</a>  
-        <a href="/calk/" target="_self" class="menu-btn" data-i18n="index_btn_calc">Калькуляторы</a>  
-        <a href="/redaktor/cityplan.html" target="_blank" class="menu-btn" data-i18n="index_btn_editors">Редактор города</a>
-        <a href="/links/" target="_self" class="menu-btn" data-i18n="index_btn_links">Полезные ссылки</a>
-        <a href="/game/" target="_self" class="menu-btn" data-i18n="index_btn_games">Games</a>
-        
-       <a href="#" id="installDbBtn" class="menu-btn">FOEhelp</a>
-        
-        <a href="https://t.me/foehelp" target="_blank" class="menu-btn" data-i18n="index_btn_questions">Вопросы, предложения...</a>
-<a href="https://boosty.to/foehelp/donate" target="_blank" class="menu-btn" >Помощь проекту 🍺 (Boosty)</a>
+
+        <!-- Сетка 3 колонки × 6 рядов -->
+        <div class="btn-grid">
+            <!-- Ряд 1 -->
+            <a href="/foedb/" target="_blank" class="menu-btn wrap-text" data-i18n="param_btn_foedb">База Зданий FoE</a>
+            <a href="/events/" target="_self" class="menu-btn wrap-text" data-i18n="index_btn_events">Ивенты</a>
+            <a href="/kva/" target="_self" class="menu-btn" data-i18n="index_btn_quanta">Кванты</a>
+            <!-- Ряд 2 -->
+            <a href="/redaktor/cityplan.html" target="_blank" class="menu-btn wrap-text" data-i18n="index_btn_editors">Редактор города</a>
+            <a href="/calk/fullvs.html" target="_self" class="menu-btn">Полная стоимость ВС</a>
+            <a href="/param/qitop.html" target="_blank" class="menu-btn">QI Leaderboards</a>
+            
+            <!-- Ряд 3 -->
+            <a href="/links/" target="_self" class="menu-btn" data-i18n="index_btn_links">Полезные ссылки</a>
+            <a href="/calk/vstitan.html" target="_self" class="menu-btn">ВС Титана</a>
+            <span class="menu-btn placeholder">—</span>
+            <!-- Ряд 4 -->
+            
+            
+            <a href="/maphelp/" target="_blank" class="menu-btn" data-i18n="param_btn_kratkart">Карты континентов</a>
+             <span class="menu-btn placeholder">—</span>
+            <span class="menu-btn placeholder">—</span>
+            
+            <!-- Ряд 5 (заглушки) -->
+           
+           <a href="/param/maptime.html" target="_blank" class="menu-btn" data-i18n="param_btn_maptime"></a>
+            <span class="menu-btn placeholder">—</span>
+          
+            <span class="menu-btn placeholder">—</span>
+          
+          
+            <!-- Ряд 6 (заглушки) -->
+            <a href="/param/nauka.html" target="_self" class="menu-btn" data-i18n="param_btn_nauka">Стоимость науки</a>
+            <a href="/param/foestat.html" target="_blank" class="menu-btn" data-i18n="param_btn_foestat">FOE RU статистика миров</a>
+            <a href="/game/" target="_self" class="menu-btn" data-i18n="index_btn_games">Games</a>
+        </div>
+
+        <!-- Блок "Расширения для браузеров" -->
+        <div class="extension-block">
+            <div class="block-title">Расширение <span style="color: #00ffff; text-shadow: 0 0 8px #00ffff, 0 0 20px rgba(0, 255, 255, 0.3); font-weight: 800;">FOEhelp</span> для браузеров</div>
+            <div class="extension-row">
+                <a href="https://chromewebstore.google.com/detail/fcllidcajdgifcibgjgnhmcbnafiambc?utm_source=item-share-cb" target="_blank" class="menu-btn" id="ext1">Хром</a>
+                <a href="#" class="menu-btn" id="ext2">Мозилла (ещё нет)</a>
+            </div>
+        </div>
+
+        <!-- Блок с широкими кнопками в одну колонку -->
+        <div class="extension-block">
+            <div class="extension-row-single">
+                <a href="https://telegram.me/foehelp" target="_blank" class="menu-btn" data-i18n="index_btn_questions">Вопросы, предложения...</a>
+                <a href="https://boosty.to/foehelp/donate" target="_blank" class="menu-btn wrap-text">Помощь проекту 🍺 (Boosty)</a>
+            </div>
+        </div>
+
         <div class="lang-switcher">
             <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
             <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
@@ -254,9 +418,8 @@
         </div>
     </div>
   
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <script>
-        
         (function initStarfall() {
             const starField = document.getElementById('starField');
             if (!starField) return;
@@ -315,7 +478,6 @@
                 }
             }, 8000);
         })();
-     
     </script>
     
     <script src="/js/i18n.js"></script>
@@ -361,6 +523,5 @@
             loadVersion();
         })();
     </script>
-        
 </body>
 </html>
