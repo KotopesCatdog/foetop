@@ -22,16 +22,16 @@
   },
   
   "boosts": {
-    "attack": { "label": "Аааатака", "iconUrl": "/icons/attack.png" },
-    "defense": { "label": "Оборона", "iconUrl": "/icons/def_boost_defender.png" },
-    "goods_production": { "label": "Производство товаров", "iconUrl": "/icons/goods.png" },
-    "money_production": { "label": "Производство монет", "iconUrl": "/icons/money.png" },
-    "supplies_production": { "label": "Производство молотков", "iconUrl": "/icons/supplies.png" },
-    "coin_production": { "label": "Производство монет", "iconUrl": "/icons/coin_production.png" },
-    "happiness": { "label": "Счастье", "iconUrl": "/icons/happiness.png" },
-    "population": { "label": "Население", "iconUrl": "/icons/population.png" },
-    "clan_power": { "label": "Сила гильдии", "iconUrl": "/icons/clan_power.png" },
-    "campaign": { "label": "Кампания", "iconUrl": "/icons/campaign.png" }
+    "attack": { "label": "Аааатака", "iconUrl": "https://foehelp.ru/icons/attack.png" },
+    "defense": { "label": "Оборона", "iconUrl": "https://foehelp.ru/icons/def_boost_defender.png" },
+    "goods_production": { "label": "Производство товаров", "iconUrl": "https://foehelp.ru/icons/goods.png" },
+    "money_production": { "label": "Производство монет", "iconUrl": "https://foehelp.ru/icons/money.png" },
+    "supplies_production": { "label": "Производство молотков", "iconUrl": "https://foehelp.ru/icons/supplies.png" },
+    "coin_production": { "label": "Производство монет", "iconUrl": "https://foehelp.ru/icons/coin_production.png" },
+    "happiness": { "label": "Счастье", "iconUrl": "https://foehelp.ru/icons/happiness.png" },
+    "population": { "label": "Население", "iconUrl": "https://foehelp.ru/icons/population.png" },
+    "clan_power": { "label": "Сила гильдии", "iconUrl": "https://foehelp.ru/icons/clan_power.png" },
+    "campaign": { "label": "Кампания", "iconUrl": "https://foehelp.ru/icons/campaign.png" }
   },
   
   "features": {

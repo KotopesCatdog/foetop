@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FoE Building DB</title>
-<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
 <style>
 :root { --bg-color: #1a1a1d; --text-color: #c5c6c7; --accent-color: #66fcf1; --box-bg: #2d2d34; --border-color: #45454b; --tooltip-bg: rgba(20, 20, 25, 0.98); --tooltip-border: #66fcf1; --hover-bg: rgba(102, 252, 241, 0.1); --close-btn-color: #ff4500; --basket-color: #ffd700; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -261,7 +261,7 @@ select.era-selector option { background: #222; color: #fff; }
 </div>
 
 
-<div style="text-align:center; color:#888; font-size:12px; margin-top:-15px; margin-bottom:20px;">(С) Foehelp База 21.03.2026</div>
+<div style="text-align:center; color:#888; font-size:12px; margin-top:-15px; margin-bottom:20px;">(С) foehelp.ru База 21.03.2026</div>
 
 <div id="statusMsg" class="status-msg">Загрузка...</div>
 <div class="search-container">
@@ -309,7 +309,7 @@ select.era-selector option { background: #222; color: #fff; }
 <div class="toast-notification" id="toastNotification"></div>
 
 <script>
-const JSON_URL = '/building.json';
+const JSON_URL = 'https://foehelp.ru/building.json';
 let allBuildings = [];
 let activeBuildingId = null;
 let activeEraOverride = null;
@@ -371,22 +371,22 @@ window.BoostsMapper = {
 "att_boost_attacker": ["attack"], "def_boost_defender": ["defense"]
 };
 window.BonusIcons = {
-"guild_raids_action_points_collection": "/icons/guild_raids_action_points_collection.jpg",
-"attack": "/icons/attack.png",
-"att_boost_defender": "/icons/att_boost_defender.png",
-"att_def_boost_attacker": "/icons/att_def_boost_attacker.png",
-"att_def_boost_defender": "/icons/att_def_boost_defender.png",
-"att_def_boost_attacker_defender": "/icons/att_def_boost_attacker_defender.png",
-"defense": "/icons/def_boost_defender.png",
-"def_boost_attacker": "/icons/def_boost_attacker.png",
-"goods_production": "/icons/goods.png",
-"money_production": "/icons/money.png",
-"supplies_production": "/icons/supplies.png",
-"happiness": "/icons/happiness.png",
-"population": "/icons/population.png",
-"clan_power": "/icons/clan_power.png",
-"campaign": "/icons/campaign.png",
-"default": "/icons/boost_generic.png"
+"guild_raids_action_points_collection": "https://foehelp.ru/icons/guild_raids_action_points_collection.jpg",
+"attack": "https://foehelp.ru/icons/attack.png",
+"att_boost_defender": "https://foehelp.ru/icons/att_boost_defender.png",
+"att_def_boost_attacker": "https://foehelp.ru/icons/att_def_boost_attacker.png",
+"att_def_boost_defender": "https://foehelp.ru/icons/att_def_boost_defender.png",
+"att_def_boost_attacker_defender": "https://foehelp.ru/icons/att_def_boost_attacker_defender.png",
+"defense": "https://foehelp.ru/icons/def_boost_defender.png",
+"def_boost_attacker": "https://foehelp.ru/icons/def_boost_attacker.png",
+"goods_production": "https://foehelp.ru/icons/goods.png",
+"money_production": "https://foehelp.ru/icons/money.png",
+"supplies_production": "https://foehelp.ru/icons/supplies.png",
+"happiness": "https://foehelp.ru/icons/happiness.png",
+"population": "https://foehelp.ru/icons/population.png",
+"clan_power": "https://foehelp.ru/icons/clan_power.png",
+"campaign": "https://foehelp.ru/icons/campaign.png",
+"default": "https://foehelp.ru/icons/boost_generic.png"
 };
 window.AllyRoomTypes = {
 "military": "Военная",

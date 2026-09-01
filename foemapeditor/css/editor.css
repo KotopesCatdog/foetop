@@ -1,0 +1,547 @@
+/* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+.editor-container {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  max-width: 1440px;
+  margin: 20px auto;
+  padding: 0 20px;
+  height: calc(100vh - 180px); /* ← одинаково с просмотром */
+}
+
+/* ===== ЛЕВАЯ ЧАСТЬ - БОЛЬШАЯ КАРТА ===== */
+.editor-map-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #14141f;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.editor-map-wrapper .map-container {
+  flex: 1;
+  position: relative;
+  background: #0a0a0f;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#editorMap {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+#editorMap.visible {
+  display: block;
+}
+
+#editorCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.editor-map-wrapper .loading-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #4a4a6a;
+  z-index: 10;
+}
+
+.editor-map-wrapper .loading-message span {
+  font-size: 48px;
+}
+
+.editor-map-wrapper .loading-message p {
+  font-size: 16px;
+}
+
+/* Кнопки управления картой */
+.editor-map-wrapper .map-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+}
+
+.editor-map-wrapper .map-controls button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  background: rgba(20, 20, 40, 0.9);
+  color: #d0d0e0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+}
+
+.editor-map-wrapper .map-controls button:hover {
+  background: rgba(40, 40, 70, 0.9);
+}
+
+/* Статусная строка */
+.editor-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #6a6a8a;
+  background: #0f0f1a;
+  border-top: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+
+/* ===== ПРАВАЯ ПАНЕЛЬ ===== */
+.editor-sidebar {
+  width: 340px;
+  min-width: 340px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #14141f;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* ===== ПАНЕЛИ ===== */
+.panel {
+  background: #0f0f1a;
+  border: 1px solid #1e1e32;
+  border-radius: 6px;
+  padding: 10px 12px;
+  flex-shrink: 0;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.panel-header h3 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #8a8aaa;
+  margin: 0;
+}
+
+/* Список карт */
+.panel-maps {
+  flex: 0 0 auto;
+  max-height: 120px;
+  overflow: hidden;
+}
+
+.panel-maps ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.panel-maps ul li {
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.panel-maps ul li:hover {
+  background: #1e1e3a;
+}
+
+.panel-maps ul li.active {
+  background: #1e2a4a;
+  border-left-color: #f7c948;
+}
+
+.panel-maps ul li .map-name {
+  font-weight: 500;
+  color: #c0c0e0;
+}
+
+.panel-maps ul li .map-era {
+  font-size: 10px;
+  color: #5a5a7a;
+}
+
+/* Редактор карты */
+.panel-map-editor {
+  flex: 0 0 auto;
+}
+
+.compact-form .form-group {
+  margin-bottom: 4px;
+}
+
+.compact-form .form-group label {
+  font-size: 10px;
+  color: #6a6a8a;
+  margin-bottom: 1px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.compact-form .form-group input {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  outline: none;
+  width: 100%;
+  height: 28px;
+}
+
+.compact-form .form-group input:focus {
+  border-color: #4a6a9a;
+}
+
+.compact-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.compact-form .form-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.compact-form .form-actions .btn {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 11px;
+  height: 26px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Стили для выбора эмодзи */
+.emoji-select {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 14px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  outline: none;
+  height: 28px;
+  cursor: pointer;
+}
+
+.emoji-select:focus {
+  border-color: #4a6a9a;
+}
+
+.emoji-select option {
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 4px;
+}
+
+/* Координаты */
+.coord-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.coord-inputs input {
+  font-size: 12px;
+  background: #0a0a18;
+  color: #5a5a7a;
+  padding: 4px 8px;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  width: 100%;
+  height: 28px;
+  outline: none;
+}
+
+.coord-inputs input:focus {
+  border-color: #4a6a9a;
+}
+
+/* Редактор провинций */
+.panel-province-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel-province-editor .province-search {
+  margin: 4px 0;
+}
+
+.panel-province-editor .province-search input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  outline: none;
+  height: 26px;
+}
+
+.panel-province-editor .province-search input:focus {
+  border-color: #4a6a9a;
+}
+
+#provinceList {
+  flex: 1;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+#provinceList li {
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.1s;
+}
+
+#provinceList li:hover {
+  background: #1a1a2e;
+}
+
+#provinceList li .prov-emoji {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+#provinceList li .prov-name {
+  flex: 1;
+  font-size: 12px;
+  color: #c0c0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#provinceList li .prov-coords {
+  font-size: 9px;
+  color: #4a4a6a;
+  flex-shrink: 0;
+}
+
+#provinceList li .prov-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+#provinceList li .prov-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #5a5a7a;
+  transition: all 0.15s;
+}
+
+#provinceList li .prov-actions .edit-btn:hover {
+  color: #f7c948;
+  background: #1a2a3a;
+}
+
+#provinceList li .prov-actions .delete-btn:hover {
+  color: #ff4444;
+  background: #2a1a1a;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #2a2a4a;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #f7c948, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ===== КНОПКИ ===== */
+.btn {
+  padding: 8px 18px;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  background: #1e1e32;
+  color: #d0d0e0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn:hover {
+  background: #2a2a4a;
+  border-color: #5a5a8a;
+}
+
+.btn-sm {
+  padding: 3px 10px;
+  font-size: 11px;
+  height: 26px;
+  line-height: 1;
+}
+
+.btn-primary {
+  background: #2d4a7a;
+  border-color: #4a6a9a;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #3a5a8a;
+}
+
+.btn-danger {
+  background: #7a2a2a;
+  border-color: #9a3a3a;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #8a3a3a;
+}
+
+/* ===== TOOLTIP ===== */
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #fff;
+  pointer-events: none;
+  border: 1px solid #3a3a5a;
+  z-index: 50;
+  transition: opacity 0.15s;
+}
+
+.tooltip.hidden {
+  opacity: 0;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a15;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5a;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .editor-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 8px;
+  }
+  
+  .editor-map-wrapper {
+    min-height: 400px;
+    max-height: 60vh;
+  }
+  
+  .editor-sidebar {
+    width: 100%;
+    min-width: unset;
+    max-width: unset;
+    height: auto;
+    max-height: 500px;
+  }
+  
+  .panel-maps {
+    max-height: 80px;
+  }
+  
+  .panel-province-editor {
+    max-height: 200px;
+  }
+}

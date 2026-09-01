@@ -407,10 +407,11 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:12px;">
                     <div style="display:flex; flex-direction:column; gap:2px;">
-                        <label style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#66fcf1;" data-i18n="db_top_era_label">🌍 ЭПОХА</label>
                         <select id="topEraSelectVisible" onchange="document.getElementById('topEraSelect').value=this.value; window._topTable && window._topTable.buildTop()"
                             style="background:#333; border:1px solid #45454b; padding:6px 10px; border-radius:8px; font-size:0.8rem; color:#c5c6c7; cursor:pointer;"></select>
                     </div>
+                    <button id="btnCopyTopBuildings" onclick="window._topTable && window._topTable.copyToClipboard()"
+                        style="background:#333; border:1px solid #2ecc71; color:#2ecc71; height:32px; padding:0 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; white-space:nowrap;">📋 Copy</button>
                     <button onclick="closeTopBuildingsModal()"
                         style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
                 </div>
@@ -424,7 +425,11 @@
         <div style="max-width:860px; margin:0 auto; background:#222; border:1px solid #3a7bd5; border-radius:16px; overflow:hidden; position:relative;">
             <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(58,123,213,0.15); border-bottom:1px solid #3a7bd5;">
                 <span style="color:#3a7bd5; font-weight:700; font-size:16px;" data-i18n="db_fragments_modal_title">🔍 Источники фрагментов</span>
-                <button onclick="closeFragmentsModal()" style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button id="btnCopyFragments" onclick="copyFragmentsData()"
+                        style="background:#333; border:1px solid #2ecc71; color:#2ecc71; height:32px; padding:0 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; white-space:nowrap;">📋 Copy</button>
+                    <button onclick="closeFragmentsModal()" style="background:#333; border:1px solid #555; color:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; line-height:1;">✕</button>
+                </div>
             </div>
             <div style="padding:20px; font-family:Arial,sans-serif; color:#eee;">
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
@@ -1229,6 +1234,140 @@
             fragLoadData();
         };
         window.closeFragmentsModal = function() { document.getElementById('fragmentsModal').style.display = 'none'; document.body.style.overflow = ''; };
+
+        // ===== Экспорт в обычный текст (для копирования) =====
+
+        function fragGetCopyText() {
+            if (fragMode === 'rating') {
+                if (fragRatingFragId) {
+                    const frag = fragFragmentIndex[fragRatingFragId];
+                    if (!frag) return t('db_frag_no_data', 'Нет данных');
+
+                    const sorted = [...frag.buildings].sort((a, b) => {
+                        const av = fragRatingSortCol === 'perDayPerTile' ? (a.perDayPerTile || 0) : a.perDay;
+                        const bv = fragRatingSortCol === 'perDayPerTile' ? (b.perDayPerTile || 0) : b.perDay;
+                        return fragRatingSortAsc ? av - bv : bv - av;
+                    });
+
+                    const sortLabel = fragRatingSortCol === 'perDayPerTile' ? '📐 /сутки/кл.' : '📦 /сутки';
+                    const header = [
+                        `${t('top_label_param', '📊 ФРАГМЕНТ')}: ${frag.name}`,
+                        `${t('db_frag_sort_label', 'Сортировка')}: ${sortLabel} (${fragRatingSortAsc ? '↑' : '↓'})`
+                    ].join('\n');
+
+                    const fmt = n => (n != null && n > 0) ? n.toFixed(2) : '';
+                    const cols = ['#', t('db_frag_col_building', 'Здание'), t('db_frag_col_size', 'Размер'), '/сутки', '/сутки/кл.'];
+                    const lines = [cols.join('\t')];
+                    sorted.forEach((b, i) => {
+                        lines.push([i + 1, b.name, b.size || '', fmt(b.perDay), fmt(b.perDayPerTile)].join('\t'));
+                    });
+
+                    return `${header}\n\n${lines.join('\n')}`;
+                }
+
+                // Режим рейтинга, фрагмент ещё не выбран - копируем список найденных фрагментов
+                const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase();
+                const matches = Object.keys(fragFragmentIndex)
+                    .filter(name => name.toLowerCase().includes(query))
+                    .sort((a, b) => a.localeCompare(b, 'ru'));
+                const header = `${t('db_frag_search_label', 'Поиск')}: ${query || '—'}`;
+                if (!matches.length) return `${header}\n\n${t('db_frag_not_found_rating', 'Фрагменты не найдены.')}`;
+                return `${header}\n\n${matches.join('\n')}`;
+            }
+
+            // Режим списка зданий
+            const query = (document.getElementById('fragSearch')?.value || '').trim().toLowerCase();
+            const excludeVal = (document.getElementById('fragExcludeSearch')?.value || '').trim();
+            const aliases = SEARCH_ALIASES[query] || [];
+            const allQ = [query, ...aliases].filter(Boolean);
+            const excludeWords = getExcludeWords();
+            const matchesQuery = text => !allQ.length || allQ.some(q => text.toLowerCase().includes(q));
+            const isExcluded = text => hasExcludeWord(text, excludeWords);
+
+            const visibleBuildings = fragBuildingsList.map(b => {
+                const visibleRewards = b.rewards.filter(r => matchesQuery(r.name) && !isExcluded(r.name));
+                const showByName = matchesQuery(b.name) && !isExcluded(b.name);
+                return { ...b, visibleRewards, isVisible: showByName || visibleRewards.length > 0 };
+            }).filter(b => b.isVisible);
+
+            const header = [
+                `${t('db_frag_search_label', 'Поиск')}: ${query || '—'}`,
+                `${t('db_frag_exclude_label', 'Исключить')}: ${excludeVal || '—'}`
+            ].join('\n');
+
+            if (!visibleBuildings.length) return `${header}\n\n${t('db_frag_not_found', 'Ничего не найдено.')}`;
+
+            const lines = visibleBuildings.map(b => {
+                const rewardLines = b.visibleRewards.map(r => `\t- ${r.name}`).join('\n');
+                return rewardLines ? `${b.name}\n${rewardLines}` : b.name;
+            });
+
+            return `${header}\n\n${lines.join('\n\n')}`;
+        }
+
+        // Небольшое самодостаточное всплывающее окошко у кнопки копирования.
+        function fragShowCopyPopup(message, isError) {
+            const btn = document.getElementById('btnCopyFragments');
+            if (!btn) return;
+
+            const old = document.getElementById('fragCopyPopup');
+            if (old) old.remove();
+
+            const rect = btn.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.id = 'fragCopyPopup';
+            popup.textContent = message;
+            popup.style.cssText = `
+                position: fixed;
+                left: ${rect.left + rect.width / 2}px;
+                top: ${rect.bottom + 8}px;
+                transform: translateX(-50%);
+                background: ${isError ? '#c0392b' : '#1a1a1d'};
+                color: ${isError ? '#fff' : '#2ecc71'};
+                border: 1px solid ${isError ? '#e74c3c' : '#2ecc71'};
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                z-index: 2147483647;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                opacity: 0;
+                transition: opacity 0.15s ease;
+                pointer-events: none;
+            `;
+            document.body.appendChild(popup);
+            requestAnimationFrame(() => { popup.style.opacity = '1'; });
+
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                setTimeout(() => popup.remove(), 200);
+            }, 1400);
+        }
+
+        window.copyFragmentsData = async function () {
+            const text = fragGetCopyText();
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.top = '-1000px';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                fragShowCopyPopup('✅ Скопировано', false);
+            } catch (err) {
+                console.error(err);
+                fragShowCopyPopup('❌ Не удалось скопировать', true);
+            }
+        };
         
         function fragUpdateModeUI() { const btn = document.getElementById('fragRatingBtn'); const toggleAllBtn = document.getElementById('fragToggleAll'); const searchEl = document.getElementById('fragSearch'); const excludeEl = document.getElementById('fragExcludeSearch'); if (fragMode === 'rating') { btn.style.background = 'rgba(255,165,0,0.3)'; btn.textContent = t('db_frag_back_btn','← Список'); toggleAllBtn.style.display = 'none'; searchEl.placeholder = t('db_frag_search_placeholder_rating','Поиск фрагмента...'); excludeEl.style.display = 'none'; fragRatingFragId = null; fragRenderRatingSearch(); } else { btn.style.background = 'rgba(255,165,0,0.15)'; btn.textContent = t('db_frag_rating_btn','🏆 Рейтинг зданий'); toggleAllBtn.style.display = ''; searchEl.placeholder = t('db_frag_search_placeholder','Поиск: здание или фрагмент'); excludeEl.style.display = ''; fragRenderList(); } }
         

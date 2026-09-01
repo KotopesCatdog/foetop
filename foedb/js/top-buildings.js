@@ -608,7 +608,11 @@
             
             const sorted = [...items].sort((a,b) => this.currentOrder === 'desc' ? b.value - a.value : a.value - b.value);
             const topList = sorted.slice(0, limit);
-            
+
+            // Сохраняем «сырые» данные (без разделителей разрядов) для копирования
+            this.lastTopList = topList;
+            this.lastPerTileMode = perTileMode;
+
             if (topList.length === 0) {
                 this.tableBody.innerHTML = `<tr class="top-empty-row"><td colspan="3">${t('top_no_data','Нет данных')}</td></tr>`;
                 return;
@@ -642,6 +646,122 @@
         escapeHtml(str) {
             if (!str) return '';
             return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+
+        // ===== Экспорт в обычный текст (для копирования) =====
+
+        getSelectedParamsText() {
+            const groupText = this.groupSelect?.selectedOptions[0]?.text || '';
+            const paramText = this.paramSelect?.selectedOptions[0]?.text || '';
+            const eraText = this.eraSelect?.selectedOptions[0]?.text || '';
+            const limitText = this.limitSelect?.value || '';
+            const perTile = this.perTileCheckbox ? this.perTileCheckbox.checked : false;
+            const yesNo = perTile ? 'Да' : 'Нет';
+
+            const lines = [
+                `${t('top_label_category', '📂 КАТЕГОРИЯ')}: ${groupText}`,
+                `${t('top_label_param', '📊 ПАРАМЕТР')}: ${paramText}`,
+                `${t('db_top_era_label', '🌍 ЭПОХА')}: ${eraText}`,
+                `${t('top_label_top', '📋 ТОП')}: ${limitText}`,
+                `${t('top_label_per_tile', '📐 На клетку')}: ${yesNo}`
+            ];
+            return lines.join('\n');
+        }
+
+        getTableText() {
+            const header = ['#', t('top_col_building', 'Название здания'), t('top_col_value', '📊 Значение')];
+            const lines = [header.join('\t')];
+            const topList = this.lastTopList || [];
+
+            if (topList.length === 0) {
+                lines.push(t('top_no_data', 'Нет данных'));
+                return lines.join('\n');
+            }
+
+            topList.forEach((item, i) => {
+                const rank = i + 1;
+                let valText;
+                if (typeof item.value === 'number') {
+                    valText = this.lastPerTileMode
+                        ? item.value.toFixed(2)          // без разделителей разрядов, 2 знака после запятой
+                        : String(Math.round(item.value)); // без разделителей разрядов, целое
+                } else {
+                    valText = item.value;
+                }
+                lines.push([rank, item.name, valText].join('\t'));
+            });
+
+            return lines.join('\n');
+        }
+
+        getFullExportText() {
+            return `${this.getSelectedParamsText()}\n\n${this.getTableText()}`;
+        }
+
+        // Небольшое самодостаточное всплывающее окошко у кнопки копирования.
+        // Не зависит от глобальных стилей .toast-notification - гарантированно
+        // видно поверх модалки (z-index выше, чем у #topBuildingsModal).
+        showCopyPopup(message, isError) {
+            const btn = document.getElementById('btnCopyTopBuildings');
+            if (!btn) return;
+
+            const old = document.getElementById('topCopyPopup');
+            if (old) old.remove();
+
+            const rect = btn.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.id = 'topCopyPopup';
+            popup.textContent = message;
+            popup.style.cssText = `
+                position: fixed;
+                left: ${rect.left + rect.width / 2}px;
+                top: ${rect.bottom + 8}px;
+                transform: translateX(-50%);
+                background: ${isError ? '#c0392b' : '#1a1a1d'};
+                color: ${isError ? '#fff' : '#2ecc71'};
+                border: 1px solid ${isError ? '#e74c3c' : '#2ecc71'};
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                z-index: 2147483647;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                opacity: 0;
+                transition: opacity 0.15s ease;
+                pointer-events: none;
+            `;
+            document.body.appendChild(popup);
+            requestAnimationFrame(() => { popup.style.opacity = '1'; });
+
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                setTimeout(() => popup.remove(), 200);
+            }, 1400);
+        }
+
+        async copyToClipboard() {
+            const text = this.getFullExportText();
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.top = '-1000px';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                this.showCopyPopup('✅ Скопировано', false);
+            } catch (err) {
+                console.error(err);
+                this.showCopyPopup('❌ Не удалось скопировать', true);
+            }
         }
 
         refresh() {

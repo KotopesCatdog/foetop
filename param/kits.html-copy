@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoE: Наборы выбора (Selection Kits)</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<style>
+* { box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+h1 { text-align: center; color: #ffd700; margin-bottom: 5px; }
+.subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 14px; }
+.search-panel { background: #252540; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+input#search {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #4a4a6a;
+    background: #2a2a3e; color: white; font-size: 16px; box-sizing: border-box;
+}
+input#search:focus { outline: none; border-color: #ffd700; }
+.filter-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.filter-group { display: flex; gap: 8px; background: #2a2a3e; padding: 5px 12px; border-radius: 8px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 12px; background: #1a1a2e; color: white; border: 1px solid #4a4a6a; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.filter-btn:hover { background: #3a3a5e; }
+.filter-btn.active { background: #ffd700; color: #1a1a2e; border-color: #ffd700; }
+.stats { background: #252540; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+.controls button { padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; }
+.controls button:hover { background: #0055aa; }
+.kit-card { background: #252540; border-radius: 12px; margin-bottom: 12px; overflow: hidden; border: 1px solid #3a3a5e; transition: all 0.2s; }
+.kit-card:hover { border-color: #ffd700; }
+.kit-header { padding: 12px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; background: #2a2a3e; }
+.kit-header::before { content: "▶"; transition: transform 0.2s; color: #ffd700; font-size: 12px; }
+.kit-card.open .kit-header::before { content: "▼"; }
+.kit-name { flex: 1; font-weight: bold; font-size: 15px; color: #4fc3f7; }
+.kit-id { font-size: 11px; color: #888; font-family: monospace; background: #1a1a2e; padding: 2px 6px; border-radius: 4px; }
+.kit-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #1a1a2e; }
+.kit-badge.building { background: #2e7d32; color: #a5d6a7; }
+.kit-badge.upgrade { background: #ef6c00; color: #ffe0b2; }
+.kit-badge.selection { background: #6a1b9a; color: #ce93d8; }
+.kit-badge.mixed { background: #c62828; color: #ffcdd2; }
+.kit-content { display: none; padding: 15px; border-top: 1px solid #3a3a5e; }
+.kit-card.open .kit-content { display: block; }
+.description { background: #1a1a2e; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #ccc; font-style: italic; }
+.choices-title { font-size: 13px; font-weight: bold; color: #ffd700; margin-bottom: 10px; }
+.choices-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.choice-item { background: #1a1a2e; border-radius: 8px; padding: 8px 12px; min-width: 180px; flex: 1 0 auto; max-width: 220px; border-left: 3px solid; }
+.choice-item.building { border-left-color: #4caf50; }
+.choice-item.upgrade_kit { border-left-color: #ff9800; }
+.choice-item.selection_kit { border-left-color: #9c27b0; }
+.choice-item.default { border-left-color: #888; }
+.choice-name { font-weight: bold; font-size: 13px; }
+.choice-type { font-size: 10px; color: #888; margin-top: 4px; }
+.choice-id { font-size: 9px; color: #666; font-family: monospace; margin-top: 4px; word-break: break-all; }
+mark { background-color: #ffd700; color: #1a1a2e; padding: 0 2px; border-radius: 3px; }
+.empty-state { text-align: center; padding: 50px; color: #888; }
+.loading { text-align: center; padding: 50px; color: #ffd700; }
+
+/* Переключатель языка */
+.lang-switcher { display: flex; justify-content: center; gap: 8px; }
+.lang-switcher button { padding: 5px 14px; font-size: 13px; font-weight: bold; color: #ffd700; background: transparent; border: 2px solid #555; border-radius: 16px; cursor: pointer; transition: all 0.2s; }
+.lang-switcher button:hover, .lang-switcher button.active { background: #444; border-color: #ffd700; }
+</style>
+</head>
+<body>
+
+<h1 data-i18n="kits_title">🎁 FoE: Наборы выбора (Selection Kits)</h1>
+<div class="subtitle" data-i18n="kits_subtitle">Поиск по названиям наборов и предметам, которые в них входят</div>
+
+<div class="search-panel">
+    <input type="text" id="search" data-i18n-placeholder="kits_search_placeholder"
+        placeholder="🔍 Поиск... (например: лучезарных, дендрарий, октосфера, анни)">
+    <div class="filter-row">
+        <div class="filter-group">
+            <span style="color:#888; font-size:12px;" data-i18n="kits_filter_label">📋 Тип набора:</span>
+            <button class="filter-btn" data-filter="all" data-i18n="kits_filter_all">Все</button>
+            <button class="filter-btn" data-filter="building" data-i18n="kits_filter_building">🏠 Здания</button>
+            <button class="filter-btn" data-filter="upgrade" data-i18n="kits_filter_upgrade">🔧 Апгрейды</button>
+            <button class="filter-btn" data-filter="mixed" data-i18n="kits_filter_mixed">🔄 Смешанные</button>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <button id="toggle-all-btn" data-i18n="kits_btn_expand">📂 Развернуть все</button>
+    <div class="lang-switcher">
+        <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
+        <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
+    </div>
+</div>
+
+<div class="stats" id="stats"></div>
+<div id="results">
+    <div class="loading" data-i18n="kits_loading">⏳ Загрузка данных из selection_kits.json...</div>
+</div>
+
+<script src="/js/i18n.js"></script>
+<script>
+// Вспомогательная функция получения перевода
+function t(key, fallback) {
+    return (window._i18nT && window._i18nT[key]) || fallback || key;
+}
+
+let kitsData = null;
+let currentFilter = 'all';
+
+function getKitType(kit) {
+    const types = kit.choices.map(c => c.type);
+    const hasBuilding = types.includes('building');
+    const hasUpgrade = types.includes('upgrade_kit');
+    const hasSelection = types.includes('selection_kit');
+    if (hasBuilding && !hasUpgrade && !hasSelection && kit.choices.length === types.filter(t => t === 'building').length) return 'building';
+    if (hasUpgrade && !hasBuilding && !hasSelection && kit.choices.length === types.filter(t => t === 'upgrade_kit').length) return 'upgrade';
+    if (hasSelection) return 'selection';
+    if ((hasBuilding && hasUpgrade) || kit.choices.length > 1) return 'mixed';
+    return 'other';
+}
+
+function filterKits(kits, searchQuery, filterType) {
+    const query = searchQuery.toLowerCase().trim();
+    return Object.entries(kits).filter(([id, kit]) => {
+        const kitType = getKitType(kit);
+        if (filterType !== 'all' && kitType !== filterType) return false;
+        if (!query) return true;
+        if (kit.name?.toLowerCase().includes(query)) return true;
+        if (id.toLowerCase().includes(query)) return true;
+        if (kit.description?.toLowerCase().includes(query)) return true;
+        for (const choice of kit.choices) {
+            if (choice.name?.toLowerCase().includes(query)) return true;
+            if (choice.id?.toLowerCase().includes(query)) return true;
+        }
+        return false;
+    });
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
+}
+
+function render() {
+    if (!kitsData) return;
+    const query = document.getElementById('search')?.value || '';
+    const statsDiv = document.getElementById('stats');
+    const resultsDiv = document.getElementById('results');
+    const filtered = filterKits(kitsData.selectionKits, query, currentFilter);
+    const filteredKits = Object.fromEntries(filtered);
+    const total = Object.keys(kitsData.selectionKits).length;
+    const shown = filtered.length;
+    const typeCounts = { building: 0, upgrade: 0, selection: 0, mixed: 0, other: 0 };
+    for (const kit of Object.values(kitsData.selectionKits)) typeCounts[getKitType(kit)]++;
+
+    statsDiv.innerHTML = `
+        <span>${t('kits_stats_total','📊 Всего наборов:')} ${total}</span>
+        <span>${t('kits_stats_shown','🔍 Показано:')} ${shown}</span>
+        <span>${t('kits_stats_building','🏠 Здания:')} ${typeCounts.building}</span>
+        <span>${t('kits_stats_upgrade','🔧 Апгрейды:')} ${typeCounts.upgrade}</span>
+        <span>${t('kits_stats_nested','🎁 Вложенные:')} ${typeCounts.selection}</span>
+        <span>${t('kits_stats_mixed','🔄 Смешанные:')} ${typeCounts.mixed}</span>
+    `;
+
+    if (shown === 0) {
+        resultsDiv.innerHTML = `<div class="empty-state">${t('kits_empty','🔍 Ничего не найдено.')}</div>`;
+        return;
+    }
+
+    const typeLabels = {
+        building: t('kits_type_building','🏠 Здания'),
+        upgrade:  t('kits_type_upgrade','🔧 Апгрейды'),
+        selection:t('kits_type_nested','🎁 Вложенные наборы'),
+        mixed:    t('kits_type_mixed','🔄 Смешанный'),
+        other:    t('kits_type_other','📦 Другое')
+    };
+    const choiceTypeLabels = {
+        'building':      t('kits_choice_building','🏠 Здание'),
+        'upgrade_kit':   t('kits_choice_upgrade','🔧 Апгрейд'),
+        'selection_kit': t('kits_choice_selection','🎁 Набор выбора')
+    };
+
+    let html = '';
+    for (const [kitId, kit] of Object.entries(filteredKits)) {
+        const kitType = getKitType(kit);
+        html += `<div class="kit-card" data-kit-id="${kitId}">`;
+        html += `<div class="kit-header">`;
+        html += `<span class="kit-name">${highlightText(kit.name, query)}</span>`;
+        html += `<span class="kit-id">${kitId}</span>`;
+        html += `<span class="kit-badge ${kitType}">${typeLabels[kitType]}</span>`;
+        html += `</div><div class="kit-content">`;
+        if (kit.description) html += `<div class="description">📝 ${highlightText(kit.description, query)}</div>`;
+        html += `<div class="choices-title">📋 ${t('kits_choices_title','Варианты выбора')} (${kit.choices.length}):</div>`;
+        html += `<div class="choices-grid">`;
+        for (const choice of kit.choices) {
+            const choiceLabel = choiceTypeLabels[choice.type] || choice.type;
+            html += `<div class="choice-item ${choice.type}">`;
+            html += `<div class="choice-name">${highlightText(choice.name, query)}</div>`;
+            html += `<div class="choice-type">${choiceLabel}${choice.amount > 1 ? ` ×${choice.amount}` : ''}</div>`;
+            html += `<div class="choice-id">${choice.id}</div>`;
+            html += `</div>`;
+        }
+        html += `</div></div></div>`;
+    }
+
+    resultsDiv.innerHTML = html;
+    document.querySelectorAll('.kit-card').forEach(card => {
+        card.querySelector('.kit-header').addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.classList.toggle('open');
+        });
+    });
+}
+
+async function loadData() {
+    try {
+        const response = await fetch('kits.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        kitsData = await response.json();
+        render();
+    } catch (error) {
+        document.getElementById('results').innerHTML = `
+            <div class="empty-state">
+                <h3>${t('kits_error_title','⚠️ Файл selection_kits.json не найден')}</h3>
+                <p>${t('kits_error_desc','Выполните экспорт данных из игры и сохраните как selection_kits.json')}</p>
+            </div>`;
+    }
+}
+
+document.getElementById('search').addEventListener('input', render);
+
+document.getElementById('toggle-all-btn').addEventListener('click', () => {
+    const cards = document.querySelectorAll('.kit-card');
+    const anyCollapsed = Array.from(cards).some(card => !card.classList.contains('open'));
+    const btn = document.getElementById('toggle-all-btn');
+    if (anyCollapsed) {
+        cards.forEach(card => card.classList.add('open'));
+        btn.textContent = t('kits_btn_collapse','📁 Свернуть все');
+    } else {
+        cards.forEach(card => card.classList.remove('open'));
+        btn.textContent = t('kits_btn_expand','📂 Развернуть все');
+    }
+});
+
+document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        render();
+    });
+});
+
+// Перерисовываем при смене языка чтобы обновить JS-строки
+document.addEventListener('i18nApplied', render);
+
+loadData();
+</script>
+</body>
+</html>

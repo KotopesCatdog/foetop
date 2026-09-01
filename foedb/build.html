@@ -525,16 +525,16 @@ async function loadDataWithProgress() {
     // Получаем URL из селекта или глобальной переменной
     // Селект хранит URL страниц, маппим их на JSON
     const PAGE_TO_JSON = {
-        '/': '/building.json',
-        '/index.html': '/building.json',
-        '/build.html': '/building.json',
-        '/foe-building-dbzz/buildzz.html': '/buildingzz.json'
+        '/': 'https://foehelp.ru/building.json',
+        '/index.html': 'https://foehelp.ru/building.json',
+        '/build.html': 'https://foehelp.ru/building.json',
+        '/foe-building-dbzz/buildzz.html': 'https://foehelp.ru/buildingzz.json'
     };
     let url = window.currentJsonUrl;
     if (!url) {
         const select = document.getElementById('jsonSelect');
         const pageUrl = select ? select.value : '/';
-        url = PAGE_TO_JSON[pageUrl] || '/building.json';
+        url = PAGE_TO_JSON[pageUrl] || 'https://foehelp.ru/building.json';
     }
     
     statusMsg.innerHTML = '🔄 Подключение...';

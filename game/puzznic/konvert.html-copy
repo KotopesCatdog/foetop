@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер уровней игры - Сборщик уровней</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #eee;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(0,212,255,0.5);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(30, 30, 50, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: #00d4ff;
+            font-size: 1.3em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 15px;
+            background: #0a0a1a;
+            color: #0f0;
+            border: 1px solid #00d4ff;
+            border-radius: 10px;
+            resize: vertical;
+        }
+
+        .level-id-input {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .level-id-input label {
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .level-id-input input {
+            background: #0a0a1a;
+            color: #0f0;
+            border: 1px solid #00d4ff;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-family: monospace;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .button-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,255,0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+        }
+
+        .load-btn {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .json-output {
+            background: #0a0a1a;
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+
+        .grid-preview {
+            background: #0a0a1a;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .game-grid {
+            display: inline-block;
+            background: #1a1a2e;
+            border: 2px solid #00d4ff;
+            border-radius: 5px;
+        }
+
+        .grid-row {
+            display: flex;
+        }
+
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+
+        .grid-cell[data-type="wall"] {
+            background: #555;
+            color: #fff;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .grid-cell[data-type="empty"] {
+            background: #0a0a1a;
+            color: #666;
+        }
+
+        .grid-cell[data-type="moving-h"] {
+            background: #ff9800;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="moving-v"] {
+            background: #ff5722;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="E"] {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="G"] {
+            background: #8bc34a;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="B"] {
+            background: #2196f3;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="P"] {
+            background: #9c27b0;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="X"] {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .grid-cell[data-type="C"] {
+            background: #00bcd4;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="D"] {
+            background: #e91e63;
+            color: #fff;
+        }
+
+        .grid-cell[data-type="T"] {
+            background: #795548;
+            color: #fff;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,212,255,0.1);
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 25px;
+            height: 25px;
+            border-radius: 3px;
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255,0,0,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #00d4ff;
+        }
+
+        .levels-list {
+            margin-top: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .level-tag {
+            display: inline-block;
+            background: #00d4ff;
+            color: #1a1a2e;
+            padding: 6px 12px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .level-tag:hover {
+            transform: scale(1.05);
+            background: #ff9800;
+            box-shadow: 0 2px 8px rgba(255,152,0,0.3);
+        }
+
+        .level-tag-remove {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .level-tag-remove:hover {
+            color: #ff6b6b;
+        }
+
+        .preview-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Конвертер уровней игры - Сборщик уровней</h1>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2>📝 Ввод уровня (текст)</h2>
+                <textarea id="levelInput" placeholder="Введите уровень здесь...">  - - - - - - -
+- -           -
+-           E -
+-         G X -
+-       B P C -
+-     G P C D -
+-   E B X D - -
+- - - - - - -  </textarea>
+                
+                <div class="level-id-input">
+                    <label>🏷️ ID уровня:</label>
+                    <input type="text" id="levelId" value="1-1" placeholder="например: 1-1">
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="addLevel()" class="add-btn">➕ Добавить уровень</button>
+                    <button onclick="previewCurrentLevel()">👁️ Предпросмотр</button>
+                    <button onclick="loadExample()">📋 Загрузить пример</button>
+                </div>
+                
+                <div class="info">
+                    <strong>📌 Правила парсинга:</strong>
+                    <ul style="margin: 5px 0 0 20px; font-size: 12px;">
+                        <li><code>-</code> - стена</li>
+                        <li><code>~</code> - горизонтальный движущийся блок</li>
+                        <li><code>|</code> - вертикальный движущийся блок</li>
+                        <li><code>E G B P X C D T</code> - цветные блоки</li>
+                        <li><strong>Два пробела подряд = один пустой блок</strong></li>
+                        <li>Четыре пробела подряд = два пустых блока, и т.д.</li>
+                        <li>Одиночные пробелы - разделители (игнорируются)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>🎨 Предпросмотр уровня</h2>
+                <div id="previewTitle" class="preview-title"></div>
+                <div id="gridPreview" class="grid-preview">
+                    <div style="text-align: center; color: #888;">Нажмите "Предпросмотр" или кликните на уровень</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📦 Собранные уровни</h2>
+                <div id="levelsContainer" class="levels-list">
+                    <div style="text-align: center; color: #888;">Нет добавленных уровней</div>
+                </div>
+                <div class="button-group">
+                    <div class="file-input-wrapper">
+                      <button class="load-btn">📂 Копировать JSON</button> 
+                        <input type="file" id="loadJSONFile" accept=".json" onchange="loadJSONFromFile(event)">
+                    </div>
+                    <button onclick="copyAllJSON()" class="copy-btn">📋 Загрузить JSON</button>
+                    <button onclick="downloadAllJSON()">💾 Сохранить JSON</button>
+                    <button onclick="clearAllLevels()" class="clear-btn">🗑️ Очистить все</button>
+                </div>
+                <div id="status" class="status"></div>
+            </div>
+
+            <div class="panel">
+                <h2>💾 JSON результат (все уровни)</h2>
+                <div id="jsonOutput" class="json-output">
+                    <span style="color: #888;">Ожидание добавления уровней...</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>🎨 Легенда цветов</h2>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color" style="background:#555;"></div><span>Стена (-)</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#ff9800;"></div><span>Гориз. блок (~)</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#ff5722;"></div><span>Вертик. блок (|)</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#4caf50;"></div><span>E блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#8bc34a;"></div><span>G блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#2196f3;"></div><span>B блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#9c27b0;"></div><span>P блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#ffc107;"></div><span>X блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#00bcd4;"></div><span>C блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#e91e63;"></div><span>D блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#795548;"></div><span>T блок</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#0a0a1a; border:1px solid #333;"></div><span>Пусто (·)</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let levelsArray = [];
+
+        // Правильный парсер: каждый блок кодируется либо символом, либо двумя пробелами
+        function parseLevelToGrid(levelText) {
+            const lines = levelText.split('\n');
+            const grid = [];
+            const validChars = new Set(['-', '~', '|', 'E', 'G', 'B', 'P', 'X', 'C', 'D', 'T']);
+            
+            for (let line of lines) {
+                line = line.replace(/\r$/, '');
+                
+                if (line.trim() === '' && grid.length === 0) continue;
+                if (line.trim() === '' && grid.length > 0) break;
+                
+                const row = [];
+                let i = 0;
+                const len = line.length;
+                
+                while (i < len) {
+                    const ch = line[i];
+                    
+                    if (ch === ' ') {
+                        let spaceCount = 1;
+                        while (i + spaceCount < len && line[i + spaceCount] === ' ') {
+                            spaceCount++;
+                        }
+                        
+                        const emptyBlocksCount = Math.floor(spaceCount / 2);
+                        for (let e = 0; e < emptyBlocksCount; e++) {
+                            row.push(' ');
+                        }
+                        
+                        i += spaceCount;
+                    } 
+                    else if (validChars.has(ch)) {
+                        row.push(ch);
+                        i++;
+                    }
+                    else {
+                        console.warn(`Неизвестный символ: "${ch}"`);
+                        i++;
+                    }
+                }
+                
+                if (row.length > 0) {
+                    grid.push(row);
+                }
+            }
+            
+            if (grid.length === 0) return null;
+            
+            const cols = Math.max(...grid.map(row => row.length));
+            for (let row of grid) {
+                while (row.length < cols) {
+                    row.push(' ');
+                }
+            }
+            
+            return {
+                cols: cols,
+                rows: grid.length,
+                grid: grid
+            };
+        }
+
+        function getBlockType(symbol) {
+            if (symbol === '-') return 'wall';
+            if (symbol === '~') return 'moving-h';
+            if (symbol === '|') return 'moving-v';
+            if (symbol === ' ') return 'empty';
+            return symbol;
+        }
+
+        function renderGrid(gridData, title = '') {
+            const container = document.getElementById('gridPreview');
+            const titleDiv = document.getElementById('previewTitle');
+            
+            if (!gridData || !gridData.grid) {
+                container.innerHTML = '<div style="text-align: center; color: #888;">Ошибка: неверные данные</div>';
+                titleDiv.innerHTML = '';
+                return;
+            }
+            
+            const grid = gridData.grid;
+            const rows = grid.length;
+            const cols = grid[0].length;
+            
+            if (title) {
+                titleDiv.innerHTML = `<strong>${title}</strong> (${cols}×${rows})`;
+            } else {
+                titleDiv.innerHTML = '';
+            }
+            
+            let html = `<div class="game-grid">`;
+            for (let i = 0; i < rows; i++) {
+                html += '<div class="grid-row">';
+                for (let j = 0; j < cols; j++) {
+                    const cell = grid[i][j];
+                    const type = getBlockType(cell);
+                    let displayChar = cell === ' ' ? '·' : cell;
+                    html += `<div class="grid-cell" data-type="${type}" title="(${j},${i}) ${cell === ' ' ? 'пусто' : cell}">${displayChar}</div>`;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function previewCurrentLevel() {
+            const inputText = document.getElementById('levelInput').value;
+            const levelId = document.getElementById('levelId').value.trim();
+            
+            try {
+                const gridData = parseLevelToGrid(inputText);
+                if (!gridData || gridData.grid.length === 0) {
+                    throw new Error("Не удалось распарсить уровень");
+                }
+                
+                renderGrid(gridData, levelId ? `Предпросмотр: ${levelId}` : 'Предпросмотр');
+                document.getElementById('status').innerHTML = '<span style="color: #4caf50;">✅ Предпросмотр готов</span>';
+                
+            } catch (error) {
+                document.getElementById('gridPreview').innerHTML = '<div class="error">❌ Ошибка парсинга</div>';
+                document.getElementById('previewTitle').innerHTML = '';
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">❌ ${error.message}</span>`;
+            }
+        }
+
+        function viewLevel(levelData, index) {
+            const gridData = {
+                cols: levelData.cols,
+                rows: levelData.rows,
+                grid: levelData.grid
+            };
+            renderGrid(gridData, `${levelData.id} (уровень ${index + 1} из ${levelsArray.length})`);
+            document.getElementById('status').innerHTML = `<span style="color: #00d4ff;">👁️ Просмотр уровня "${levelData.id}"</span>`;
+        }
+
+        function addLevel() {
+            const inputText = document.getElementById('levelInput').value;
+            const levelId = document.getElementById('levelId').value.trim();
+            
+            if (!levelId) {
+                document.getElementById('status').innerHTML = '<span style="color: #ff6b6b;">❌ Введите ID уровня!</span>';
+                return;
+            }
+            
+            // Проверка на дубликат ID
+            if (levelsArray.some(level => level.id === levelId)) {
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">❌ Уровень с ID "${levelId}" уже существует!</span>`;
+                return;
+            }
+            
+            try {
+                const gridData = parseLevelToGrid(inputText);
+                if (!gridData || gridData.grid.length === 0) {
+                    throw new Error("Не удалось распарсить уровень");
+                }
+                
+                const levelData = {
+                    id: levelId,
+                    cols: gridData.cols,
+                    rows: gridData.rows,
+                    grid: gridData.grid
+                };
+                
+                levelsArray.push(levelData);
+                updateLevelsList();
+                updateAllJSON();
+                
+                document.getElementById('status').innerHTML = `<span style="color: #4caf50;">✅ Уровень "${levelId}" добавлен! Всего уровней: ${levelsArray.length}</span>`;
+                
+                // Очищаем поле ID для следующего уровня
+                document.getElementById('levelId').value = '';
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">❌ ${error.message}</span>`;
+            }
+        }
+
+        function removeLevel(index, event) {
+            event.stopPropagation();
+            const removedId = levelsArray[index].id;
+            levelsArray.splice(index, 1);
+            updateLevelsList();
+            updateAllJSON();
+            document.getElementById('status').innerHTML = `<span style="color: #ff9800;">🗑️ Уровень "${removedId}" удалён</span>`;
+            
+            // Если удалили последний уровень, очищаем предпросмотр
+            if (levelsArray.length === 0) {
+                document.getElementById('gridPreview').innerHTML = '<div style="text-align: center; color: #888;">Нажмите "Предпросмотр" или кликните на уровень</div>';
+                document.getElementById('previewTitle').innerHTML = '';
+            }
+        }
+
+        function loadJSONFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    
+                    // Проверяем, что это массив
+                    if (!Array.isArray(jsonData)) {
+                        throw new Error("JSON должен содержать массив уровней");
+                    }
+                    
+                    // Проверяем структуру каждого уровня
+                    for (let level of jsonData) {
+                        if (!level.id || !level.cols || !level.rows || !level.grid) {
+                            throw new Error(`Уровень с ID "${level.id}" имеет неверную структуру`);
+                        }
+                    }
+                    
+                    // Загружаем уровни (добавляем к существующим, проверяя дубликаты)
+                    let addedCount = 0;
+                    let duplicateCount = 0;
+                    
+                    for (let level of jsonData) {
+                        if (!levelsArray.some(existing => existing.id === level.id)) {
+                            levelsArray.push(level);
+                            addedCount++;
+                        } else {
+                            duplicateCount++;
+                        }
+                    }
+                    
+                    updateLevelsList();
+                    updateAllJSON();
+                    
+                    let message = `✅ Загружено ${addedCount} уровней`;
+                    if (duplicateCount > 0) {
+                        message += ` (${duplicateCount} пропущено из-за дубликатов ID)`;
+                    }
+                    document.getElementById('status').innerHTML = `<span style="color: #4caf50;">${message}</span>`;
+                    
+                } catch (error) {
+                    document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">❌ Ошибка загрузки JSON: ${error.message}</span>`;
+                }
+                
+                // Очищаем input, чтобы можно было загрузить тот же файл снова
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function updateLevelsList() {
+            const container = document.getElementById('levelsContainer');
+            if (levelsArray.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #888;">Нет добавленных уровней</div>';
+                return;
+            }
+            
+            let html = '<strong>📋 Добавленные уровни (кликните для просмотра):</strong><br>';
+            levelsArray.forEach((level, index) => {
+                html += `<div class="level-tag" onclick="viewLevel(levelsArray[${index}], ${index})">
+                            ${level.id} (${level.cols}×${level.rows})
+                            <span class="level-tag-remove" onclick="removeLevel(${index}, event)">✖</span>
+                         </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateAllJSON() {
+            const container = document.getElementById('jsonOutput');
+            if (levelsArray.length === 0) {
+                container.innerHTML = '<span style="color: #888;">Ожидание добавления уровней...</span>';
+                return;
+            }
+            
+            // Компактный JSON без переносов строк
+            const jsonString = JSON.stringify(levelsArray);
+            container.innerHTML = `<pre style="margin:0; font-family:'Courier New',monospace; font-size:11px; word-wrap:break-word; white-space:pre-wrap;">${escapeHtml(jsonString)}</pre>`;
+        }
+
+        function copyAllJSON() {
+            if (levelsArray.length === 0) {
+                alert("Нет добавленных уровней!");
+                return;
+            }
+            
+            const jsonString = JSON.stringify(levelsArray);
+            navigator.clipboard.writeText(jsonString).then(() => {
+                document.getElementById('status').innerHTML = '<span style="color: #4caf50;">✅ JSON со всеми уровнями скопирован!</span>';
+                setTimeout(() => {
+                    if (levelsArray.length > 0) {
+                        document.getElementById('status').innerHTML = `<span style="color: #4caf50;">✅ Всего уровней: ${levelsArray.length}</span>`;
+                    }
+                }, 2000);
+            }).catch(() => {
+                alert("❌ Не удалось скопировать");
+            });
+        }
+
+        function downloadAllJSON() {
+            if (levelsArray.length === 0) {
+                alert("Нет добавленных уровней!");
+                return;
+            }
+            
+            const jsonString = JSON.stringify(levelsArray);
+            const blob = new Blob([jsonString], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `levels_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            document.getElementById('status').innerHTML = '<span style="color: #4caf50;">✅ JSON файл скачан!</span>';
+        }
+
+        function clearAllLevels() {
+            if (levelsArray.length > 0 && confirm(`Удалить все ${levelsArray.length} уровней?`)) {
+                levelsArray = [];
+                updateLevelsList();
+                updateAllJSON();
+                document.getElementById('gridPreview').innerHTML = '<div style="text-align: center; color: #888;">Нажмите "Предпросмотр" или кликните на уровень</div>';
+                document.getElementById('previewTitle').innerHTML = '';
+                document.getElementById('status').innerHTML = '<span style="color: #ff9800;">🗑️ Все уровни удалены</span>';
+            }
+        }
+
+        function loadExample() {
+            const example = `  - - - - - - -
+- -           -
+-           E -
+-         G X -
+-       B P C -
+-     G P C D -
+-   E B X D - -
+- - - - - - -  `;
+            document.getElementById('levelInput').value = example;
+            document.getElementById('levelId').value = '1-1';
+            previewCurrentLevel();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Загружаем пример при старте
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExample();
+        });
+    </script>
+</body>
+</html>

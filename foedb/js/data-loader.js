@@ -154,7 +154,7 @@ async function loadData() {
                 statusMsg.textContent = 'Ошибка: Найдено 0 зданий.';
                 statusMsg.style.color = '#ff6b6b';
                 document.getElementById('resultsGrid').innerHTML =
-                    '<div class="no-results" style="color:#ff6b6b">Здания не загружены. См. консоль (F12).</div>';
+                    '<div class="no-results" style="color:#ff6b6b">Здания не загружены.</div>';
             } else {
                 statusMsg.textContent = `Готово. Найдено: ${window.allBuildings.length}.`;
                 statusMsg.style.color = '#c5c6c7';

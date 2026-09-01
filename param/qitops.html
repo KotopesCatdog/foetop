@@ -103,7 +103,7 @@
   </div>
 
   <div id="tableContainer"><div class="loading-overlay"><div class="spinner"></div><span>Загрузка данных из Supabase...</span></div></div>
-  <footer>📡 Данные: расширение FoE Extractor → Lightbase</footer>
+  <footer>📡 Данные: расширение FoE Extractor → Lightbase<div id="pingCounter" style="margin-top:6px;color:#3a4b6e;"></div></footer>
 </div>
 
 <script>
@@ -226,7 +226,10 @@ function renderWorldsView() {
   }
   
   const guilds = data.top20;
-  const worldRaw = data.world_raw || `${REGION}${currentWorld}`;
+  // Получаем мир в нижнем регистре, например "ru1"
+  const worldRawLower = (data.world_raw || `${REGION}${currentWorld}`).toLowerCase();
+  // Формируем правильную ссылку с явным указанием региона
+  const baseUrl = `https://foestats.com/${REGION}/${worldRawLower}`;
   
   let html = `<div class="table-wrapper"><table class="guilds-table">
     <thead>
@@ -243,7 +246,8 @@ function renderWorldsView() {
   
   for (let i = 0; i < guilds.length; i++) {
     const g = guilds[i];
-    const guildUrl = `https://foestats.com/${REGION}/${worldRaw}/guilds/${g.guild_id}`;
+    // Используем baseUrl для ссылки
+    const guildUrl = `${baseUrl}/guilds/${g.guild_id}`;
     
     const rankChange = g.rankChange || 0;
     let changeHtml = '<span class="rank-change">—</span>';
@@ -270,7 +274,7 @@ function renderWorldsView() {
   
   document.getElementById('tableContainer').innerHTML = html;
   document.getElementById('currentWorldSpan').innerHTML = 
-    `ru${currentWorld} — ${WORLD_NAMES[currentWorld]}`;
+    `${worldRawLower} — ${WORLD_NAMES[currentWorld]}`;
   
   const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'неизвестно';
   document.getElementById('updateTime').innerHTML = `📅 ${timestamp}`;
@@ -307,7 +311,10 @@ function renderTopGuilds() {
   
   for (let i = 0; i < topGuilds.length; i++) {
     const g = topGuilds[i];
-    const guildUrl = `https://foestats.com/${REGION}/${g.world_raw || REGION + g.world_id}/guilds/${g.guild_id}`;
+    // Получаем мир в нижнем регистре, например "ru1"
+    const worldRawLower = (g.world_raw || `${REGION}${g.world_id}`).toLowerCase();
+    // Формируем правильную ссылку с явным указанием региона
+    const guildUrl = `https://foestats.com/${REGION}/${worldRawLower}/guilds/${g.guild_id}`;
     
     const rankChange = g.rankChange || 0;
     let changeHtml = '<span class="rank-change">—</span>';
@@ -322,7 +329,7 @@ function renderTopGuilds() {
           ${g.flagUrl ? `<img class="guild-flag" src="${g.flagUrl}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
           <a href="${guildUrl}" target="_blank" class="guild-link">${escapeHtml(g.name)}</a>
         </div>
-        <div class="world-badge">🌍 ${g.world_raw || REGION + g.world_id} — ${g.world_name}</div>
+        <div class="world-badge">🌍 ${worldRawLower} — ${g.world_name}</div>
         ${g.tier ? `<div class="tier-badge">🏆 ${g.tier}</div>` : ''}
       </td>
       <td class="points-cell">${g.points?.toLocaleString() || '—'}</td>
@@ -396,7 +403,7 @@ function exportToExcel() {
       if (data?.top20?.[0]) {
         const top = data.top20[0];
         const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : '—';
-        const wr = data.world_raw || `${REGION}${world}`;
+        const wr = (data.world_raw || `${REGION}${world}`).toLowerCase();
         summaryRows.push([
           wr,
           WORLD_NAMES[world] || `Мир ${world}`,
@@ -420,9 +427,10 @@ function exportToExcel() {
       ['Rank', 'Мир', 'Guild ID', 'Название гильдии', 'Участники', 'QI Points', 'QI Rank', 'Rank Change', 'Championships', 'Flag', 'URL']
     ];
     top100.forEach((g, i) => {
+      const worldRawLower = (g.world_raw || `${REGION}${g.world_id}`).toLowerCase();
       topRows.push([
         i+1,
-        g.world_raw || `${REGION}${g.world_id}`,
+        worldRawLower,
         g.guild_id || '',
         g.name || '',
         g.membersCount || 0,
@@ -430,8 +438,8 @@ function exportToExcel() {
         g.rank || '',
         g.rankChange || 0,
         g.championshipsWon || 0,
-        g.flag || '',
-        `https://foestats.com/${REGION}/${g.world_raw || REGION + g.world_id}/guilds/${g.guild_id}`
+        g.flagUrl || '',
+        `https://foestats.com/${REGION}/${worldRawLower}/guilds/${g.guild_id}`
       ]);
     });
     const wsTop = XLSX.utils.aoa_to_sheet(topRows);
@@ -445,6 +453,7 @@ function exportToExcel() {
         ['Rank', 'Guild ID', 'Название гильдии', 'Участники', 'QI Points', 'QI Rank', 'Rank Change', 'Championships', 'Flag', 'URL']
       ];
       if (data?.top20?.length) {
+        const worldRawLower = (data.world_raw || `${REGION}${world}`).toLowerCase();
         data.top20.forEach((g) => {
           rows.push([
             g.rank || '',
@@ -455,15 +464,15 @@ function exportToExcel() {
             g.rank || '',
             g.rankChange || 0,
             g.championshipsWon || 0,
-            g.flag || '',
-            `https://foestats.com/${REGION}/${worldsData.get(world)?.world_raw || REGION + world}/guilds/${g.guild_id}`
+            g.flagUrl || '',
+            `https://foestats.com/${REGION}/${worldRawLower}/guilds/${g.guild_id}`
           ]);
         });
       } else {
         rows.push(['Нет данных', data?.error || '—']);
       }
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      const sheetWorldId = worldsData.get(world)?.world_raw || `${REGION}${world}`;
+      const sheetWorldId = (worldsData.get(world)?.world_raw || `${REGION}${world}`).toLowerCase();
       let sheetName = `${sheetWorldId}_${(WORLD_NAMES[world] || `Мир${world}`).substring(0, 10)}`.replace(/[\\/*?:[\]]/g, '').slice(0, 31);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     }
@@ -476,10 +485,34 @@ function exportToExcel() {
   }
 }
 
+// ========= СЧЁТЧИК ПИНГОВ РАСШИРЕНИЯ =========
+
+async function loadPingCount() {
+  const el = document.getElementById('pingCounter');
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/ping_log?select=id`, {
+      method: 'HEAD',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'count=exact'
+      }
+    });
+    const range = response.headers.get('content-range'); // формат "0-0/123"
+    const total = range ? range.split('/')[1] : null;
+    if (total !== null) {
+      el.textContent = `📶 Тестовых обращений от расширения: ${total}`;
+    }
+  } catch (err) {
+    console.error('Ошибка загрузки счётчика пингов:', err);
+  }
+}
+
 // ========= ИНИЦИАЛИЗАЦИЯ =========
 
 buildTabs();
 loadAllWorldsFromSupabase();
+loadPingCount();
 
 document.getElementById('exportBtn').onclick = exportToExcel;
 document.getElementById('topGuildsBtn').onclick = renderTopGuilds;
