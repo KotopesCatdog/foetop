@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krakout — Редактор уровней</title>
+    <style>
+        * {
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0a0f1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+
+        .editor-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            max-width: 1000px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 0 4px #2a2418, 0 10px 30px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .block-palette {
+            display: flex;
+            gap: 10px;
+            background: #000000aa;
+            padding: 10px 20px;
+            border-radius: 60px;
+            flex-wrap: wrap;
+        }
+
+        .block-btn {
+            width: 50px;
+            height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #fff;
+            transition: 0.1s;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .block-btn.active {
+            border: 3px solid #ffff00;
+            transform: scale(1.05);
+            box-shadow: 0 0 10px yellow;
+        }
+
+        .block-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            background: #000000aa;
+            padding: 10px 20px;
+            border-radius: 60px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #2a3622;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            color: #d4ffb0;
+            border-radius: 40px;
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: 0.1s linear;
+            font-size: 14px;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .level-props {
+            background: #000000aa;
+            padding: 15px 20px;
+            border-radius: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prop-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f0f0f;
+            padding: 4px 16px;
+            border-radius: 40px;
+        }
+
+        .prop-group label {
+            color: #b3ffa7;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .prop-group input, .prop-group select {
+            background: #2a3622;
+            border: 1px solid #7eff5e;
+            color: #d4ffb0;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 40px;
+            outline: none;
+        }
+
+        .prop-group input {
+            width: 60px;
+        }
+
+        .prop-group select {
+            width: 100px;
+        }
+
+        .output {
+            margin-top: 20px;
+            background: #000000aa;
+            border-radius: 16px;
+            padding: 15px;
+        }
+
+        .output h3 {
+            color: #b3ffa7;
+            margin: 0 0 10px 0;
+        }
+
+        .output pre {
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 11px;
+            color: #d4ffb0;
+            font-family: monospace;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .status {
+            color: #ffdd88;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<div class="editor-container">
+    <canvas id="editorCanvas" width="832" height="640"></canvas>
+    
+    <div class="toolbar">
+        <div class="block-palette">
+            <div class="block-btn" data-type="0" style="background: #1a1a2e; color: #fff;">🗑️ 0</div>
+            <div class="block-btn" data-type="1" style="background: #FFFFFF; color: #000;">1</div>
+            <div class="block-btn" data-type="2" style="background: #FF4444; color: #fff;">2</div>
+            <div class="block-btn" data-type="3" style="background: #4488FF; color: #fff;">3</div>
+            <div class="block-btn" data-type="9" style="background: #222222; color: #fff;">9</div>
+        </div>
+        
+        <div class="controls">
+            <button id="clearBtn">🗑️ Очистить всё</button>
+            <button id="randomBonusesBtn">🎲 Добавить бонусы</button>
+        </div>
+    </div>
+    
+    <div class="level-props">
+        <div class="prop-group">
+            <label>🆔 ID:</label>
+            <input type="number" id="levelId" min="0" max="99" value="8">
+        </div>
+        <div class="prop-group">
+            <label>📛 NAME:</label>
+            <input type="text" id="levelName" value="БАШНЯ" style="width: 120px;">
+        </div>
+        <div class="prop-group">
+            <label>🌀 MOVEMENT:</label>
+            <select id="movementType">
+                <option value="none">none</option>
+                <option value="horizontal">horizontal</option>
+                <option value="vertical">vertical</option>
+                <option value="both">both</option>
+            </select>
+        </div>
+        <div class="prop-group">
+            <label>⚡ SPEED:</label>
+            <input type="number" id="movementSpeed" step="0.1" min="0" max="2" value="0.4">
+        </div>
+        <button id="saveLevelBtn" style="background: #44aa44;">💾 СОХРАНИТЬ</button>
+        <button id="loadLevelBtn">📂 ЗАГРУЗИТЬ</button>
+    </div>
+    
+    <div class="output">
+        <h3>📋 Код для levels.js (скопируйте и вставьте)</h3>
+        <pre id="codeOutput">// Здесь будет код уровня</pre>
+    </div>
+    <div class="status" id="status">✅ Клик — установка блока | Shift+клик — бонус | Ctrl+клик — удалить</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const W = 832;
+    const H = 640;
+    const BRICK_W = 64;
+    const BRICK_H = 32;
+    const ROWS = 8;
+    const COLS = 13;
+    const BRICKS_TOP_Y = 104;
+    
+    let grid = [];
+    let bonusMap = [];
+    let currentBlockType = 1;
+    
+    // Цвета для отображения
+    const COLORS = {
+        0: { main: "#1a1a2e", light: "#2a2a3e" },
+        1: { main: "#FFFFFF", light: "#E0E0E0" },
+        2: { main: "#FF4444", light: "#FF8888" },
+        3: { main: "#4488FF", light: "#88AAFF" },
+        9: { main: "#222222", light: "#444444" }
+    };
+    
+    // Инициализация пустой сетки
+    function initGrid() {
+        grid = [];
+        bonusMap = [];
+        for(let row = 0; row < ROWS; row++) {
+            grid[row] = [];
+            bonusMap[row] = [];
+            for(let col = 0; col < COLS; col++) {
+                grid[row][col] = 0;
+                bonusMap[row][col] = null;
+            }
+        }
+    }
+    initGrid();
+    
+    // Отрисовка сетки
+    function drawGrid() {
+        ctx.fillStyle = "#01020b";
+        ctx.fillRect(0, 0, W, H);
+        
+        ctx.strokeStyle = "#3a4a2e";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, BRICKS_TOP_Y - 4, W, ROWS * BRICK_H + 8);
+        
+        for(let row = 0; row < ROWS; row++) {
+            for(let col = 0; col < COLS; col++) {
+                const type = grid[row][col];
+                const colors = COLORS[type] || COLORS[0];
+                const x = col * BRICK_W;
+                const y = BRICKS_TOP_Y + row * BRICK_H;
+                
+                ctx.fillStyle = colors.main;
+                ctx.fillRect(x, y, BRICK_W-2, BRICK_H-2);
+                ctx.fillStyle = colors.light;
+                ctx.fillRect(x+4, y+4, BRICK_W-10, 6);
+                
+                ctx.strokeStyle = "#FFFFFF44";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x+1, y+1, BRICK_W-4, BRICK_H-4);
+                
+                if(bonusMap[row][col]) {
+                    ctx.font = `bold 20px "Segoe UI Emoji"`;
+                    ctx.fillStyle = "#ffff00";
+                    ctx.shadowBlur = 3;
+                    ctx.shadowColor = "black";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    let letter = "";
+                    switch(bonusMap[row][col]) {
+                        case 'EXTEND': letter = "↔️"; break;
+                        case 'SHRINK': letter = "🔁"; break;
+                        case 'EXTRA_LIFE': letter = "🖤"; break;
+                        case 'SLOW': letter = "🐢"; break;
+                        case 'FAST': letter = "⚡"; break;
+                        case 'MEGA': letter = "💥"; break;
+                        case 'MAGNET': letter = "🧲"; break;
+                        case 'ATTACK': letter = "🔺"; break;
+                        default: letter = "?";
+                    }
+                    ctx.fillText(letter, x + BRICK_W/2, y + BRICK_H/2);
+                    ctx.shadowBlur = 0;
+                }
+                
+                if(type === 0) {
+                    ctx.strokeStyle = "#333";
+                    ctx.beginPath();
+                    ctx.moveTo(x + BRICK_W/2, y);
+                    ctx.lineTo(x + BRICK_W/2, y + BRICK_H);
+                    ctx.moveTo(x, y + BRICK_H/2);
+                    ctx.lineTo(x + BRICK_W, y + BRICK_H/2);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        ctx.font = "12px monospace";
+        ctx.fillStyle = "#888";
+        ctx.textAlign = "center";
+        for(let col = 0; col < COLS; col++) {
+            ctx.fillText(col, col * BRICK_W + BRICK_W/2, BRICKS_TOP_Y - 8);
+        }
+        
+        ctx.textAlign = "left";
+    }
+    
+    function getCellFromClick(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        let mouseX = (e.clientX - rect.left) * scaleX;
+        let mouseY = (e.clientY - rect.top) * scaleY;
+        
+        if(mouseY < BRICKS_TOP_Y || mouseY > BRICKS_TOP_Y + ROWS * BRICK_H) return null;
+        
+        const col = Math.floor(mouseX / BRICK_W);
+        const row = Math.floor((mouseY - BRICKS_TOP_Y) / BRICK_H);
+        
+        if(row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+            return { row, col };
+        }
+        return null;
+    }
+    
+    canvas.addEventListener('click', (e) => {
+        const cell = getCellFromClick(e);
+        if(!cell) return;
+        
+        if(e.shiftKey) {
+            if(grid[cell.row][cell.col] !== 0 && grid[cell.row][cell.col] !== 9) {
+                const bonuses = ['EXTEND', 'SHRINK', 'EXTRA_LIFE', 'SLOW', 'FAST', 'MEGA', 'MAGNET', 'ATTACK'];
+                const currentBonus = bonusMap[cell.row][cell.col];
+                let nextIndex = 0;
+                if(currentBonus) {
+                    nextIndex = (bonuses.indexOf(currentBonus) + 1) % bonuses.length;
+                }
+                bonusMap[cell.row][cell.col] = bonuses[nextIndex];
+                document.getElementById('status').innerHTML = `✨ Бонус: ${bonusMap[cell.row][cell.col] || 'нет'} на (${cell.row},${cell.col})`;
+            } else {
+                document.getElementById('status').innerHTML = `⚠️ На пустом или непробиваемом блоке нет бонуса`;
+            }
+        } else if(e.ctrlKey) {
+            grid[cell.row][cell.col] = 0;
+            bonusMap[cell.row][cell.col] = null;
+            document.getElementById('status').innerHTML = `🗑️ Удалён блок (${cell.row},${cell.col})`;
+        } else {
+            grid[cell.row][cell.col] = currentBlockType;
+            if(currentBlockType === 0 || currentBlockType === 9) {
+                bonusMap[cell.row][cell.col] = null;
+            }
+            document.getElementById('status').innerHTML = `✅ Блок ${currentBlockType} на (${cell.row},${cell.col})`;
+        }
+        drawGrid();
+        updateCodeOutput();
+    });
+    
+    document.querySelectorAll('.block-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.block-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentBlockType = parseInt(btn.dataset.type);
+            document.getElementById('status').innerHTML = `🎨 Выбран блок: ${currentBlockType === 0 ? 'пусто' : currentBlockType}`;
+        });
+    });
+    
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        initGrid();
+        drawGrid();
+        updateCodeOutput();
+        document.getElementById('status').innerHTML = '🗑️ Всё очищено';
+    });
+    
+    document.getElementById('randomBonusesBtn').addEventListener('click', () => {
+        const bonusTypes = ['EXTEND', 'SHRINK', 'EXTRA_LIFE', 'SLOW', 'FAST', 'MEGA', 'MAGNET', 'ATTACK'];
+        for(let row = 0; row < ROWS; row++) {
+            for(let col = 0; col < COLS; col++) {
+                if(grid[row][col] !== 0 && grid[row][col] !== 9 && Math.random() < 0.15) {
+                    bonusMap[row][col] = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+                }
+            }
+        }
+        drawGrid();
+        updateCodeOutput();
+        document.getElementById('status').innerHTML = '🎲 Добавлены случайные бонусы';
+    });
+    
+    function generateLevelCode() {
+        const id = document.getElementById('levelId').value;
+        const name = document.getElementById('levelName').value || "БЕЗ ИМЕНИ";
+        const movement = document.getElementById('movementType').value;
+        const movementSpeed = parseFloat(document.getElementById('movementSpeed').value);
+        
+        let layoutStr = "[\n";
+        for(let row = 0; row < ROWS; row++) {
+            layoutStr += "            [";
+            for(let col = 0; col < COLS; col++) {
+                layoutStr += grid[row][col];
+                if(col < COLS-1) layoutStr += ",";
+            }
+            layoutStr += "]";
+            if(row < ROWS-1) layoutStr += ",";
+            layoutStr += "\n";
+        }
+        layoutStr += "        ]";
+        
+        let bonusMapStr = "";
+        let hasBonuses = false;
+        for(let row = 0; row < ROWS; row++) {
+            let rowBonuses = [];
+            for(let col = 0; col < COLS; col++) {
+                if(bonusMap[row][col]) {
+                    rowBonuses.push(`${col}: "${bonusMap[row][col]}"`);
+                }
+            }
+            if(rowBonuses.length > 0) {
+                if(!hasBonuses) {
+                    bonusMapStr = ",\n        bonusMap: {\n";
+                    hasBonuses = true;
+                }
+                bonusMapStr += `            ${row}: { ${rowBonuses.join(", ")} },\n`;
+            }
+        }
+        if(hasBonuses) {
+            bonusMapStr += "        }";
+        }
+        
+        return `    {
+        id: ${id},
+        name: "${name}",
+        movement: "${movement}",
+        movementSpeed: ${movementSpeed},
+        layout: ${layoutStr}${bonusMapStr}
+    }`;
+    }
+    
+    function updateCodeOutput() {
+        const code = generateLevelCode();
+        document.getElementById('codeOutput').innerText = code;
+    }
+    
+    document.getElementById('saveLevelBtn').addEventListener('click', () => {
+        const id = document.getElementById('levelId').value;
+        const levelCode = generateLevelCode();
+        
+        const levels = JSON.parse(localStorage.getItem('krakout_custom_levels') || '{}');
+        levels[id] = {
+            id: parseInt(id),
+            name: document.getElementById('levelName').value,
+            movement: document.getElementById('movementType').value,
+            movementSpeed: parseFloat(document.getElementById('movementSpeed').value),
+            layout: grid,
+            bonusMap: bonusMap
+        };
+        localStorage.setItem('krakout_custom_levels', JSON.stringify(levels));
+        
+        updateCodeOutput();
+        navigator.clipboard.writeText(levelCode).then(() => {
+            document.getElementById('status').innerHTML = `💾 Уровень ID:${id} "${document.getElementById('levelName').value}" сохранён и скопирован в буфер!`;
+        });
+    });
+    
+    document.getElementById('loadLevelBtn').addEventListener('click', () => {
+        const id = document.getElementById('levelId').value;
+        const levels = JSON.parse(localStorage.getItem('krakout_custom_levels') || '{}');
+        
+        if(levels[id]) {
+            const level = levels[id];
+            grid = level.layout;
+            bonusMap = level.bonusMap || [];
+            
+            for(let row = 0; row < ROWS; row++) {
+                if(!bonusMap[row]) bonusMap[row] = [];
+                for(let col = 0; col < COLS; col++) {
+                    if(!bonusMap[row][col]) bonusMap[row][col] = null;
+                }
+            }
+            
+            document.getElementById('levelName').value = level.name || "БЕЗ ИМЕНИ";
+            document.getElementById('movementType').value = level.movement || "none";
+            document.getElementById('movementSpeed').value = level.movementSpeed || 0;
+            
+            drawGrid();
+            updateCodeOutput();
+            document.getElementById('status').innerHTML = `📂 Загружен уровень ID:${id} "${level.name}"`;
+        } else {
+            document.getElementById('status').innerHTML = `❌ Уровень с ID:${id} не найден`;
+        }
+    });
+    
+    document.querySelectorAll('#levelId, #levelName, #movementType, #movementSpeed').forEach(el => {
+        el.addEventListener('input', () => updateCodeOutput());
+        el.addEventListener('change', () => updateCodeOutput());
+    });
+    
+    document.querySelector('.block-btn[data-type="1"]').classList.add('active');
+    
+    drawGrid();
+    updateCodeOutput();
+    
+    document.getElementById('status').innerHTML = '✅ Клик — блок | Shift+клик — бонус | Ctrl+клик — удалить';
+</script>
+</body>
+</html>

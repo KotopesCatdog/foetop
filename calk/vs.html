@@ -1,0 +1,293 @@
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Calculator">
+        <meta name="keywords" content="foe, Forge of Empires, Great Buildings, calculator, calculations, Cost, Bonuses, Rewards">
+        
+
+<link href="favicon.ico" rel="icon" type="image/x-icon">
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://odessa.clan.su/foe/calc.css">
+        <link rel="stylesheet" href="https://odessa.clan.su/foe/nouislider.min.css">
+        <script src="https://odessa.clan.su/foe/nouislider.min.js"></script>
+        <script src="https://odessa.clan.su/foe/store.js"></script>
+        <script src="https://odessa.clan.su/foe/data1.js"></script>
+        <script src="https://odessa.clan.su/foe/calc.js"></script>
+        <title>FoE - калькулятор вложений в ВС</title>
+        <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    </head>
+    <body>
+           
+            <style>
+    
+</style>
+          <style>
+    .navigation-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
+    }
+    .back-button {
+        padding: 12px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background-color: #008080;
+        border: 4px solid black;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .back-button:hover {
+        background-color: #00a0a0;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+        transform: scale(1.05);
+    }
+
+    /* Адаптив для мобильных */
+    @media (max-width: 480px) {
+        .navigation-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-button {
+            width: 80%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="navigation-buttons">
+    <a href="javascript:history.back()" class="back-button">← Назад</a>
+    <a href="https://www.foehelp.ru" class="back-button">🏠 Домой</a>
+</div>
+        <nav class="navbar navbar-expand-md navbar-dark bg-primary sticky-top">
+     
+  
+		   </div>
+            
+		
+        </nav>
+        <main>
+            
+            <div class="container-fluid">
+                <form class="mb-2">
+                    <div class="row">
+                        <div class="col-sm-auto">
+                            <div class="input-group input-group-sm">
+                                <select class="form-control form-control-sm" id="lb_id" onchange="Calc()">
+                                    <option value="0">Выберите здание</option>
+                                                                            <option value="1">Обсерватория</option>
+																		    <option value="3">Храм реликвий</option>
+																			<option value="2">Дельфийский оракул</option>
+																			<option value="4">Вавилонская башня</option>
+																			<option value="5">Статуя Зевса</option>
+																			<option value="6">Колизей</option>
+                                                                            <option value="7">Александрийский маяк</option>
+																			<option value="9">Собор Святой Софии</option>
+																			<option value="8">Ахенский собор</option>
+                                                                            <option value="41">Галатская башня</option>
+																		    <option value="10">Собор Святого Марка</option>
+                                                                            <option value="11">Нотр-Дам</option>
+																			<option value="12">Собор Василия Блаженного</option>
+																			<option value="13">Кастель-дель-Монте</option>
+																			<option value="15">Фрауэнкирхе</option>
+																			<option value="14">Дильский замок</option>
+																			<option value="17">Королевский Альберт-холл</option>
+																			<option value="16">Капитолий</option>
+																			<option value="18">Шато-Фронтенак</option>
+																			<option value="19">Алькатрас</option>
+																			<option value="20">Спейс-Нидл</option>
+																			<option value="21">Атомиум</option>
+																			<option value="22">Космодром на мысе Канаверал</option>
+																			<option value="23">Хабитат</option>
+																			<option value="25">Замок Лотоса</option>
+																			<option value="24">Башня Инноваций</option>
+																			<option value="27">Башня перемирия</option>
+																			<option value="26">Вояджер V1</option>
+																			<option value="29">Арка</option>
+																			<option value="28">Проект «Дождевой лес»</option>
+																			<option value="30">Статуя Геи</option>
+																			<option value="32">Зернохранилище</option>
+																			<option value="31">Арктическая оранжерея</option>
+																			<option value="33">Музей Атлантиды</option>
+                                                                            <option value="34">Кракен</option>
+                                                                            <option value="35">Синяя галактика</option>
+																			<option value="36">Терракотовая армия</option>
+                                                                            <option value="37">Замок Химэдзи</option>
+                                                                            <option value="39">Звездочёт</option>
+                                                                            <option value="38">Проект Дева</option>
+                                                                            <option value="40">Космический авианосец</option>
+                                                                            <option value="42">Парящий остров</option>
+                                                                            <option value="43">Ядро ИИ</option>
+                                                                            <option value="44">КЕНТАВР</option>
+																			<option value="45">ПЕГАС</option>
+                                                                            <option value="46">ГИДРА</option>
+                                                                           
+                                                                      </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-auto">
+                           <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text" for="lb_level">Уровень ВС (до-)</label>
+                                </div>
+                                <input class="form-control form-control-sm" size="5" type="number" min="1" max="999" value="1" id="lb_level" onchange="Calc()">
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-secondary px-3" type="button" onclick="LevelDown()">-</button>
+                                    <button class="btn btn-sm btn-outline-secondary px-3" type="button" onclick="LevelUp()">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-auto">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text" for="CostTotal">всего СО</label>
+                                </div>
+                                <div class="input-group-append">
+                                    <input class="form-control form-control-sm" style="text-align:center;font-size:smaller" size="5" type="text" value="0" id="CostTotal" disabled>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        
+						
+										
+					</div>
+                </form>
+            </div>
+            <table class="table table-bordered table-sm" id="FPList">
+                <thead>
+                    <tr>
+                        <th scope="col" class="bt bl tac" style="width:14%">места</th>
+                        <th scope="col" class="bt br tac" style="width:14%">СО</th>
+                        <th scope="col" class="tac" style="width:14%">Всего</th>
+                        <th scope="col" style="width:48%">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <div>Информация</div>
+                                <div><input class="form-control form-control-sm" type="text" placeholder="Ник (не обязательно)" pattern="[A-Za-z ]+" value="" id="User" onchange="Calc()"></div>
+                            </div>
+                        </th>
+                        <th scope="col" class="tac" style="width:10%">Коэф.</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <td class="bb bl tac"><div id="Pos_99">мой вклад</div></td>
+                        <td class="bb br tac"><div id="CostTotalLeft">0</div></td>
+                        <td class="tac"><div id="SaveTotal">-</div></td>
+                        <td></td>
+                        <td class="tac" style="white-space:nowrap">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="SetFactor(1.85)">85%</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="SetFactor(1.9)">90%</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="SetFactor(2.0)">100%</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+                                <tbody id="Pos1">
+                    <tr class="pure-table">
+                        <td class="bl tac align-middle"><div id="Pos_1">P1</div></td>
+                        <td class="br tac align-middle"><div id="Cost_1">0</div></td>
+                        <td class="tac align-middle"><div id="SaveTotal_1">-</div></td>
+                        <td class="align-middle">
+                            <h5><span class="badge badge-warning" style="display:none" id="Note_1">выравнивание<br></span></h5>
+                            <h5><span class="badge badge-danger" style="display:none" id="LossInfo_1">риск потери <span class="">(<span id="LossValue_1"></span> СО)</span> </span></h5>
+                            <h5><span class="badge badge-success" style="display:none" id="SaveInfo_1">безопасный</span></h5>
+                        </td>
+                        <td class="tac align-middle"><input class="form-control form-control-sm" type="number" step="0.001" min="1" max="3" value="1.9" id="Factor_1" onchange="Calc()"></td>
+                    </tr>
+                </tbody>
+                                <tbody id="Pos2">
+                    <tr class="pure-table">
+                        <td class="bl tac align-middle"><div id="Pos_2">P2</div></td>
+                        <td class="br tac align-middle"><div id="Cost_2">0</div></td>
+                        <td class="tac align-middle"><div id="SaveTotal_2">-</div></td>
+                        <td class="align-middle">
+                            <h5><span class="badge badge-warning" style="display:none" id="Note_2">выравнивание<br></span></h5>
+                            <h5><span class="badge badge-danger" style="display:none" id="LossInfo_2">риск потери <span class="">(<span id="LossValue_2"></span> СО)</span> </span></h5>
+                            <h5><span class="badge badge-success" style="display:none" id="SaveInfo_2">безопасный</span></h5>
+                        </td>
+                        <td class="tac align-middle"><input class="form-control form-control-sm" type="number" step="0.001" min="1" max="3" value="1.9" id="Factor_2" onchange="Calc()"></td>
+                    </tr>
+                </tbody>
+                                <tbody id="Pos3">
+                    <tr class="pure-table">
+                        <td class="bl tac align-middle"><div id="Pos_3">P3</div></td>
+                        <td class="br tac align-middle"><div id="Cost_3">0</div></td>
+                        <td class="tac align-middle"><div id="SaveTotal_3">-</div></td>
+                        <td class="align-middle">
+                            <h5><span class="badge badge-warning" style="display:none" id="Note_3">выравнивание<br></span></h5>
+                            <h5><span class="badge badge-danger" style="display:none" id="LossInfo_3">риск потери <span class="">(<span id="LossValue_3"></span> СО)</span> </span></h5>
+                            <h5><span class="badge badge-success" style="display:none" id="SaveInfo_3">безопасный</span></h5>
+                        </td>
+                        <td class="tac align-middle"><input class="form-control form-control-sm" type="number" step="0.001" min="1" max="3" value="1.9" id="Factor_3" onchange="Calc()"></td>
+                    </tr>
+                </tbody>
+                                <tbody id="Pos4">
+                    <tr class="pure-table">
+                        <td class="bl tac align-middle"><div id="Pos_4">P4</div></td>
+                        <td class="br tac align-middle"><div id="Cost_4">0</div></td>
+                        <td class="tac align-middle"><div id="SaveTotal_4">-</div></td>
+                        <td class="align-middle">
+                            <h5><span class="badge badge-warning" style="display:none" id="Note_4">выравнивание<br></span></h5>
+                            <h5><span class="badge badge-danger" style="display:none" id="LossInfo_4">риск потери <span class="">(<span id="LossValue_4"></span> СО)</span> </span></h5>
+                            <h5><span class="badge badge-success" style="display:none" id="SaveInfo_4">безопасный</span></h5>
+                        </td>
+                        <td class="tac align-middle"><input class="form-control form-control-sm" type="number" step="0.001" min="1" max="3" value="1.9" id="Factor_4" onchange="Calc()"></td>
+                    </tr>
+                </tbody>
+                                <tbody id="Pos5">
+                    <tr class="pure-table">
+                        <td class="bl tac align-middle"><div id="Pos_5">P5</div></td>
+                        <td class="br tac align-middle"><div id="Cost_5">0</div></td>
+                        <td class="tac align-middle"><div id="SaveTotal_5">-</div></td>
+                        <td class="align-middle">
+                            <h5><span class="badge badge-warning" style="display:none" id="Note_5">выравнивание<br></span></h5>
+                            <h5><span class="badge badge-danger" style="display:none" id="LossInfo_5">риск потери <span class="">(<span id="LossValue_5"></span> СО)</span> </span></h5>
+                            <h5><span class="badge badge-success" style="display:none" id="SaveInfo_5">безопасный</span></h5>
+                        </td>
+                        <td class="tac align-middle"><input class="form-control form-control-sm" type="number" step="0.001" min="1" max="3" value="1.9" id="Factor_5" onchange="Calc()"></td>
+                    </tr>
+                </tbody>
+                            </table>
+            <div class="container-fluid">
+                <div class="row">
+                    
+                    <div class="col-11">
+                        <div class="row align-items-center" id="InvestList"></div>
+                       
+                    </div>
+                    <div class="col-1 text-right">
+                        <input class="btn btn-danger btn-sm" type="button" onclick="Reset(true)" value="Reset">
+                    </div>
+                </div>
+            </div>
+            <p>&nbsp;</p>
+            <div class="container-fluid">
+    
+                </div>
+            </div>
+
+        </main>
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+                <script type="text/javascript">
+            $(window).on('load', function() { Init(); });
+        </script>
+                    </body>
+</html>

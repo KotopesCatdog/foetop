@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoE: Источники фрагментов</title>
+<link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #eee;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.json-selector {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.json-selector label {
+    color: #888;
+    font-size: 12px;
+}
+.json-selector select {
+    background: #333;
+    color: #fff;
+    border: 1px solid #4ecdc4;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.json-selector select:hover {
+    border-color: #66fcf1;
+}
+input#search {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #333;
+    color: white;
+    box-sizing: border-box;
+}
+#toggle-all {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+#toggle-all:hover { background: #0055aa; }
+.building {
+    border-bottom: 1px solid #444;
+    padding: 10px 0;
+    cursor: pointer;
+}
+.building-header {
+    font-weight: bold;
+    color: #4fc3f7;
+    display: flex;
+    align-items: center;
+}
+.building-header::before {
+    content: "▶ ";
+    margin-right: 6px;
+    transition: transform 0.2s;
+}
+.building.open .building-header::before { content: "▼ "; }
+.rewards {
+    margin-top: 8px;
+    padding-left: 24px;
+    display: none;
+    color: #ccc;
+}
+.building.open .rewards { display: block; }
+.reward-item { margin: 4px 0; }
+mark {
+    background-color: #ffeb3b;
+    color: #000;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+.navigation-buttons {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+}
+.back-button {
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: #008080;
+    border: 4px solid black;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s;
+    display: inline-block;
+}
+.back-button:hover {
+    background-color: #00a0a0;
+    box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+    transform: scale(1.05);
+}
+#loading {
+    text-align: center;
+    color: #ffd700;
+    padding: 20px;
+    font-family: monospace;
+    font-size: 14px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 8px;
+}
+#serverFileDate {
+    text-align: left;
+    color: #ffd700;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+.status-msg {
+    text-align: center;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.5);
+}
+@media (max-width: 480px) {
+    .navigation-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    .back-button { width: 80%; text-align: center; }
+    .json-selector { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="navigation-buttons">
+    <a href="javascript:history.back()" class="back-button">← Назад</a>
+    <a href="https://www.foehelp.ru" class="back-button">🏠 Домой</a>
+</div>
+
+<h2>🔍 Источники фрагментов   (С) foehelp.ru</h2>
+
+<div class="json-selector">
+    <label>📁 БАЗА ДАННЫХ:</label>
+    <select id="jsonSelect">
+        <option value="/building.json">RU</option>
+        <option value="/buildingzz.json">BETA</option>
+        <option value="https://pub-566ab475475d4d62a392e476f515f46c.r2.dev/building.json">TEST (R2)</option>
+    </select>
+    <div id="localJsonStatus" style="font-size: 11px; color: #4ecdc4;">🌐 Серверная версия</div>
+</div>
+
+<div id="serverFileDate"></div>
+<div id="statusMsg" class="status-msg">Загрузка...</div>
+
+<input type="text" id="search" placeholder="Поиск: здание или фрагмент">
+<button id="toggle-all">Развернуть все</button>
+<div id="loading" style="display: none;"></div>
+<div id="results"></div>
+
+<script>
+// === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+let buildingsList = [];
+let allExpanded = false;
+let currentJsonUrl = '/building.json';
+
+// === ПОЛУЧЕНИЕ ДАТЫ ФАЙЛА ===
+async function loadServerFileDate() {
+    const dateElement = document.getElementById('serverFileDate');
+    if (!dateElement) return;
+    
+    try {
+        const response = await fetch(currentJsonUrl, { method: 'HEAD' });
+        const lastModified = response.headers.get('Last-Modified');
+        
+        if (lastModified) {
+            const fileDate = new Date(lastModified);
+            const formattedDate = fileDate.toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            dateElement.textContent = `📅 Дата обновления базы: ${formattedDate}`;
+        } else {
+            dateElement.textContent = `📅 База обновлена: ${new Date().toLocaleDateString()}`;
+        }
+    } catch (error) {
+        console.error('Ошибка получения даты файла:', error);
+        dateElement.textContent = `📅 База обновлена: ${new Date().toLocaleDateString()}`;
+    }
+}
+
+// === ПОИСКОВЫЕ АЛИАСЫ ===
+const SEARCH_ALIASES = {
+    'риф': ['завершите особое производство', 'rush_event_buildings_instant']
+};
+
+// Список эпох для проверки
+const ERAS_TO_CHECK = [
+    'AllAge', 'BronzeAge', 'IronAge', 'EarlyMiddleAge', 'HighMiddleAge',
+    'LateMiddleAge', 'ColonialAge', 'IndustrialAge', 'ProgressiveEra',
+    'ModernEra', 'PostModernEra', 'ContemporaryEra', 'TomorrowEra',
+    'FutureEra', 'ArcticFuture', 'OceanicFuture', 'VirtualFuture',
+    'SpaceAgeMars', 'SpaceAgeAsteroidBelt', 'SpaceAgeVenus',
+    'SpaceAgeJupiterMoon', 'SpaceAgeTitan'
+];
+
+// === ФУНКЦИИ ДЛЯ ПОЛУЧЕНИЯ ИМЁН ФРАГМЕНТОВ ===
+window.CityBuildings = {
+    findRewardInLookup: (rewardId, metaData, era) => {
+        try {
+            if (!metaData.components) return null;
+            const erasToCheck = [era, 'AllAge'];
+            for (const e of erasToCheck) {
+                if (metaData.components[e] && metaData.components[e].lookup && metaData.components[e].lookup.rewards) {
+                    const rewards = metaData.components[e].lookup.rewards;
+                    if (rewards[rewardId]) return rewards[rewardId];
+                    for (const key in rewards) {
+                        const item = rewards[key];
+                        if (item.type === 'chest' && item.possible_rewards) {
+                            for (const possible of item.possible_rewards) {
+                                if (possible.reward && possible.reward.id === rewardId) return possible.reward;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        } catch (e) { 
+            console.warn("findRewardInLookup error:", e); 
+            return null; 
+        }
+    },
+    
+    setGenericReward: (product, metaData, era) => {
+        try {
+            let rewardData = {
+                id: product.reward.id,
+                name: 'Награда',
+                type: 'consumable',
+                subType: '',
+                amount: product.reward.amount || product.reward.totalAmount || 1,
+                dropChance: product.dropChance || null,
+                iconClass: 'bg-generic'
+            };
+            const lookupData = window.CityBuildings.findRewardInLookup(product.reward.id, metaData, era);
+            if (lookupData) {
+                if (lookupData.subType === 'fragment') {
+                    rewardData.name = lookupData.name || (lookupData.assembledReward ? lookupData.assembledReward.name : 'Фрагмент');
+                    rewardData.iconClass = 'bg-fragment';
+                    rewardData.type = 'fragment';
+                    rewardData.amount = lookupData.amount || 1;
+                }
+                else if (lookupData.type === 'blueprint' || lookupData.subType === 'reward_item') {
+                    rewardData.name = lookupData.name;
+                    rewardData.iconClass = 'bg-blueprint';
+                    rewardData.type = 'blueprint';
+                    rewardData.amount = lookupData.amount || 1;
+                }
+                else if (lookupData.name) {
+                    if (lookupData.subType !== 'reward_item') {
+                        rewardData.name = lookupData.name.replace(/^\+?\d+\s*/, '');
+                    } else {
+                        rewardData.name = lookupData.name;
+                    }
+                }
+            } else {
+                if (product.reward.id.includes('fragment')) {
+                    rewardData.name = 'Фрагмент (' + product.reward.id + ')';
+                    rewardData.iconClass = 'bg-fragment';
+                    rewardData.type = 'fragment';
+                }
+            }
+            return rewardData;
+        } catch (e) {
+            console.warn("setGenericReward error:", e);
+            return { name: 'Ошибка награды', type: 'unknown', amount: 0 };
+        }
+    }
+};
+
+// === ЗАГРУЗКА ДАННЫХ С ПРОГРЕССОМ ===
+async function loadFragments() {
+    const statusMsg = document.getElementById('statusMsg');
+    const loadingDiv = document.getElementById('loading');
+    const resultsDiv = document.getElementById('results');
+    
+    statusMsg.style.display = 'block';
+    statusMsg.innerHTML = '🔄 Подключение...';
+    statusMsg.style.color = '#ffd700';
+    loadingDiv.style.display = 'block';
+    resultsDiv.innerHTML = '';
+    
+    const startTime = Date.now();
+    
+    try {
+        statusMsg.innerHTML = '📥 Загрузка JSON...';
+        
+        const response = await fetch(currentJsonUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const contentLength = response.headers.get('content-length');
+        const totalMB = contentLength ? (parseInt(contentLength) / 1024 / 1024).toFixed(1) : '?';
+        
+        const reader = response.body.getReader();
+        let received = 0;
+        const chunks = [];
+        
+        loadingDiv.innerHTML = `📥 Загрузка ${totalMB} МБ... 0%`;
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            chunks.push(value);
+            received += value.length;
+            
+            if (contentLength) {
+                const percent = Math.round(received / parseInt(contentLength) * 100);
+                const receivedMB = (received / 1024 / 1024).toFixed(1);
+                loadingDiv.innerHTML = `📥 Загрузка ${totalMB} МБ... ${percent}% (${receivedMB} МБ)`;
+            }
+        }
+        
+        loadingDiv.innerHTML = '📦 Обработка JSON...';
+        
+        const chunksAll = new Uint8Array(received);
+        let position = 0;
+        for (const chunk of chunks) {
+            chunksAll.set(chunk, position);
+            position += chunk.length;
+        }
+        
+        const decoder = new TextDecoder();
+        const jsonText = decoder.decode(chunksAll);
+        const rawData = JSON.parse(jsonText);
+        
+        loadingDiv.innerHTML = '🔄 Преобразование данных...';
+        
+        const entities = Array.isArray(rawData) ? rawData : Object.values(rawData);
+        
+        buildingsList = [];
+        let processedCount = 0;
+        
+        // Дополнительные признаки фрагментов
+        const FRAGMENT_PATTERNS = [
+            'fragment', 'rush_', 'renovation_kit', 'one_up_kit', 'upgrade_kit',
+            'selection_kit', 'mass_self_aid', 'self_aid_kit', 'building_',
+            'coin_boost', 'attacker_boost', 'defence_attacker', 'store_building',
+            'blueprint_box'
+        ];
+        
+        function isFragmentId(id) {
+            if (!id) return false;
+            const lowerId = id.toLowerCase();
+            return FRAGMENT_PATTERNS.some(pattern => lowerId.includes(pattern));
+        }
+        
+        entities.forEach(metaData => {
+            if (!metaData || !metaData.id || !metaData.name) return;
+            
+            const fragments = [];
+            const seenIds = new Set();
+            
+            ERAS_TO_CHECK.forEach(era => {
+                if (metaData.components && metaData.components[era] && 
+                    metaData.components[era].production && 
+                    metaData.components[era].production.options) {
+                    
+                    metaData.components[era].production.options.forEach(opt => {
+                        if (!opt.products || !Array.isArray(opt.products)) return;
+                        
+                        opt.products.forEach(prod => {
+                            // 1. Прямые genericReward
+                            if (prod.type === 'genericReward' && prod.reward && prod.reward.id) {
+                                if (isFragmentId(prod.reward.id) && !seenIds.has(prod.reward.id)) {
+                                    seenIds.add(prod.reward.id);
+                                    
+                                    const tempProduct = { 
+                                        reward: prod.reward, 
+                                        type: prod.type,
+                                        dropChance: prod.dropChance 
+                                    };
+                                    const rewardData = window.CityBuildings.setGenericReward(tempProduct, metaData, era);
+                                    
+                                    fragments.push({
+                                        id: prod.reward.id,
+                                        name: rewardData.name || `Фрагмент: ${prod.reward.id}`,
+                                        icon: rewardData.iconClass || 'icon_fragment'
+                                    });
+                                }
+                            }
+                            
+                            // 2. Случайные награды (random)
+                            if (prod.type === 'random' && prod.products && Array.isArray(prod.products)) {
+                                prod.products.forEach(rProd => {
+                                    if (rProd.product && rProd.product.reward && rProd.product.reward.id) {
+                                        if (isFragmentId(rProd.product.reward.id) && !seenIds.has(rProd.product.reward.id)) {
+                                            seenIds.add(rProd.product.reward.id);
+                                            
+                                            const tempProduct = { 
+                                                reward: rProd.product.reward, 
+                                                type: rProd.product.type,
+                                                dropChance: rProd.dropChance 
+                                            };
+                                            const rewardData = window.CityBuildings.setGenericReward(tempProduct, metaData, era);
+                                            
+                                            fragments.push({
+                                                id: rProd.product.reward.id,
+                                                name: rewardData.name || `Фрагмент: ${rProd.product.reward.id}`,
+                                                icon: rewardData.iconClass || 'icon_fragment'
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+            
+            if (fragments.length > 0) {
+                buildingsList.push({
+                    id: metaData.id,
+                    name: metaData.name,
+                    rewards: fragments
+                });
+                processedCount++;
+            }
+        });
+        
+        buildingsList.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+        
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        
+        statusMsg.innerHTML = `✅ Загружено ${processedCount} зданий с фрагментами за ${elapsed} сек`;
+        statusMsg.style.color = '#4ecdc4';
+        
+        console.log(`✅ Найдено зданий с фрагментами: ${processedCount}`);
+        
+        loadingDiv.style.display = 'none';
+        
+        // Загружаем дату файла
+        await loadServerFileDate();
+        
+        setTimeout(() => {
+            if (statusMsg) statusMsg.style.opacity = '0.5';
+        }, 3000);
+        
+        render();
+        
+    } catch (error) {
+        console.error('Ошибка загрузки фрагментов:', error);
+        statusMsg.innerHTML = `❌ Ошибка: ${error.message}`;
+        statusMsg.style.color = '#ff6b6b';
+        loadingDiv.style.display = 'none';
+        resultsDiv.innerHTML = '<p style="color:#ff6b6b">Ошибка загрузки данных. Проверьте консоль (F12).</p>';
+    }
+}
+
+// === ПЕРЕКЛЮЧЕНИЕ JSON ===
+async function switchJson(url) {
+    currentJsonUrl = url;
+    const select = document.getElementById('jsonSelect');
+    if (select) select.value = url;
+    
+    // Обновляем статус источника
+    const statusDiv = document.getElementById('localJsonStatus');
+    if (statusDiv) {
+        if (url.includes('r2.dev')) {
+            statusDiv.innerHTML = '📁 R2 (TEST)';
+            statusDiv.style.color = '#4ecdc4';
+        } else if (url.includes('buildingzz')) {
+            statusDiv.innerHTML = '📁 BETA';
+            statusDiv.style.color = '#4ecdc4';
+        } else {
+            statusDiv.innerHTML = '🌐 Серверная версия';
+            statusDiv.style.color = '#888';
+        }
+    }
+    
+    await loadFragments();
+}
+
+function render() {
+    const searchInputElem = document.getElementById('search');
+    const query = searchInputElem ? searchInputElem.value.trim() : '';
+    const resultsDiv = document.getElementById('results');
+    
+    if (!resultsDiv) return;
+    resultsDiv.innerHTML = '';
+    
+    const aliases = SEARCH_ALIASES[query.toLowerCase()] || [];
+    const allQueries = [query.toLowerCase(), ...aliases];
+    
+    const filtered = buildingsList.filter(b => {
+        const matchesBuilding = allQueries.some(q => b.name.toLowerCase().includes(q));
+        const matchesReward = b.rewards.some(r => 
+            allQueries.some(q => r.name.toLowerCase().includes(q))
+        );
+        return query === '' || matchesBuilding || matchesReward;
+    });
+    
+    if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<p>Ничего не найдено.</p>';
+        return;
+    }
+    
+    const highlight = (text, query) => {
+        if (!query) return text;
+        for (const alias of [query, ...aliases]) {
+            if (text.toLowerCase().includes(alias)) {
+                const regex = new RegExp(`(${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return text.replace(regex, '<mark>$1</mark>');
+            }
+        }
+        return text;
+    };
+    
+    filtered.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'building';
+        const highlightedBuildingName = highlight(b.name, query);
+        const rewardsHtml = b.rewards.map(r => {
+            const highlightedReward = highlight(r.name, query);
+            return `<div class="reward-item">${highlightedReward}</div>`;
+        }).join('');
+        
+        div.innerHTML = `
+            <div class="building-header">${highlightedBuildingName}</div>
+            <div class="rewards">${rewardsHtml}</div>
+        `;
+        
+        div.addEventListener('click', () => {
+            div.classList.toggle('open');
+        });
+        
+        resultsDiv.appendChild(div);
+    });
+}
+
+
+// === ИНИЦИАЛИЗАЦИЯ ===
+document.addEventListener('DOMContentLoaded', () => {
+    // Объявляем глобальные переменные здесь, после загрузки DOM
+    window.searchInput = document.getElementById('search');
+    window.toggleAllBtn = document.getElementById('toggle-all');
+    window.jsonSelect = document.getElementById('jsonSelect');
+    
+    // Устанавливаем currentJsonUrl из селекта
+    currentJsonUrl = window.jsonSelect ? window.jsonSelect.value : '/building.json';
+    
+    // Обновляем статус источника
+    const statusDiv = document.getElementById('localJsonStatus');
+    if (statusDiv && window.jsonSelect) {
+        const url = window.jsonSelect.value;
+        if (url.includes('r2.dev')) {
+            statusDiv.innerHTML = '📁 R2 (TEST)';
+            statusDiv.style.color = '#4ecdc4';
+        } else if (url.includes('buildingzz')) {
+            statusDiv.innerHTML = '📁 BETA';
+            statusDiv.style.color = '#4ecdc4';
+        } else {
+            statusDiv.innerHTML = '🌐 Серверная версия';
+            statusDiv.style.color = '#888';
+        }
+    }
+    
+    if (window.jsonSelect) {
+        window.jsonSelect.addEventListener('change', (e) => {
+            if (confirm('Переключение базы данных приведет к перезагрузке. Продолжить?')) {
+                switchJson(e.target.value);
+            } else {
+                window.jsonSelect.value = currentJsonUrl;
+            }
+        });
+    }
+    
+    if (window.searchInput) {
+        window.searchInput.addEventListener('input', () => render());
+    }
+    
+    if (window.toggleAllBtn) {
+        window.toggleAllBtn.addEventListener('click', () => {
+            const buildings = document.querySelectorAll('.building');
+            if (allExpanded) {
+                buildings.forEach(b => b.classList.remove('open'));
+                window.toggleAllBtn.textContent = 'Развернуть все';
+            } else {
+                buildings.forEach(b => b.classList.add('open'));
+                window.toggleAllBtn.textContent = 'Свернуть все';
+            }
+            allExpanded = !allExpanded;
+        });
+    }
+    
+    // Запускаем загрузку
+    loadFragments();
+});
+</script>
+</body>
+</html>

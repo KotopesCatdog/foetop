@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Политика конфиденциальности - Foehelp</title>
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .date {
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        .contact {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+        }
+        .highlight {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #4285f4;
+            margin: 20px 0;
+        }
+        .drive-icon {
+            color: #4285f4;
+            font-weight: bold;
+        }
+        
+        /* Стили для спойлеров */
+        .spoiler {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .spoiler-header {
+            background-color: #f1f3f4;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+        .spoiler-header:hover {
+            background-color: #e8eaed;
+        }
+        .spoiler-header::before {
+            content: "▶";
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 0.9em;
+            transition: transform 0.2s;
+        }
+        .spoiler.active .spoiler-header::before {
+            transform: rotate(90deg);
+        }
+        .spoiler-content {
+            max-height: 0;
+            padding: 0 20px;
+            background-color: #fff;
+            transition: max-height 0.3s ease-out, padding 0.3s ease;
+            overflow: hidden;
+        }
+        .spoiler.active .spoiler-content {
+            max-height: 2000px; /* Достаточно для большого содержимого */
+            padding: 20px 20px;
+            transition: max-height 0.5s ease-in, padding 0.3s ease;
+        }
+        
+        /* Маленькая анимация для плавности */
+        .spoiler-content p:first-child,
+        .spoiler-content .date:first-child {
+            margin-top: 0;
+        }
+        .spoiler-content .contact:last-child,
+        .spoiler-content .highlight:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Документы конфиденциальности</h1>
+<p class="date">Актуальные версии: 8 января 2026 г.</p>
+
+<!-- Спойлер 1: Политика конфиденциальности (русский) -->
+<div class="spoiler" id="spoilerRu">
+    <div class="spoiler-header">📄 Политика конфиденциальности</div>
+    <div class="spoiler-content">
+        <p class="date">Дата вступления в силу: 8 января 2026 г.</p>
+        
+        <p>Foehelp (далее — «мы», «сайт» или «сервис») уважает вашу конфиденциальность и стремится защищать ваши личные данные.</p>
+
+        <h2>1. Какие данные мы собираем</h2>
+        <p>Мы <strong>не собираем, не храним и не обрабатываем</strong> никакие ваши личные данные на наших серверах.</p>
+        <div class="highlight">
+            <p><span class="drive-icon">☁️ Google Drive:</span> Все планы городов и квантов, которые вы создаёте в редакторах, хранятся <strong>исключительно на вашем устройстве</strong> (локально в браузере) или <strong>в вашем личном Google Drive</strong>, если вы используете функцию сохранения в облако.</p>
+            
+            <p>При использовании Google Drive вы авторизуетесь напрямую через Google. Мы получаем только временный токен доступа, который позволяет сохранять и загружать файлы <strong>только от вашего имени и только в вашем аккаунте Google Drive</strong>. Мы не имеем доступа к вашим другим файлам, письмам или личной информации.</p>
+        </div>
+
+        <h2>2. Cookies и аналитика</h2>
+        <ul>
+            <li>Сайт использует только необходимые технические cookies для работы редакторов (сохранение состояния на время сессии).</li>
+            <li>Мы <strong>не используем</strong> Google Analytics, Yandex Metrika или любые другие системы аналитики и трекинга.</li>
+            <li>Мы не показываем рекламу и не передаём данные третьим лицам.</li>
+        </ul>
+
+        <h2>3. Облачное сохранение через Google Drive</h2>
+        <div class="highlight">
+            <p>Для возможности синхронизации ваших планов между устройствами мы предлагаем опциональное сохранение в <span class="drive-icon">Google Drive</span>.</p>
+            
+            <p><strong>Как это работает:</strong></p>
+            <ul>
+                <li>Вы сами решаете, сохранять ли файлы локально или в вашем Google Drive</li>
+                <li>При выборе Google Drive происходит прямая авторизация через сервисы Google</li>
+                <li>Все файлы сохраняются непосредственно в вашем личном аккаунте</li>
+                <li>Мы не имеем доступа к содержимому ваших файлов и не можем их просматривать</li>
+                <li>Данные хранятся анонимно, без привязки к дополнительной личной информации</li>
+            </ul>
+        </div>
+
+        <h2>4. Ваши права</h2>
+        <ul>
+            <li>Вы в любой момент можете удалить свои планы из Google Drive или очистить локальное хранилище браузера.</li>
+            <li>Поскольку мы не храним ваши данные на своих серверах, запрос на удаление или доступ к данным не требуется.</li>
+            <li>Вы полностью контролируете свои данные — они либо на вашем устройстве, либо в вашем Google Drive.</li>
+        </ul>
+
+        <h2>5. Изменения в политике</h2>
+        <p>Мы можем обновлять эту политику. Новая версия будет опубликована на этой странице с указанием даты вступления в силу.</p>
+
+        <h2>6. Контакты</h2>
+        <div class="contact">
+            <p>Если у вас есть вопросы, пишите:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Спойлер 2: Privacy Policy (английский перевод) -->
+<div class="spoiler" id="spoilerEn">
+    <div class="spoiler-header">🌐 Privacy Policy</div>
+    <div class="spoiler-content">
+        <p class="date">Effective Date: January 8, 2026</p>
+        
+        <p>Foehelp (hereinafter — "we", "site" or "service") respects your privacy and is committed to protecting your personal data.</p>
+
+        <h2>1. What data we collect</h2>
+        <p>We <strong>do not collect, store or process</strong> any of your personal data on our servers.</p>
+        <div class="highlight">
+            <p><span class="drive-icon">☁️ Google Drive:</span> All city and quantum plans you create in the editors are stored <strong>exclusively on your device</strong> (locally in your browser) or <strong>in your personal Google Drive</strong> if you use the cloud saving feature.</p>
+            
+            <p>When using Google Drive, you authenticate directly through Google. We only receive a temporary access token that allows us to save and load files <strong>only on your behalf and only within your Google Drive account</strong>. We do not have access to your other files, emails, or personal information.</p>
+        </div>
+
+        <h2>2. Cookies and analytics</h2>
+        <ul>
+            <li>The site uses only necessary technical cookies for the editors to work (saving state during a session).</li>
+            <li>We <strong>do not use</strong> Google Analytics, Yandex Metrika or any other analytics and tracking systems.</li>
+            <li>We do not display ads and do not share data with third parties.</li>
+        </ul>
+
+        <h2>3. Cloud saving via Google Drive</h2>
+        <div class="highlight">
+            <p>To enable synchronization of your plans across devices, we offer optional saving to <span class="drive-icon">Google Drive</span>.</p>
+            
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>You decide whether to save files locally or to your Google Drive</li>
+                <li>When you choose Google Drive, you authenticate directly through Google services</li>
+                <li>All files are saved directly in your personal account</li>
+                <li>We do not have access to the content of your files and cannot view them</li>
+                <li>Data is stored anonymously, without any link to additional personal information</li>
+            </ul>
+        </div>
+
+        <h2>4. Your rights</h2>
+        <ul>
+            <li>You can delete your plans from Google Drive or clear your browser's local storage at any time.</li>
+            <li>Since we do not store your data on our servers, a deletion or data access request is not required.</li>
+            <li>You have full control over your data — it is either on your device or in your Google Drive.</li>
+        </ul>
+
+        <h2>5. Changes to this policy</h2>
+        <p>We may update this policy. The new version will be published on this page with the effective date indicated.</p>
+
+        <h2>6. Contacts</h2>
+        <div class="contact">
+            <p>If you have any questions, please contact us:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+
+<!-- Спойлер 3: Расширение для браузера (русский) -->
+<div class="spoiler" id="spoilerExtRu">
+    <div class="spoiler-header">🧩 Политика конфиденциальности браузерного расширения FOEhelp</div>
+    <div class="spoiler-content">
+        <p class="date">Дата вступления в силу: 8 января 2026 г.</p>
+
+        <p>Расширение FOEhelp для Google Chrome предназначено исключительно для игроков <strong>Forge of Empires</strong> и работает только на страницах этой игры.</p>
+
+        <h2>1. Какие данные обрабатывает расширение</h2>
+        <p>Расширение <strong>не собирает и не передаёт</strong> никакие личные данные пользователя. Все данные обрабатываются локально в браузере.</p>
+
+        <div class="highlight">
+            <p><strong>Локальное хранилище (chrome.storage.local):</strong></p>
+            <ul>
+                <li>Настройки расширения (включён/выключен, параметры уведомлений)</li>
+                <li>Данные рейтинга гильдий (временно, до следующей загрузки)</li>
+                <li>Токены Telegram и URL Discord-вебхуков — хранятся <strong>только на вашем устройстве</strong> и никуда не передаются, кроме ваших собственных Telegram-бота или Discord-сервера</li>
+            </ul>
+        </div>
+
+        <h2>2. Доступ к странице игры</h2>
+        <p>Расширение запрашивает доступ к страницам <strong>forgeofempires.com</strong> исключительно для:</p>
+        <ul>
+            <li>Добавления кнопок и панелей в интерфейс FoE Helper</li>
+            <li>Перехвата игровых данных (рейтинги гильдий, статистика) для отображения в собственных окнах расширения</li>
+            <li>Инжекции модальных окон планировщиков и статистики</li>
+        </ul>
+        <p>Расширение <strong>не читает</strong> личные сообщения, платёжные данные или любую информацию за пределами игровых данных Forge of Empires.</p>
+
+        <h2>3. Передача данных третьим сторонам</h2>
+        <div class="highlight">
+            <p><strong>Telegram / Discord:</strong> если вы настроили уведомления, расширение отправляет игровые данные (информация о секторах GBG, сообщения инфобокса) <strong>только в ваш собственный Telegram-бот или Discord-сервер</strong> по адресу, который вы указали сами. Мы не имеем доступа к этим данным.</p>
+            <p><strong>Lightbase (Supabase):</strong> при добровольной загрузке рейтинга Guild Raids данные отправляются в общую анонимную базу данных на foehelp.ru. Загружаются только игровые данные (названия гильдий, очки, ранги) — без привязки к вашему аккаунту или личным данным.</p>
+        </div>
+
+        <h2>4. Разрешения расширения</h2>
+        <ul>
+            <li><strong>activeTab / scripting</strong> — для добавления интерфейса расширения на страницу игры по действию пользователя</li>
+            <li><strong>storage</strong> — для хранения настроек на вашем устройстве</li>
+            <li><strong>tabs</strong> — для определения текущего игрового мира (по URL вкладки)</li>
+            <li><strong>downloads</strong> — для сохранения экспортируемых файлов CSV/JSON на ваш компьютер</li>
+            <li><strong>clipboardWrite</strong> — для копирования данных по кнопке «Копировать»</li>
+        </ul>
+
+        <h2>5. Контакты</h2>
+        <div class="contact">
+            <p>Если у вас есть вопросы, пишите:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- Спойлер 4: Browser Extension Privacy Policy (English) -->
+<div class="spoiler" id="spoilerExtEn">
+    <div class="spoiler-header">🌐 FOEhelp Browser Extension — Privacy Policy</div>
+    <div class="spoiler-content">
+        <p class="date">Effective Date: January 8, 2026</p>
+
+        <p>The FOEhelp Chrome extension is designed exclusively for <strong>Forge of Empires</strong> players and operates only on pages of this game.</p>
+
+        <h2>1. What data the extension processes</h2>
+        <p>The extension <strong>does not collect or transmit</strong> any personal user data. All data is processed locally in the browser.</p>
+
+        <div class="highlight">
+            <p><strong>Local storage (chrome.storage.local):</strong></p>
+            <ul>
+                <li>Extension settings (enabled/disabled, notification parameters)</li>
+                <li>Guild raid rankings data (temporarily, until the next capture)</li>
+                <li>Telegram tokens and Discord webhook URLs — stored <strong>only on your device</strong> and transmitted solely to your own Telegram bot or Discord server</li>
+            </ul>
+        </div>
+
+        <h2>2. Access to game pages</h2>
+        <p>The extension requests access to <strong>forgeofempires.com</strong> pages exclusively to:</p>
+        <ul>
+            <li>Add buttons and panels to the FoE Helper interface</li>
+            <li>Intercept in-game data (guild rankings, statistics) for display in extension windows</li>
+            <li>Inject modal windows for planners and statistics</li>
+        </ul>
+        <p>The extension <strong>does not read</strong> private messages, payment data, or any information outside of Forge of Empires game data.</p>
+
+        <h2>3. Data sharing with third parties</h2>
+        <div class="highlight">
+            <p><strong>Telegram / Discord:</strong> if you have configured notifications, the extension sends in-game data (GBG sector info, info box messages) <strong>only to your own Telegram bot or Discord server</strong> at the address you provided. We do not have access to this data.</p>
+            <p><strong>Lightbase (Supabase):</strong> when voluntarily uploading Guild Raids rankings, data is sent to a shared anonymous database at foehelp.ru. Only in-game data is uploaded (guild names, scores, ranks) — with no link to your account or personal information.</p>
+        </div>
+
+        <h2>4. Extension permissions</h2>
+        <ul>
+            <li><strong>activeTab / scripting</strong> — to add the extension interface to the game page upon user action</li>
+            <li><strong>storage</strong> — to store settings on your device</li>
+            <li><strong>tabs</strong> — to identify the current game world (by tab URL)</li>
+            <li><strong>downloads</strong> — to save exported CSV/JSON files to your computer</li>
+            <li><strong>clipboardWrite</strong> — to copy data via the "Copy" button</li>
+        </ul>
+
+        <h2>5. Contact</h2>
+        <div class="contact">
+            <p>If you have any questions, please contact us:</p>
+            <p><a href="https://t.me/foehelp" target="_blank">https://t.me/foehelp</a></p>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Скрипт для работы спойлеров: клик по заголовку открывает/закрывает контент
+    document.querySelectorAll('.spoiler-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const spoiler = this.parentElement;
+            spoiler.classList.toggle('active');
+        });
+    });
+    
+   
+</script>
+
+</body>
+</html>

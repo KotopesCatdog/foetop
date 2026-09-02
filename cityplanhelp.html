@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Справка по редактору города</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #222;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 800px;
+            text-align: left;
+        }
+
+        h1 {
+            margin: 30px 0 40px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #0066cc;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            z-index: 101;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .back-button:hover {
+            background: #0055aa;
+        }
+
+        .help-block {
+            background: #333;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        .help-block h2 {
+            margin: 30px 0 20px;
+            font-size: 22px;
+            color: #0f0;
+        }
+
+        .help-block ol {
+            padding-left: 30px;
+            margin: 20px 0;
+        }
+
+        .help-block li {
+            margin-bottom: 15px;
+        }
+
+        .help-block p {
+            margin: 15px 0;
+        }
+
+        @media (max-width: 480px) {
+            .back-button {
+                padding: 8px 16px;
+                font-size: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .help-block {
+                padding: 20px;
+                font-size: 16px;
+            }
+        }
+    </style>
+    <script src="/links-loader.js" defer></script>
+</head>
+<body>
+
+  
+    <div class="content">
+        <h1>Справка по редактору города</h1>
+
+        <div class="help-block">
+            <h2>Редактор города</h2>
+            <p>Предназначен для работы на компе с установленным хелпером.<br>
+            Позволяет редактировать города "телефонистов".</p>
+
+            <ol>
+               <li>
+  Устанавливаем расширение для хрома
+  <a href="#"
+   data-link-key="chrome_extension"
+   target="_blank"
+   style="
+        display: inline-block;
+        padding: 6px 14px;
+        background-color: #4CAF50;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+      ">
+   скачать
+</a>
+</li>
+
+                (Расширение берёт данные только из хелпера, с самой игрой не взаимодействует).<br>
+                Распаковываем архив в любое место.<br>
+                Для установки в браузере вводим chrome://extensions/ - Загрузить распакованное расширение и указываем на папку MyExtractor.</li>
+
+                <li>В любом городе включаем в хелпере "Обзор города".</li>
+
+                <li>Нажимаем на кнопку в окне хелпера "FOEhelp-Plan"</li>
+
+                <li>Границы - для обозначения границ города, выставляются вручную, т.к. данные по занятой территории мы не можем извлечь. (Кнопка имеет 3 состояния - неактивная, активная и удаление границ).</li>
+
+                <li>Здания синего цвета (извлечённые из города) не требуют дороги.</li>
+
+                <li>Клик по зданию показывает его название.</li>
+
+                <li>Имя для нового здания пишем в окне над кнопкой "Создать".</li>
+
+                <li>Возможность сохранять и загружать результаты.</li>
+
+                <li>Здания зелёного (декор) и синего (бездорожные) цвета в расчёте эфф. дорог не участвуют.</li>
+
+                <li>В расчёте эффективности дорог возможна незначительная погрешность.</li>
+                
+                 <li>
+  Вы также можете установить независимое приложение для Виндовса <br> (пароль на архив 1)
+  <a href="https://drive.google.com/file/d/15ixcTxGiTy2CA-vBmbwJirpApdrI_0-l/view?usp=sharing"
+      target="_blank"
+      style="
+        display: inline-block;
+        padding: 6px 14px;
+        background-color: #4CAF50;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+      ">
+      скачать
+  </a>
+</li>
+            </ol>
+        </div>
+    </div>
+
+</body>
+</html>

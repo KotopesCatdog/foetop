@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>FoE Рейтинг зданий игрока</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+<style>
+/* Переключатель языка */
+.lang-switcher { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
+.lang-switcher button { padding: 4px 12px; font-size: 12px; font-weight: bold; color: #c9d8e8; background: transparent; border: 1px solid #3a4f66; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.lang-switcher button:hover, .lang-switcher button.active { background: #3a4f66; }
+</style>
+ <script src="/links-loader.js" defer></script>
+</head>
+<body>
+<div class="container">
+    <div class="ext-header-row">
+        <div class="buttons-row">
+            <button id="downloadExtBtn" data-i18n="statprod_btn_download">Скачать расширение для Хрома</button>
+            <div id="uploadArea" class="upload-area" data-i18n="statprod_upload_area">📁 Загрузка JSON</div>
+        </div>
+        <div class="helper-note">
+            <span data-i18n="statprod_helper_note">Перед импортом данных откройте "Рейтинг эфф." в хелпере</span>
+            <br><br>
+            <span data-i18n="statprod_helper_note2">Оранжевый шрифт - средние значения в сутки с учётом рандома.</span>
+        </div>
+    </div>
+
+    <div class="header-center">
+        <h1 data-i18n="statprod_title">Forge of Empires – Рейтинг зданий игрока</h1>
+        <div class="subtitle" data-i18n="statprod_subtitle">Идея — papachina</div>
+    </div>
+
+    <div class="content-wrapper"></div>
+
+    <input type="file" id="fileInput" accept=".json" hidden>
+    <input id="searchInput" class="search-box" data-i18n-placeholder="statprod_search_placeholder" placeholder="🔍 Поиск по названию здания..." />
+
+    <div class="controls-row">
+        <button id="favToggle" class="switchButton" data-i18n="statprod_btn_favorites">★ Избранные: все</button>
+        <button id="togglePerTile" class="switchButton" data-i18n="statprod_btn_per_tile_off">На клетку: выкл</button>
+        <button id="toggleInventory" class="switchButton" data-i18n="statprod_btn_inventory">Инвентарь: все</button>
+        <input id="itemSearchInput" class="item-search-box" data-i18n-placeholder="statprod_item_search_placeholder" placeholder="🔍 Поиск по предмету..." style="display:none" />
+        <div class="lang-switcher">
+            <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
+            <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="production" data-i18n="statprod_tab_production">Производство</button>
+        <button class="tab-btn" data-tab="items" data-i18n="statprod_tab_items">Фрагменты</button>
+        <button class="tab-btn" data-tab="guild_raids" data-i18n="statprod_tab_quanta">Кванты</button>
+    </div>
+
+    <!-- Производство -->
+    <div id="tab-production" class="tab-content active">
+        <div class="scrollable">
+            <table id="productionTable">
+                <colgroup>
+                    <col style="width:25px"><col style="width:28px"><col style="width:340px">
+                    <col style="width:40px"><col style="width:50px"><col style="width:50px">
+                    <col style="width:50px"><col style="width:50px"><col style="width:50px">
+                    <col style="width:50px"><col style="width:50px"><col style="width:50px">
+                    <col style="width:60px"><col style="width:60px"><col style="width:60px">
+                    <col style="width:40px"><col style="width:50px"><col style="width:50px">
+                    <col style="width:50px"><col style="width:40px"><col style="width:40px">
+                    <col style="width:40px"><col style="width:40px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>★</th>
+                        <th title="Инвентарь"><img src="icons/inventory.png" style="height:25px"></th>
+                        <th>Имя</th>
+                        <th>К-во</th>
+                        <th title="Размер"><img src="icons/raz.cur" style="height:25px"></th>
+                        <th title="Эпоха"><img src="icons/era.png" style="height:25px"></th>
+                        <th title="СО"><img src="icons/forge_points_production.png" style="height:25px"></th>
+                        <th title="Товары предыдущей эпохи"><img src="icons/all_goods_of_previous_age.png" style="height:25px"></th>
+                        <th title="Товары эпохи"><img src="icons/all_goods_of_age.png" style="height:25px"></th>
+                        <th title="Товары следующей эпохи"><img src="icons/all_goods_of_next_age.png" style="height:25px"></th>
+                        <th title="Тов. в гильдию"><img src="icons/guild_goods.png" style="height:25px"></th>
+                        <th title="Спец.товары"><img src="icons/special_goods_production.png" style="height:25px"></th>
+                        <th title="Монеты"><img src="icons/coin_production.png" style="height:25px"></th>
+                        <th title="Молотки"><img src="icons/supply_production.png" style="height:25px"></th>
+                        <th title="Медали"><img src="icons/medals.png" style="height:25px"></th>
+                        <th title="Бриллианты"><img src="icons/premium.png" style="height:25px"></th>
+                        <th title="Юниты"><img src="icons/units.png" style="height:25px"></th>
+                        <th title="Население"><img src="icons/population.png" style="height:25px"></th>
+                        <th title="Счастье"><img src="icons/happiness.png" style="height:25px"></th>
+                        <th title="Буст СО %"><img src="icons/forge_points_production.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                        <th title="Буст Монет %"><img src="icons/coin_production.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                        <th title="Буст Молотков %"><img src="icons/supply_production.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                        <th title="Буст Товара %"><img src="icons/all_goods_of_age.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Фрагменты -->
+    <div id="tab-items" class="tab-content">
+        <div class="scrollable">
+            <table id="itemsTable">
+                <colgroup>
+                    <col style="width:20px"><col style="width:20px"><col style="width:180px">
+                    <col style="width:20px"><col style="width:25px"><col style="width:30px">
+                    <col style="width:180px"><col style="width:80px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>★</th><th>И</th><th>Имя</th><th>К-во</th>
+                        <th>Размер</th><th>Эпоха</th><th>Предмет</th><th>Кол-во</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Кванты -->
+    <div id="tab-guild_raids" class="tab-content">
+        <div class="scrollable">
+            <table id="guildRaidsTable">
+                <colgroup>
+                    <col style="width:20px"><col style="width:20px"><col style="width:180px">
+                    <col style="width:10px"><col style="width:25px"><col style="width:30px">
+                    <col style="width:80px"><col style="width:80px"><col style="width:80px">
+                    <col style="width:80px"><col style="width:80px"><col style="width:80px">
+                    <col style="width:80px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>★</th>
+                        <th title="Инвентарь"><img src="icons/inventory.png" style="height:25px"></th>
+                        <th title="Имя">Имя</th>
+                        <th title="К-во">К-во</th>
+                        <th title="Размер"><img src="icons/raz.cur" style="height:25px"></th>
+                        <th title="Эпоха"><img src="icons/era.png" style="height:25px"></th>
+                        <th title="Монеты"><img src="icons/guild_raids_coins_production.png" style="height:25px"></th>
+                        <th title="Буст Монет %"><img src="icons/guild_raids_coins_production.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                        <th title="Буст Молотков %"><img src="icons/guild_raids_supplies_production.png" style="height:25px"><img src="icons/up.png" style="height:25px"></th>
+                        <th title="Монеты на старте"><img src="icons/guild_raids_coins_start.png" style="height:25px"></th>
+                        <th title="Молотки на старте"><img src="icons/guild_raids_supplies_start.png" style="height:25px"></th>
+                        <th title="Товары на старте"><img src="icons/guild_raids_goods_start.png" style="height:25px"></th>
+                        <th title="Юниты на старте"><img src="icons/guild_raids_units_start.png" style="height:25px"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/js/i18n.js"></script>
+<script src="era_names.js"></script>
+<script src="foe_analyzer.js"></script>
+<script>
+    const extBtn = document.getElementById('downloadExtBtn');
+    if (extBtn) {
+        extBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLink('chrome_extension');
+        });
+    }
+</script>
+</body>
+</html>

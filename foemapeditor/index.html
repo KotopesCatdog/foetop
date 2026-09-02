@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Карта Старых Земель — Справочник</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>🗺️ Карта Старых Земель</h1>
+    <div class="header-actions">
+      <a href="editor.html" class="btn btn-primary">✏️ Редактор</a>
+      <button id="resetView" class="btn">🎯 Сбросить</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="map-wrapper">
+      <div class="map-container">
+        <img id="mainMap" src="Map_old_ages_BG.webp" alt="Карта" style="cursor: crosshair; width: 100%; height: auto;">
+        <canvas id="highlightCanvas"></canvas>
+        <div id="tooltip" class="tooltip hidden"></div>
+      </div>
+      <div class="map-controls">
+        <button id="zoomIn">➕</button>
+        <button id="zoomOut">➖</button>
+        <button id="fitView">⬛</button>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="search-box">
+        <input type="text" id="search" placeholder="🔍 Поиск провинции..." autocomplete="off">
+        <span class="search-count" id="searchCount">0</span>
+      </div>
+      
+      <div class="filter-group">
+        <label>Фильтр по цвету:</label>
+        <div id="colorFilters" class="color-filters"></div>
+      </div>
+
+      <ul id="provinceList"></ul>
+      
+      <div class="sidebar-footer">
+        <span id="provinceCount">0 провинций</span>
+        <button id="exportData" class="btn btn-sm">📥 Экспорт</button>
+        <button id="importData" class="btn btn-sm">📤 Импорт</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

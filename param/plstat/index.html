@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>FoE Рейтинг статов игрока</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+<style>
+#statsModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+#statsModal.open { display: flex; }
+#statsModalInner {
+    background: var(--bg, #1e2a38);
+    border: 1px solid var(--border, #3a4f66);
+    border-radius: 10px;
+    padding: 24px 20px 20px;
+    max-width: 98vw;
+    width: max-content;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+}
+#statsModalInner h2 { margin: 0 0 16px; font-size: 1.1rem; color: var(--text-header, #c9d8e8); text-align: center; }
+#statsModalClose {
+    position: absolute; top: 10px; right: 14px;
+    background: none; border: none; color: var(--text-header, #c9d8e8);
+    font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 0;
+}
+#statsModalClose:hover { color: #e05050; }
+#statsTable { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+#statsTable th, #statsTable td { border: 1px solid var(--border, #3a4f66); padding: 5px 8px; text-align: center; white-space: nowrap; }
+#statsTable thead th { background: var(--header-bg, #253447); color: var(--text-header, #c9d8e8); font-weight: 600; }
+#statsTable thead th img { width: 22px; height: 22px; display: block; margin: 0 auto; }
+#statsTable tbody tr td:first-child { text-align: left; font-weight: 600; color: var(--text-header, #c9d8e8); padding-left: 10px; min-width: 110px; }
+.stats-row-total  td { background: rgba(80,160,255,0.10); }
+.stats-row-fields td { background: rgba(80,220,120,0.10); }
+.stats-row-quants td { background: rgba(220,180,60,0.10); }
+.stats-row-expd   td { background: rgba(200,80,200,0.10); }
+
+/* Переключатель языка */
+.lang-switcher { display: inline-flex; gap: 6px; margin-left: 10px; vertical-align: middle; }
+.lang-switcher button { padding: 4px 12px; font-size: 12px; font-weight: bold; color: #c9d8e8; background: transparent; border: 1px solid #3a4f66; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.lang-switcher button:hover, .lang-switcher button.active { background: #3a4f66; }
+</style>
+ <script src="/links-loader.js" defer></script>
+</head>
+<body>
+<div class="container">
+    <div class="ext-header-row">
+        <div class="buttons-row">
+            <button id="downloadExtBtn" data-i18n="plstat_btn_download">📦 Скачать расширение для Хрома</button>
+            <div id="uploadArea" class="upload-area" data-i18n="plstat_upload_area">📁 Загрузка JSON</div>
+        </div>
+        <div class="helper-note" data-i18n="plstat_helper_note">Перед импортом данных откройте "Рейтинг эфф." в хелпере</div>
+    </div>
+
+    <div class="header-center">
+        <h1 data-i18n="plstat_title">Forge of Empires – Рейтинг статов игрока</h1>
+        <div class="subtitle" data-i18n="plstat_subtitle">Идея — papachina</div>
+    </div>
+
+    <div class="content-wrapper">
+        <input id="searchInput" class="search-box" data-i18n-placeholder="plstat_search_placeholder" placeholder="🔍 Поиск по названию..." />
+
+        <div class="controls-group">
+            <button id="togglePerTile" class="switchButton" data-i18n="plstat_btn_per_tile_off">На клетку: выкл</button>
+            <button id="toggleInventory" class="switchButton" data-i18n="plstat_btn_inventory">Инвентарь: все</button>
+            <button id="toggleAverage" class="switchButton" data-i18n="plstat_btn_average_off">Среднее: выкл</button>
+            <button id="favToggle" class="switchButton" data-i18n="plstat_btn_favorites">★ Только избранные</button>
+            <button id="toggleStatsBtn" class="switchButton" data-i18n="plstat_btn_stats">📊 Общие статы</button>
+            <div class="lang-switcher">
+                <button data-lang-btn="ru" onclick="i18nSwitchTo('ru')">RU</button>
+                <button data-lang-btn="en" onclick="i18nSwitchTo('en')">EN</button>
+            </div>
+        </div>
+
+        <div class="tabs" style="display: none;">
+            <button class="tab-btn active" data-tab="all">🏗️ Все здания</button>
+            <button class="tab-btn" data-tab="battle">Боевые бонусы</button>
+        </div>
+
+        <div id="tab-all" class="tab-content" style="display: none;">
+            <div class="scrollable">
+                <table id="buildingsTable">
+                    <thead>
+                        <tr><th>★</th><th>И</th><th>Имя</th><th>К-во</th><th>Размер</th><th>Эпоха</th><th>Население</th><th>СО</th><th>Тов пр</th><th>Тов</th><th>Тов сл</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-battle" class="tab-content active">
+            <div class="scrollable">
+                <table id="battleTable">
+                    <thead>
+                        <tr>
+                            <th>★</th><th>И</th><th>Имя</th><th>К-во</th>
+                            <th><img src="/icons/att_boost_attacker.png"     alt="att_att"></th>
+                            <th><img src="/icons/def_boost_attacker.png"     alt="def_att"></th>
+                            <th><img src="/icons/att_boost_defender.png"     alt="att_def"></th>
+                            <th><img src="/icons/def_boost_defender.png"     alt="def_def"></th>
+                            <th><img src="/icons/att_boost_attacker_gbg.png" alt="att_att_gbg"></th>
+                            <th><img src="/icons/def_boost_attacker_gbg.png" alt="def_att_gbg"></th>
+                            <th><img src="/icons/att_boost_defender_gbg.png" alt="att_def_gbg"></th>
+                            <th><img src="/icons/def_boost_defender_gbg.png" alt="def_def_gbg"></th>
+                            <th><img src="/icons/att_boost_attacker_gr.png"  alt="att_att_gr"></th>
+                            <th><img src="/icons/def_boost_attacker_gr.png"  alt="def_att_gr"></th>
+                            <th><img src="/icons/att_boost_defender_gr.png"  alt="att_def_gr"></th>
+                            <th><img src="/icons/def_boost_defender_gr.png"  alt="def_def_gr"></th>
+                            <th><img src="/icons/att_boost_attacker_gex.png" alt="att_att_gex"></th>
+                            <th><img src="/icons/def_boost_attacker_gex.png" alt="def_att_gex"></th>
+                            <th><img src="/icons/att_boost_defender_gex.png" alt="att_def_gex"></th>
+                            <th><img src="/icons/def_boost_defender_gex.png" alt="def_def_gex"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО "ОБЩИЕ СТАТЫ" -->
+<div id="statsModal">
+    <div id="statsModalInner">
+        <button id="statsModalClose" data-i18n-title="plstat_modal_close_title" title="Закрыть">×</button>
+        <h2 data-i18n="plstat_modal_title">📊 Общие статы</h2>
+        <div style="overflow-x:auto;">
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th data-i18n="plstat_col_mode">Режим</th>
+                        <th><img src="/icons/att_boost_attacker.png"></th>
+                        <th><img src="/icons/def_boost_attacker.png"></th>
+                        <th><img src="/icons/att_boost_defender.png"></th>
+                        <th><img src="/icons/def_boost_defender.png"></th>
+                        <th><img src="/icons/att_boost_attacker_gbg.png"></th>
+                        <th><img src="/icons/def_boost_attacker_gbg.png"></th>
+                        <th><img src="/icons/att_boost_defender_gbg.png"></th>
+                        <th><img src="/icons/def_boost_defender_gbg.png"></th>
+                        <th><img src="/icons/att_boost_attacker_gr.png"></th>
+                        <th><img src="/icons/def_boost_attacker_gr.png"></th>
+                        <th><img src="/icons/att_boost_defender_gr.png"></th>
+                        <th><img src="/icons/def_boost_defender_gr.png"></th>
+                        <th><img src="/icons/att_boost_attacker_gex.png"></th>
+                        <th><img src="/icons/def_boost_attacker_gex.png"></th>
+                        <th><img src="/icons/att_boost_defender_gex.png"></th>
+                        <th><img src="/icons/def_boost_defender_gex.png"></th>
+                    </tr>
+                </thead>
+                <tbody id="statsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json" hidden>
+
+<script src="/js/i18n.js"></script>
+<script src="foe_analyzer.js"></script>
+<script>
+    function t(key, fallback) {
+        return (window._i18nT && window._i18nT[key]) || fallback || key;
+    }
+
+    const extBtn = document.getElementById('downloadExtBtn');
+    if (extBtn) {
+        extBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLink('chrome_extension');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const battleTabBtn = document.querySelector('.tab-btn[data-tab="battle"]');
+        const allTabBtn = document.querySelector('.tab-btn[data-tab="all"]');
+        const allTab = document.getElementById('tab-all');
+        const battleTab = document.getElementById('tab-battle');
+        if (battleTabBtn && allTabBtn) {
+            allTabBtn.classList.remove('active');
+            battleTabBtn.classList.add('active');
+            allTab.classList.remove('active');
+            battleTab.classList.add('active');
+        }
+        if (typeof updateTables === 'function') setTimeout(updateTables, 100);
+
+        const avgBtn = document.getElementById('toggleAverage');
+        function isAverageActive() { return avgBtn && avgBtn.classList.contains('active'); }
+        function applyAverageFeatures() {
+            const active = isAverageActive();
+            document.querySelectorAll('#buildingsTable, #battleTable').forEach(table => {
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+                const rows = [...tbody.querySelectorAll('tr')];
+                let avgRow = rows.find(r =>
+                    r.classList.contains('average-row') ||
+                    [...r.querySelectorAll('td')].some(td => td.textContent.trim() === 'Среднее')
+                );
+                if (avgRow) {
+                    avgRow.classList.add('average-row');
+                    avgRow.style.display = active ? '' : 'none';
+                }
+                const dataRows = rows.filter(r => r !== avgRow);
+                if (!active) {
+                    dataRows.forEach(row => row.querySelectorAll('td').forEach(td => td.classList.remove('val-above-avg')));
+                    return;
+                }
+                if (!avgRow) return;
+                const avgCells = [...avgRow.querySelectorAll('td')];
+                dataRows.forEach(row => {
+                    const cells = [...row.querySelectorAll('td')];
+                    cells.forEach((td, i) => {
+                        td.classList.remove('val-above-avg');
+                        if (i < 4) return;
+                        const avgTd = avgCells[i];
+                        if (!avgTd) return;
+                        const val = parseFloat(td.textContent.replace(',', '.'));
+                        const avg = parseFloat(avgTd.textContent.replace(',', '.'));
+                        if (!isNaN(val) && !isNaN(avg) && val > avg) td.classList.add('val-above-avg');
+                    });
+                });
+            });
+        }
+
+        const observer = new MutationObserver(() => setTimeout(applyAverageFeatures, 50));
+        document.querySelectorAll('#buildingsTable tbody, #battleTable tbody').forEach(tbody => {
+            observer.observe(tbody, { childList: true, subtree: true });
+        });
+        if (avgBtn) avgBtn.addEventListener('click', () => setTimeout(applyAverageFeatures, 80));
+        applyAverageFeatures();
+
+        const COL_BASE = 4, N_COLS = 16;
+        const G_TOTAL  = [0,1,2,3];
+        const G_FIELDS = [4,5,6,7];
+        const G_QUANTS = [8,9,10,11];
+        const G_EXPD   = [12,13,14,15];
+
+        function calcColumnSums() {
+            const tbody = document.querySelector('#battleTable tbody');
+            if (!tbody) return new Array(N_COLS).fill(0);
+            const sums = new Array(N_COLS).fill(0);
+            [...tbody.querySelectorAll('tr')].forEach(row => {
+                if (row.classList.contains('average-row')) return;
+                if (row.style.display === 'none') return;
+                const cells = [...row.querySelectorAll('td')];
+                const count = parseFloat(cells[3]?.textContent.replace(',', '.')) || 1;
+                for (let i = 0; i < N_COLS; i++) {
+                    const val = parseFloat(cells[COL_BASE + i]?.textContent.replace(',', '.'));
+                    if (!isNaN(val)) sums[i] += val * count;
+                }
+            });
+            return sums;
+        }
+
+        function fmt(v) {
+            if (v === null || v === undefined) return '—';
+            if (typeof v === 'string') return v;
+            return Number.isInteger(v) ? v.toString() : v.toFixed(2);
+        }
+
+        function buildRow(label, values, rowClass) {
+            const tr = document.createElement('tr');
+            tr.className = rowClass;
+            const tdLabel = document.createElement('td');
+            tdLabel.textContent = label;
+            tr.appendChild(tdLabel);
+            values.forEach(v => {
+                const td = document.createElement('td');
+                td.textContent = fmt(v);
+                tr.appendChild(td);
+            });
+            return tr;
+        }
+
+        function buildStatsTable() {
+            const sums = calcColumnSums();
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = '';
+
+            tbody.appendChild(buildRow(t('plstat_row_total','Итого (все)'), sums.slice(), 'stats-row-total'));
+
+            const fieldsVals = new Array(N_COLS).fill('—');
+            for (let i = 0; i < 4; i++) fieldsVals[i] = sums[G_TOTAL[i]] + sums[G_FIELDS[i]];
+            tbody.appendChild(buildRow(t('plstat_row_fields','Поля (общ.+поля)'), fieldsVals, 'stats-row-fields'));
+
+            const quantsVals = new Array(N_COLS).fill('—');
+            for (let i = 0; i < 4; i++) quantsVals[i] = sums[G_QUANTS[i]];
+            tbody.appendChild(buildRow(t('plstat_row_quants','Кванты'), quantsVals, 'stats-row-quants'));
+
+            const expdVals = new Array(N_COLS).fill('—');
+            for (let i = 0; i < 4; i++) expdVals[i] = sums[G_TOTAL[i]] + sums[G_EXPD[i]];
+            tbody.appendChild(buildRow(t('plstat_row_expd','Экспедиция (общ.+эксп.)'), expdVals, 'stats-row-expd'));
+        }
+
+        const statsBtn   = document.getElementById('toggleStatsBtn');
+        const statsModal = document.getElementById('statsModal');
+        const statsClose = document.getElementById('statsModalClose');
+
+        statsBtn.addEventListener('click', () => { buildStatsTable(); statsModal.classList.add('open'); });
+        statsClose.addEventListener('click', () => statsModal.classList.remove('open'));
+        statsModal.addEventListener('click', (e) => { if (e.target === statsModal) statsModal.classList.remove('open'); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') statsModal.classList.remove('open'); });
+
+        // Перестроить таблицу статов при смене языка
+        document.addEventListener('i18nApplied', () => {
+            if (statsModal.classList.contains('open')) buildStatsTable();
+        });
+    });
+</script>
+</body>
+</html>

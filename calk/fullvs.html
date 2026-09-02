@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полная стоимость уровней ВС</title>
+    <link rel="icon" href="https://foehelp.ru/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #222;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 30px 0 40px;
+            font-size: 24px;
+        }
+
+        
+        .calc-block {
+            background: #333;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: end;
+            justify-content: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            background: #444;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        button:hover {
+            background: #0055aa;
+        }
+
+        .btn-reset {
+            background: #dc3545;
+        }
+
+        .btn-reset:hover {
+            background: #c82333;
+        }
+
+        #results {
+            width: 100%;
+        }
+
+        .result-row {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .building-name {
+            font-weight: bold;
+        }
+
+        .levels {
+            color: #aaa;
+        }
+
+        .result-cost {
+            font-weight: bold;
+            color: #0f0;
+        }
+
+        .total-sum-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #2a4a6a;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #4a7a9a;
+        }
+
+        .total-sum-label {
+            color: #fff;
+        }
+
+        .total-sum-value {
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .alert-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .back-button {
+                padding: 8px 16px;
+                font-size: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .result-row {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <style>
+    .navigation-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px;
+    }
+    .back-button {
+        padding: 12px 24px;
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        background-color: #008080;
+        border: 4px solid black;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .back-button:hover {
+        background-color: #00a0a0;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+        transform: scale(1.05);
+    }
+
+    /* Адаптив для мобильных */
+    @media (max-width: 480px) {
+        .navigation-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-button {
+            width: 80%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="navigation-buttons">
+    <a href="javascript:history.back()" class="back-button">← Назад</a>
+    <a href="https://www.foehelp.ru" class="back-button">🏠 Домой</a>
+</div>
+
+    <div class="content">
+        <h1>Полная стоимость уровней ВС</h1>
+
+        <div class="calc-block">
+            <div class="form-row">
+                <div style="flex: 1; min-width: 250px;">
+                    <label for="great_buildings">Здание</label>
+                    <select id="great_buildings">
+                        <option value="">-- Выберите --</option>
+                        <option value="Александрийский маяк">Александрийский маяк</option>
+                        <option value="Алькатрас">Алькатрас</option>
+                        <option value="Атомиум">Атомиум</option>
+                        <option value="Арка">Арка</option>
+                        <option value="Арктическая оранжерея">Арктическая оранжерея</option>
+                        <option value="Ахенский собор">Ахенский собор</option>
+                        <option value="Башня Инноваций">Башня Инноваций</option>
+                        <option value="Башня перемирия">Башня перемирия</option>
+                        <option value="Вавилонская башня">Вавилонская башня</option>
+                        <option value="Вояджер V1">Вояджер V1</option>
+                        <option value="Галатская башня">Галатская башня</option>
+                        <option value="ГИДРА">ГИДРА</option>
+                        <option value="Дельфийский оракул">Дельфийский оракул</option>
+                        <option value="Дильский замок">Дильский замок</option>
+                        <option value="Замок Лотоса">Замок Лотоса</option>
+                        <option value="Замок Химэдзи">Замок Химэдзи</option>
+                        <option value="Звёздный военный корабль">Звёздный военный корабль</option>
+                        <option value="Звездочёт">Звездочёт</option>
+                        <option value="Зернохранилище">Зернохранилище</option>
+                        <option value="Капитолий">Капитолий</option>
+                        <option value="Кастель-дель-Монте">Кастель-дель-Монте</option>
+                        <option value="КЕНТАВР">КЕНТАВР</option>
+                        <option value="Колизей">Колизей</option>
+                        <option value="Королевский Альберт-холл">Королевский Альберт-холл</option>
+                        <option value="Космический авианосец">Космический авианосец</option>
+                        <option value="Космический катализатор">Космический катализатор</option>
+                        <option value="Космодром на мысе Канаверал">Космодром на мысе Канаверал</option>
+                        <option value="Кракен">Кракен</option>
+                        <option value="Музей Атлантиды">Музей Атлантиды</option>
+                        <option value="Нотр-Дам">Нотр-Дам</option>
+                        <option value="Обсерватория">Обсерватория</option>
+                        <option value="Парящий остров">Парящий остров</option>
+                        <option value="ПЕГАС">ПЕГАС</option>
+                        <option value="Проект «Дождевой лес»">Проект «Дождевой лес»</option>
+                        <option value="Проект Дева">Проект Дева</option>
+                        <option value="Синяя галактика">Синяя галактика</option>
+                        <option value="Собор Святого Марка">Собор Святого Марка</option>
+                        <option value="Собор Святой Софии">Собор Святой Софии</option>
+                        <option value="Спейс-Нидл">Спейс-Нидл</option>
+                        <option value="Статуя Геи">Статуя Геи</option>
+                        <option value="Статуя Зевса">Статуя Зевса</option>
+                        <option value="Терракотовая армия">Терракотовая армия</option>
+                        <option value="Фрауэнкирхе">Фрауэнкирхе</option>
+                        <option value="Хабитат">Хабитат</option>
+                        <option value="Храм Василия Блаженного">Храм Василия Блаженного</option>
+                        <option value="Храм реликвий">Храм реликвий</option>
+                        <option value="Шато-Фронтенак">Шато-Фронтенак</option>
+                        <option value="Ядро ИИ">Ядро ИИ</option>
+                    </select>
+                </div>
+
+                <div style="min-width: 120px;">
+                    <label for="level_from">Уровень ОТ</label>
+                    <input type="number" min="10" max="999" value="10" id="level_from">
+                </div>
+
+                <div style="min-width: 120px;">
+                    <label for="level_to">Уровень ДО</label>
+                    <input type="number" min="11" max="999" value="11" id="level_to">
+                </div>
+
+                <div class="btn-group">
+                    <button onclick="calculateLevels()">Посчитать</button>
+                    <button class="btn-reset" onclick="resetForm()">Сброс</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const buildingsData = [
+            {"name": "Александрийский маяк", "level_11_cost": 564},
+            {"name": "Алькатрас", "level_11_cost": 851},
+            {"name": "Арка", "level_11_cost": 995},
+            {"name": "Арктическая оранжерея", "level_11_cost": 1138},
+            {"name": "Атомиум", "level_11_cost": 902},
+            {"name": "Ахенский собор", "level_11_cost": 615},
+            {"name": "Башня Инноваций", "level_11_cost": 902},
+            {"name": "Башня перемирия", "level_11_cost": 954},
+            {"name": "Вавилонская башня", "level_11_cost": 523},
+            {"name": "Вояджер V1", "level_11_cost": 954},
+            {"name": "Галатская башня", "level_11_cost": 667},
+            {"name": "ГИДРА", "level_11_cost": 4080},
+            {"name": "Дельфийский оракул", "level_11_cost": 667},
+            {"name": "Дильский замок", "level_11_cost": 759},
+            {"name": "Замок Лотоса", "level_11_cost": 902},
+            {"name": "Замок Химэдзи", "level_11_cost": 1241},
+            {"name": "Звёздный военный корабль", "level_11_cost": 14689},
+            {"name": "Звездочёт", "level_11_cost": 1282},
+            {"name": "Зернохранилище", "level_11_cost": 1138},
+            {"name": "Капитолий", "level_11_cost": 810},
+            {"name": "Кастель-дель-Монте", "level_11_cost": 718},
+            {"name": "КЕНТАВР", "level_11_cost": 3332},
+            {"name": "Колизей", "level_11_cost": 564},
+            {"name": "Королевский Альберт-холл", "level_11_cost": 810},
+            {"name": "Космический авианосец", "level_11_cost": 1333},
+            {"name": "Космический катализатор", "level_11_cost": 11829},
+            {"name": "Космодром на мысе Канаверал", "level_11_cost": 902},
+            {"name": "Кракен", "level_11_cost": 1189},
+            {"name": "Музей Атлантиды", "level_11_cost": 1189},
+            {"name": "Нотр-Дам", "level_11_cost": 667},
+            {"name": "Обсерватория", "level_11_cost": 667},
+            {"name": "Парящий остров", "level_11_cost": 1384},
+            {"name": "ПЕГАС", "level_11_cost": 2583},
+            {"name": "Проект «Дождевой лес»", "level_11_cost": 995},
+            {"name": "Проект Дева", "level_11_cost": 1282},
+            {"name": "Синяя галактика", "level_11_cost": 1189},
+            {"name": "Собор Святого Марка", "level_11_cost": 667},
+            {"name": "Собор Святой Софии", "level_11_cost": 615},
+            {"name": "Спейс-Нидл", "level_11_cost": 902},
+            {"name": "Статуя Геи", "level_11_cost": 1138},
+            {"name": "Статуя Зевса", "level_11_cost": 523},
+            {"name": "Терракотовая армия", "level_11_cost": 1241},
+            {"name": "Фрауэнкирхе", "level_11_cost": 759},
+            {"name": "Хабитат", "level_11_cost": 902},
+            {"name": "Храм Василия Блаженного", "level_11_cost": 718},
+            {"name": "Храм реликвий", "level_11_cost": 667},
+            {"name": "Шато-Фронтенак", "level_11_cost": 851},
+            {"name": "Ядро ИИ", "level_11_cost": 1425}
+        ];
+
+        function formatNumber(number) {
+            return number.toLocaleString('ru-RU');
+        }
+
+        function updateTotalSum() {
+            const results = document.getElementById('results');
+            const resultRows = results.querySelectorAll('.result-row:not(.total-sum-container)');
+            const totalSum = Array.from(resultRows).reduce((sum, row) => {
+                const costSpan = row.querySelector('.result-cost');
+                if (costSpan) {
+                    const cost = parseInt(costSpan.textContent.replace(/\s/g, ''));
+                    return sum + (isNaN(cost) ? 0 : cost);
+                }
+                return sum;
+            }, 0);
+
+            let totalContainer = document.getElementById('total-sum-container');
+            if (resultRows.length > 0) {
+                if (!totalContainer) {
+                    totalContainer = document.createElement('div');
+                    totalContainer.id = 'total-sum-container';
+                    totalContainer.className = 'total-sum-container';
+                    results.appendChild(totalContainer);
+                }
+                totalContainer.innerHTML = `
+                    <span class="total-sum-label">Общая сумма:</span>
+                    <span class="total-sum-value">${formatNumber(totalSum)}</span>
+                `;
+            } else if (totalContainer) {
+                totalContainer.remove();
+            }
+        }
+
+        function calculateLevels() {
+            const building = document.getElementById('great_buildings').value;
+            const levelFrom = parseInt(document.getElementById('level_from').value) || 10;
+            const levelTo = parseInt(document.getElementById('level_to').value) || 11;
+            const results = document.getElementById('results');
+
+            // Удаляем старую общую сумму перед обновлением
+            const oldTotal = document.getElementById('total-sum-container');
+            if (oldTotal) oldTotal.remove();
+
+            // Удаляем только старые ошибки
+            const errors = results.querySelectorAll('.alert-danger');
+            errors.forEach(el => el.remove());
+
+            if (!building) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.textContent = 'Ошибка: Выберите здание.';
+                results.appendChild(errorDiv);
+                return;
+            }
+
+            if (levelFrom < 10 || levelTo < 11 || levelTo < levelFrom) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.textContent = 'Ошибка: Уровень ОТ ≥ 10, Уровень ДО ≥ 11, ОТ ≤ ДО.';
+                results.appendChild(errorDiv);
+                return;
+            }
+
+            const buildingData = buildingsData.find(b => b.name === building);
+            if (!buildingData) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.textContent = 'Ошибка: Данные о здании не найдены.';
+                results.appendChild(errorDiv);
+                return;
+            }
+
+            let cost = buildingData.level_11_cost;
+            let totalCost = 0;
+
+            let currentLevel = levelFrom === 10 ? 11 : levelFrom;
+
+            if (currentLevel > 11) {
+                for (let i = 11; i < currentLevel; i++) {
+                    cost = Math.round(cost * 1.025);
+                }
+            }
+
+            for (let level = currentLevel; level <= levelTo; level++) {
+                totalCost += cost;
+                cost = Math.round(cost * 1.025);
+            }
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result-row';
+            resultDiv.innerHTML = `
+                <span class="building-name">${building}</span>
+                <span class="levels">(${levelFrom} → ${levelTo})</span>
+                <span class="result-cost">${formatNumber(totalCost)}</span>
+            `;
+            results.appendChild(resultDiv);
+            
+            // Обновляем общую сумму после добавления нового результата
+            updateTotalSum();
+        }
+
+        function resetForm() {
+            document.getElementById('great_buildings').value = '';
+            document.getElementById('level_from').value = 10;
+            document.getElementById('level_to').value = 11;
+            document.getElementById('results').innerHTML = ''; // Очищаем результаты тоже
+        }
+
+        // Вызываем updateTotalSum при загрузке страницы на случай, если есть сохраненные результаты
+        document.addEventListener('DOMContentLoaded', updateTotalSum);
+    </script>
+
+</body>
+</html>

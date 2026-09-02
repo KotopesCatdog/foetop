@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QI-Plan Редактор</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<style>
+* {
+    box-sizing: border-box;
+}
+body {
+    background-color: #5E381A;
+    display: flex;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+.container {
+    display: flex;
+    position: relative;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(28, 30px);
+    grid-template-rows: repeat(28, 30px);
+    background-color: #eee;
+    position: relative;
+    z-index: 1;
+}
+.grid.delete-mode {
+    cursor: not-allowed;
+}
+.cell {
+    width: 30px;
+    height: 30px;
+    background-color: #fff;
+    border-right: 0.375px solid #000;
+    border-bottom: 0.375px solid #000;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+.cell:nth-child(28n + 4),
+.cell:nth-child(28n + 8),
+.cell:nth-child(28n + 12),
+.cell:nth-child(28n + 16),
+.cell:nth-child(28n + 20),
+.cell:nth-child(28n + 24) {
+    border-right: 3px solid #000;
+}
+.cell:nth-child(n + 85):nth-child(-n + 112),
+.cell:nth-child(n + 197):nth-child(-n + 224),
+.cell:nth-child(n + 309):nth-child(-n + 336),
+.cell:nth-child(n + 421):nth-child(-n + 448),
+.cell:nth-child(n + 533):nth-child(-n + 560),
+.cell:nth-child(n + 645):nth-child(-n + 672) {
+    border-bottom: 3px solid #000;
+}
+.input-container {
+    margin-left: 30px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1.5px solid #ccc;
+    width: 450px;
+    box-sizing: border-box;
+}
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 7.5px;
+}
+.button-row {
+    display: flex;
+    gap: 7.5px;
+    margin-bottom: 7.5px;
+}
+.button-row button {
+    flex: 1;
+    padding: 4px 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+}
+.button-row button:hover {
+    background-color: #e0e0e0;
+}
+.figure {
+    position: absolute;
+    background-color: rgba(0,0,0,0.5);
+    box-sizing: border-box;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    padding: 3px;
+    box-shadow: inset 0 0 0 3px black;
+    user-select: none;
+    white-space: pre-wrap;
+    line-height: 1.2;
+    z-index: 10;
+    pointer-events: auto;
+    transition: opacity 0.5s;
+}
+.townhall { background-color: #FFD700; }
+.yellow-cat { background-color: #228B22; }
+.brown-cat { background-color: #8B4513; }
+.plum-cat { background-color: #722F8D; }
+.pink-cat { background-color: #0000FF; }
+.lightblue-cat { background-color: #87CEEB; }
+.blue-cat { background-color: #FF0000; }
+.white-cat { background-color: #FFFFFF; }
+.road { background-color: #333333 !important; }
+.boundary { background-color: rgba(0, 255, 0, 0.3) !important; }
+.yellow-light { background-color: #90EE90; }
+.yellow-medium { background-color: #32CD32; }
+.yellow-dark { background-color: #006400; }
+.brown-light { background-color: #8B4513; }
+.brown-medium { background-color: #704214; }
+.brown-dark { background-color: #5D2F0D; }
+.plum-light { background-color: #722F8D; }
+.plum-medium { background-color: #5B2570; }
+.plum-dark { background-color: #451C54; }
+.pink-light { background-color: #0000FF; }
+.pink-medium { background-color: #0000CC; }
+.pink-dark { background-color: #000099; }
+.lightblue-light { background-color: #87CEEB; }
+.lightblue-medium { background-color: #6FB7D8; }
+.lightblue-dark { background-color: #57A0C5; }
+.blue-light { background-color: #FF0000; }
+.blue-medium { background-color: #CC0000; }
+.blue-dark { background-color: #990000; }
+.white-light { background-color: #FFFFFF; }
+.white-medium { background-color: #F0F0F0; }
+.white-dark { background-color: #E0E0E0; }
+.tooltip {
+    position: fixed;
+    background-color: rgba(0,0,0,0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 18px;
+    white-space: pre-wrap;
+    pointer-events: none;
+    display: none;
+    z-index: 20;
+    margin-left: 10px;
+}
+.sidebar {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: 15px;
+    box-sizing: border-box;
+}
+.tab-container {
+    width: 112.5px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.tab {
+    width: 100%;
+    padding: 7.5px 10px;
+    background-color: #ddd;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    text-align: left;
+    font-size: 16px;
+    margin-bottom: 7.5px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+}
+.tab:hover {
+    background-color: #bbb;
+}
+.tab.active {
+    background-color: #000;
+    color: #fff;
+}
+.tab-content-container {
+    flex: 1;
+    margin-left: 15px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 15px;
+    box-sizing: border-box;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+.building-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+.building-list li {
+    padding: 7.5px 10px;
+    background-color: #f0f0f0;
+    margin-bottom: 7.5px;
+    cursor: pointer;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+}
+.building-list li:hover {
+    background-color: #ddd;
+}
+.building-list li.active {
+    background-color: #90EE90;
+    border: 2px solid #228B22;
+    font-weight: bold;
+}
+.building-list li .symbol {
+    flex: 0 0 auto;
+    margin-right: 10px;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.symbol.yellow { color: #FFD700; }
+.symbol.green { color: #008000; }
+.symbol.red { color: #FF0000; }
+.building-list li .name-size {
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 30;
+    width: 200px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-size: 14px;
+    text-align: left;
+}
+.building-list li:hover .submenu {
+    display: block;
+}
+.submenu div {
+    padding: 5px 0;
+}
+.bonuses-table {
+    width: 100%;
+    max-width: 400px;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 16px;
+}
+.bonuses-table th,
+.bonuses-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+    width: 50%;
+}
+.bonuses-table th {
+    background-color: #ddd;
+    font-weight: bold;
+}
+.modal {
+    display: none;
+    position: fixed;
+    background-color: #f9f9f9;
+    border: 4px solid #00cfff;
+    padding: 20px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 207, 255, 0.3);
+    width: 300px;
+    box-sizing: border-box;
+}
+.modal h2 {
+    margin: 0 0 15px;
+    font-size: 18px;
+    text-align: center;
+}
+.modal label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+.modal input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.modal-buttons button {
+    padding: 7.5px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+}
+.modal-header {
+    background-color: #ddd;
+    padding: 5px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: -20px -20px 15px -20px;
+    border-bottom: 1px solid #ccc;
+}
+.modal-title {
+    font-size: 16px;
+    font-weight: bold;
+}
+.close-button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #000;
+}
+.close-button:hover {
+    color: red;
+}
+#saveButton,
+.file-input-button {
+    background-color: #f0f0f0 !important;
+    color: black;
+    border: 1px solid #ccc !important;
+    padding: 4px 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    box-sizing: border-box;
+}
+#saveButton:hover,
+.file-input-button:hover {
+    background-color: #3367D6 !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+}
+.ghost-figure {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.3);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    padding: 3px;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+    user-select: none;
+    white-space: pre-wrap;
+    line-height: 1.2;
+    z-index: 15;
+    pointer-events: none;
+    border: 4px solid #000000;
+}
+#buildingInfoModal {
+    display: none;
+    position: fixed;
+    background-color: #f9f9f9;
+    border: 1.5px solid #ccc;
+    padding: 20px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    width: 400px;
+    max-width: 90%;
+    box-sizing: border-box;
+}
+.building-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+}
+.building-info-table th,
+.building-info-table td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: left;
+}
+.building-info-table th {
+    background-color: #ddd;
+    font-weight: bold;
+    width: 50%;
+}
+#statisticsModal {
+    width: 480px;
+    min-width: 320px;
+    min-height: 200px;
+    resize: both;
+    overflow: auto;
+}
+#statisticsModal #statsContent {
+    overflow: auto;
+}
+#statisticsModal .bonuses-table {
+    width: 100%;
+}
+.minimized {
+    height: auto !important;
+    width: auto !important;
+    min-width: 220px;
+    max-width: 350px;
+    padding: 0;
+    overflow: hidden;
+    resize: none;
+}
+.minimized #statsContent {
+    display: none;
+}
+.minimized .modal-header {
+    border-radius: 6px;
+    margin: 0;
+    padding: 8px 12px;
+}
+#minimizeStatsBtn {
+    background: none;
+    border: none;
+    color: #333;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 6px;
+    transition: all 0.2s;
+}
+
+/* Возможность изменения размера для модальных окон */
+#townHallModal,
+#bldCountModal {
+    resize: both;
+    overflow: auto;
+    min-width: 300px;
+    min-height: 200px;
+}
+
+/* Убираем стандартный resize у статистики если он дублируется */
+#statisticsModal {
+    width: 480px;
+    min-width: 320px;
+    min-height: 200px;
+    resize: both;
+    overflow: auto;
+}
+
+/* Стили для модального окна "Количество зданий" */
+#bldCountModal {
+    width: 320px;
+    max-width: 90%;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+#bldCountModal .modal-header {
+    margin: 0;
+    padding: 10px 15px;
+    background-color: #ddd;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0;
+}
+#bldCountModal .modal-header .modal-title {
+    font-size: 16px;
+    font-weight: bold;
+}
+#bldCountBody {
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+#bldCountContent {
+    font-size: 14px;
+    line-height: 1.4;
+}
+#bldCountContent .expansions-section {
+    background-color: #e3f4fd;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border-left: 3px solid #2196F3;
+}
+#bldCountContent .expansions-section strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+#bldCountContent .expansions-section .expansions-stats {
+    margin: 8px 0;
+}
+#bldCountContent .expansions-section .expansions-stats span {
+    font-weight: bold;
+    color: #1976D2;
+}
+#bldCountContent .expansions-section button {
+    margin-top: 10px;
+    padding: 6px 12px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    width: 100%;
+}
+#bldCountContent .expansions-section button:disabled {
+    background-color: #bdbdbd;
+    color: #757575;
+    cursor: not-allowed;
+}
+#bldCountContent .buildings-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+#bldCountContent .building-item {
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+#bldCountContent .building-item:last-child {
+    border-bottom: none;
+}
+#bldCountContent .building-name {
+    color: #333;
+}
+#bldCountContent .building-count {
+    font-weight: bold;
+    color: #1976D2;
+}
+#bldCountContent .empty-message {
+    color: #999;
+    text-align: center;
+    padding: 20px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="grid" id="grid"></div>
+<div class="input-container">
+<div class="button-container">
+<textarea id="city-data-input" placeholder="Вставьте в это окно данные из Обзора города или начните постройку нового города. Внимание! Перед загрузкой вашего сохранённого файла сперва надо выбрать положение поля при котором файл сохранялся." style="width:100%; height:70px; margin-bottom:8px; font-size:12px; resize:vertical;"></textarea>
+<div class="button-row">
+<button id="btnStart">Старт</button>
+<button id="resetFiguresBtn">Очистить поле</button>
+<button id="resetToInitialBtn">Сброс</button>
+</div>
+<div class="button-row">
+<button id="deleteButton">Удалить здание</button>
+</div>
+<div class="button-row">
+<button id="rotateBtn" title="Повернуть вид на 90° по часовой">🔄 Повернуть вид</button>
+</div>
+<div class="button-row">
+<button id="saveButton">Сохранить в файл</button>
+<button id="loadFileBtn" class="file-input-button">Загрузить из файла</button>
+</div>
+</div>
+<div class="sidebar">
+<div class="tab-container">
+<div id="tab1Btn" class="tab">Жилые 🏚️</div>
+<div id="tab2Btn" class="tab">Молотки 🛠️</div>
+<div id="tab3Btn" class="tab">Товар 🛒</div>
+<div id="tab4Btn" class="tab">Общест. ⛪</div>
+<div id="tab5Btn" class="tab">Декор 🌲</div>
+<div id="tab6Btn" class="tab">Воен. ⚔️</div>
+<div id="tab7Btn" class="tab">Расширения ⏹️</div>
+<div id="bonusesBtn" class="tab">Бонусы основы ➕</div>
+<div id="statisticsBtn" class="tab">Статистика 📊</div>
+<div id="bldCountBtn" class="tab">Количество зданий 🗒️</div>
+
+<div style="margin-top: 20px; font-size: 14px; text-align: center; color: #666;">
+Благодарность за помощь<br>
+МАХ-23, КАМА, York1407
+</div>
+</div>
+<div class="tab-content-container" id="tab-content-container"></div>
+</div>
+</div>
+</div>
+<div id="tooltip" class="tooltip"></div>
+
+<div id="buildingInfoModal" class="modal">
+<div class="modal-header">
+<span class="modal-title">Данные здания</span>
+<button id="closeBuildingInfoBtn" class="close-button">X</button>
+</div>
+<div id="buildingInfoContent"></div>
+</div>
+
+<div id="townHallModal" class="modal">
+<div class="modal-header">
+<span class="modal-title">Бонусы основного города</span>
+<button id="closeBonusesModalBtn" class="close-button">X</button>
+</div>
+<div style="padding: 0 20px 20px 20px;">
+<div style="display:flex; align-items:center; gap:6px; margin-bottom:10px;">
+  <select id="cityProfileSelect" style="flex:1; font-size:12px; padding:3px 5px; background:#2a1a0a; border:1px solid #a07040; border-radius:3px; color:#eee;"></select>
+  <button id="cityProfileAddBtn" title="Добавить город" style="font-size:13px; padding:2px 7px; background:#2a3e20; border:1px solid #5a8a40; border-radius:3px; color:#8fcc60; cursor:pointer;">+</button>
+  <button id="cityProfileRenameBtn" title="Переименовать" style="font-size:11px; padding:2px 7px; background:#2a2a3e; border:1px solid #5050a0; border-radius:3px; color:#aaaaee; cursor:pointer;">✏️</button>
+  <button id="cityProfileDeleteBtn" title="Удалить город" style="font-size:13px; padding:2px 7px; background:#3e1a1a; border:1px solid #a04040; border-radius:3px; color:#ee6060; cursor:pointer;">✖</button>
+</div>
+<label>Пр-во ОД/ 1 ч.:</label>
+<input type="number" id="townHall-od" min="0" step="1" value="0">
+<label>+% Ускор. монет:</label>
+<input type="number" id="townHall-coin-acceleration" min="0" step="1" value="0">
+<label>+% Ускор. молотков:</label>
+<input type="number" id="townHall-hammer-acceleration" min="0" step="1" value="0">
+<label>Стартовые монеты:</label>
+<input type="number" id="townHall-coin-initial" min="0" step="1" value="0">
+<label>Стартовые молотки:</label>
+<input type="number" id="townHall-hammer-initial" min="0" step="1" value="0">
+<label>Ёмкость КД:</label>
+<input type="number" id="townHall-kd-capacity" min="0" step="1" value="200000">
+<div class="modal-buttons">
+<button id="saveBonusesBtn">Сохранить</button>
+<button id="closeBonusesBtn">Отмена</button>
+</div>
+</div>
+</div>
+
+<div id="statisticsModal" class="modal">
+<div class="modal-header">
+<span class="modal-title">Статистика</span>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button id="minimizeStatsBtn" class="close-button" title="Свернуть / Развернуть" style="font-size: 20px; line-height: 1; padding: 0 6px;">−</button>
+<button id="closeStatisticsBtn" class="close-button">X</button>
+</div>
+</div>
+<div id="statsContent">
+<table class="bonuses-table" id="statistics-table">
+<tbody>
+<tr><th>Население (всего/доступно)</th><td id="stat-population">0</td></tr>
+<tr><th>Пр-во монет/ 10 ч.</th><td id="stat-coins">0</td></tr>
+<tr><th>Пр-во молотков/ 10 ч.</th><td id="stat-hammers">0</td></tr>
+<tr><th>Пр-во хроно/ 10 ч.</th><td id="stat-chrono">0</td></tr>
+<tr><th>Счастье</th><td id="stat-happiness">0</td></tr>
+<tr><th>Коэф. счастья</th><td id="stat-happiness-coef">0</td></tr>
+<tr><th>Пр-во ОД/ 1 ч.</th><td id="stat-od">0</td></tr>
+<tr><th>Ёмкость КД</th><td id="stat-kd-capacity">200000</td></tr>
+<tr><th>+% Син. статы</th><td id="stat-blue">0</td></tr>
+<tr><th>+% Красн. статы</th><td id="stat-red">0</td></tr>
+<tr><th>+% Ускор. монет</th><td id="stat-coin-acceleration">0</td></tr>
+<tr><th>+% Ускор. молотков</th><td id="stat-hammer-acceleration">0</td></tr>
+<tr><th>Расход монет</th><td id="stat-coin-cost">0</td></tr>
+<tr><th>Расход молотков</th><td id="stat-hammer-cost">0</td></tr>
+<tr><th>Расход хроно</th><td id="stat-chrono-cost">0</td></tr>
+</tbody>
+</table>
+
+</div>
+<div style="position: absolute; bottom: 2px; right: 4px; font-size: 14px; color: #aaa; pointer-events: none; user-select: none;">⤡</div>
+</div>
+
+<div id="bldCountModal" class="modal">
+<div class="modal-header">
+<span class="modal-title">Количество зданий</span>
+<button id="closeBldCountBtn" class="close-button">X</button>
+</div>
+<div id="bldCountBody">
+<div id="bldCountContent"></div>
+</div>
+</div>
+
+<script src="kvag_data.js"></script>
+<script src="kvag.js"></script>
+</body>
+</html>
