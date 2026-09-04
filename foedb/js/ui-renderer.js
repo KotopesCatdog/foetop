@@ -794,8 +794,8 @@ function translateType(type) {
         'guild_raids':              'db_type_guild_raids'
     };
     const key = map[type];
-    if (key) return t(key, type);
-    return type;
+if (key) return t(key, type);
+return type || '';   
 }
 
 function translateAssetId(assetId) {

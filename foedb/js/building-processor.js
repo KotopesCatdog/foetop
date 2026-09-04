@@ -543,7 +543,7 @@ window.CityBuildings = {
     id: data.id || metaData.id,
     entityId: data.cityentity_id || metaData.id,
     name: metaData.name,
-    type: metaData.type,
+    type: metaData.type || 'unknown',
     baseEra: era,
     availableEras: availableEras,
     size: window.CityBuildings.setSize(metaData),
