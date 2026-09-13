@@ -26,15 +26,87 @@ const areas = [
 ];
 
 let deleteMode = false;
+let sellMode = false;
 let whiteCellsCount = 192;
+
+// ============================================
+// ИМИТАЦИЯ ПРОИЗВОДСТВА И СБОРА РЕСУРСОВ
+// ============================================
+let productionMode = false;  // режим отметки зданий, запущенных в производство (кнопка "Пр-во")
+let collectionMode = false;  // режим сбора готовой продукции (кнопка "Сбор")
+
+// Категории, для которых вообще действует имитация производства/сбора
+const PRODUCTION_ELIGIBLE_CATEGORIES = ['Жилые', 'Молотки', 'Товар'];
+// "Жилые" и "Молотки" готовы к сбору только через столько часов виртуального
+// игрового времени после отметки кнопкой "Пр-во"
+const PRODUCTION_CYCLE_HOURS = 10;
+// "Товар" производится сразу (без ожидания), но за фиксированную плату,
+// одинаковую для любого здания категории "Товар" (не зависит от конкретной
+// постройки - в данных зданий этой стоимости нет, она задаётся здесь).
+const GOODS_YIELD_PER_RUN = 20;
+const GOODS_RUN_COST = { coin: 70000, hammer: 56000 };
+
+let gameTimeHours = 0; // виртуальный игровой таймер (в часах) с начала имитации
+
+// Накопленный результат всех сборов (может уходить в минус по монетам/молоткам
+// из-за стоимости запуска "Товар") - учитывается в общем балансе ресурсов
+// наравне с soldPenalty/expansionSpent, см. calculateBonuses().
+let producedTotals = { coin: 0, hammer: 0, goods: 0 };
+
+// Последний посчитанный calculateBonuses() набор stats - нужен кнопке "+ стат",
+// чтобы записать в таблицу именно те остатки ресурсов, что сейчас показаны в HUD.
+let lastCalculatedStats = null;
+
+// Записи таблицы "Статистика производства": [{ timeHours, coin, hammer, goods, shard }]
+let productionStatSnapshots = [];
+
 let initialCellStates = new Array(totalCells).fill('');
 let townHallBonuses = {
   od: 0,
   coin_acceleration: 0,
   hammer_acceleration: 0,
-  coin_initial: 0,
-  hammer_initial: 0,
+  coin_initial: 450000,
+  hammer_initial: 75000,
+  chrono_initial: 0,
+  shard_initial: 500,
+  goods_initial: 100,
   kd_capacity: 200000
+};
+
+// Стоимость расширений по номеру покупки (индекс 0 — первая покупка этого типа)
+const EXPANSION_SHARD_COSTS = [
+  100, 150, 200, 250, 300, 350, 400, 450, 500, 550,
+  600, 650, 700, 750, 800, 850, 900, 950
+];
+const EXPANSION_GOODS_COSTS = [
+  30, 60, 90, 130, 180, 240, 310, 390, 480, 580, 700
+];
+
+// Соответствие названия здания-инструмента типу расширения
+const EXPANSION_NAME_TO_TYPE = {
+  'За осколки': 'shard',
+  'За товар': 'goods'
+};
+
+// Суммарно потрачено ресурсов на купленные расширения (учитывается при пересчёте баланса)
+let expansionSpent = {
+  shard: 0,
+  goods: 0
+};
+
+// "Виртуальные" расширения — уже куплены игроком в реальной игре, но не отражены
+// на текущем плане (например план начат заново). Не трогают клетки поля, только
+// продвигают прогрессию стоимости и учитываются в балансе ресурсов, как обычная покупка.
+let virtualExpansions = {
+  shard: 0,
+  goods: 0
+};
+
+// Накопленные потери от продажи зданий (см. calculateBonuses)
+let soldPenalty = {
+  coin: 0,
+  hammer: 0,
+  chrono: 0
 };
 
 let selectedBuilding = null;
@@ -196,7 +268,7 @@ function createMenu() {
         }
       };
       
-      if (building.name !== 'Расш') {
+      if (building.category !== 'Расширения') {
         const submenu = document.createElement('div');
         submenu.classList.add('submenu');
         let bonusesHtml = '';
@@ -208,7 +280,33 @@ function createMenu() {
         li.appendChild(submenu);
       }
       
-      ul.appendChild(li);
+      const expType = EXPANSION_NAME_TO_TYPE[building.name];
+      if (expType) {
+        const row = document.createElement('div');
+        row.className = 'expansion-buy-row';
+        li.classList.add('expansion-buy-li');
+        
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.className = 'expansion-plus-btn';
+        plusBtn.textContent = '+';
+        plusBtn.title = 'Учесть расширение, уже купленное в игре (без изменений на поле)';
+        plusBtn.onclick = (e) => { e.stopPropagation(); addVirtualExpansion(expType); };
+        
+        const countSpan = document.createElement('span');
+        countSpan.className = 'expansion-virtual-count';
+        countSpan.id = `virtual-count-${expType}`;
+        countSpan.textContent = String(virtualExpansions[expType] || 0);
+        countSpan.title = 'Клик — отменить последнее виртуальное расширение этого типа';
+        countSpan.onclick = (e) => { e.stopPropagation(); removeVirtualExpansion(expType); };
+        
+        row.appendChild(li);
+        row.appendChild(plusBtn);
+        row.appendChild(countSpan);
+        ul.appendChild(row);
+      } else {
+        ul.appendChild(li);
+      }
     });
     
     if (category === "Расширения") {
@@ -216,6 +314,16 @@ function createMenu() {
       li.innerHTML = `<span class="symbol"></span><span class="name-size">Все расш.</span>`;
       li.onclick = clearAllXCells;
       ul.appendChild(li);
+      
+      const liSellShard = document.createElement('li');
+      liSellShard.innerHTML = `<span class="symbol"></span><span class="name-size">↩️ Продать посл. (осколки)</span>`;
+      liSellShard.onclick = (e) => { e.stopPropagation(); sellLastExpansion('shard'); };
+      ul.appendChild(liSellShard);
+      
+      const liSellGoods = document.createElement('li');
+      liSellGoods.innerHTML = `<span class="symbol"></span><span class="name-size">↩️ Продать посл. (товар)</span>`;
+      liSellGoods.onclick = (e) => { e.stopPropagation(); sellLastExpansion('goods'); };
+      ul.appendChild(liSellGoods);
     }
     
     tabContent.appendChild(ul);
@@ -329,7 +437,13 @@ function createFigureWithClass(name, widthPx, heightPx, left, top, forcedClass) 
   text.textContent = (bData ? bData.display_name : name).substring(0, maxChars);
   figure.appendChild(text);
 
-  figure.addEventListener('click', (e) => { e.stopPropagation(); handleFigureClick(figure, e); });
+  if (name !== 'Препятствие') {
+    // Препятствия не должны перехватывать клик через stopPropagation — иначе он
+    // не доходит до обработчика установки зданий/расширений на сетке. Удаление
+    // препятствий по-прежнему работает: режим "Удалить здание" слушает клики на
+    // фазе перехвата (capture) на самой сетке, раньше этого обработчика.
+    figure.addEventListener('click', (e) => { e.stopPropagation(); handleFigureClick(figure, e); });
+  }
   figure.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
   grid.appendChild(figure);
@@ -342,36 +456,6 @@ function createFigureWithClass(name, widthPx, heightPx, left, top, forcedClass) 
 // СОЗДАНИЕ ФИГУРЫ
 // ============================================
 function createFigure(name, widthPx, heightPx, left, top, isLoad = false) {
-  if (name === 'Расш') {
-    const figure = document.createElement('div');
-    figure.classList.add('figure', 'white-light');
-    figure.style.width = `${widthPx}px`;
-    figure.style.height = `${heightPx}px`;
-    figure.style.left = `${left}px`;
-    figure.style.top = `${top}px`;
-    figure.dataset.name = 'Расш';
-    figure.style.color = 'black';
-    
-    const text = document.createElement('div');
-    const maxChars = Math.floor((widthPx / 30) * 30 / 8);
-    text.textContent = 'Расш'.substring(0, maxChars);
-    figure.appendChild(text);
-    
-    figure.addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleFigureClick(figure, e);
-    });
-    
-    figure.addEventListener('mouseleave', () => {
-      tooltip.style.display = 'none';
-    });
-    
-    grid.appendChild(figure);
-    addDragHandlers(figure);
-    calculateBonuses();
-    return figure;
-  }
-  
   const selectedBuildingData = buildingData.find(building => building.name === name);
   if (!selectedBuildingData) {
     // Неизвестное здание (из импорта) — рисуем серым с сырым именем
@@ -386,7 +470,13 @@ function createFigure(name, widthPx, heightPx, left, top, isLoad = false) {
     const maxChars = Math.floor(widthPx / 8);
     text.textContent = name.substring(0, maxChars);
     figure.appendChild(text);
-    figure.addEventListener('click', (e) => { e.stopPropagation(); handleFigureClick(figure, e); });
+    if (name !== 'Препятствие') {
+      // Препятствия не должны перехватывать клик через stopPropagation — иначе он
+      // не доходит до обработчика установки зданий/расширений на сетке. Удаление
+      // препятствий по-прежнему работает: режим "Удалить здание" слушает клики на
+      // фазе перехвата (capture) на самой сетке, раньше этого обработчика.
+      figure.addEventListener('click', (e) => { e.stopPropagation(); handleFigureClick(figure, e); });
+    }
     figure.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
     grid.appendChild(figure);
     addDragHandlers(figure);
@@ -433,6 +523,9 @@ function createFigure(name, widthPx, heightPx, left, top, isLoad = false) {
   figure.style.left = `${finalLeft}px`;
   figure.style.top = `${finalTop}px`;
   figure.dataset.name = finalName;
+  if (EXPANSION_NAME_TO_TYPE[finalName]) {
+    figure.dataset.expansionType = EXPANSION_NAME_TO_TYPE[finalName];
+  }
   
   const text = document.createElement('div');
   const maxChars = Math.floor((finalWidthPx / 30) * 30 / 8);
@@ -456,17 +549,19 @@ function createFigure(name, widthPx, heightPx, left, top, isLoad = false) {
   grid.appendChild(figure);
   addDragHandlers(figure);
   
-  if (!isLoad && finalName === 'Расш') {
+  if (!isLoad && EXPANSION_NAME_TO_TYPE[finalName]) {
     const isOverGray = isInGrayArea(finalLeft, finalTop, widthCells, heightCells);
     if (!isOverGray) {
-      clearXUnderFigure(figure);
-      figure.remove();
-      whiteCellsCount = countWhiteCells();
-      for (let y = finalTop / 30; y < finalTop / 30 + heightCells; y++) {
-        for (let x = finalLeft / 30; x < finalLeft / 30 + widthCells; x++) {
-          const cellIndex = y * 28 + x;
-          if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
-            initialCellStates[cellIndex] = '';
+      const purchased = clearXUnderFigure(figure);
+      if (purchased) {
+        figure.remove();
+        whiteCellsCount = countWhiteCells();
+        for (let y = finalTop / 30; y < finalTop / 30 + heightCells; y++) {
+          for (let x = finalLeft / 30; x < finalLeft / 30 + widthCells; x++) {
+            const cellIndex = y * 28 + x;
+            if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+              initialCellStates[cellIndex] = '';
+            }
           }
         }
       }
@@ -530,21 +625,23 @@ function addDragHandlers(figure) {
     figure.style.zIndex = '10';
     checkOverlap();
     
-    if (figure.dataset.name === 'Расш') {
+    if (figure.dataset.expansionType) {
       const left = parseInt(figure.style.left) / 30;
       const top = parseInt(figure.style.top) / 30;
       const width = parseInt(figure.style.width) / 30;
       const height = parseInt(figure.style.height) / 30;
       const isOverGray = isInGrayArea(left * 30, top * 30, width, height);
       if (!isOverGray) {
-        clearXUnderFigure(figure);
-        figure.remove();
-        whiteCellsCount = countWhiteCells();
-        for (let y = top; y < top + height; y++) {
-          for (let x = left; x < left + width; x++) {
-            const cellIndex = y * 28 + x;
-            if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
-              initialCellStates[cellIndex] = '';
+        const purchased = clearXUnderFigure(figure);
+        if (purchased) {
+          figure.remove();
+          whiteCellsCount = countWhiteCells();
+          for (let y = top; y < top + height; y++) {
+            for (let x = left; x < left + width; x++) {
+              const cellIndex = y * 28 + x;
+              if (cellIndex >= 0 && cellIndex < totalCells && !isInGrayArea(x * 30, y * 30, 1, 1)) {
+                initialCellStates[cellIndex] = '';
+              }
             }
           }
         }
@@ -570,7 +667,7 @@ function addDragHandlers(figure) {
       let isInGray = isInGrayArea(left, top, width, height);
       
       figures.forEach(otherFig => {
-        if (otherFig !== fig) {
+        if (otherFig !== fig && fig.dataset.name !== 'Препятствие' && otherFig.dataset.name !== 'Препятствие') {
           const rect2 = otherFig.getBoundingClientRect();
           const innerRect1 = {
             left: rect1.left + 1,
@@ -693,8 +790,35 @@ function countWhiteCells() {
   return count;
 }
 
+// Сколько ступеней прогрессии уже пройдено — реальные покупки на поле + виртуальные
+// (уже купленные в игре, но не отражённые на плане, см. addVirtualExpansion)
+function getGoodsPurchasedCount() {
+  return clearedCellsHistory.filter(h => h.expansionType === 'goods').length + virtualExpansions.goods;
+}
+function getShardPurchasedCount() {
+  return clearedCellsHistory.filter(h => h.expansionType === 'shard').length + virtualExpansions.shard;
+}
+
 function clearXUnderFigure(figure) {
-  if (figure.dataset.name !== 'Расш') return;
+  const expansionType = figure.dataset.expansionType;
+  if (expansionType !== 'shard' && expansionType !== 'goods') return false;
+  
+  let cost;
+  if (expansionType === 'goods') {
+    const goodsCount = getGoodsPurchasedCount();
+    if (goodsCount >= EXPANSION_GOODS_COSTS.length) {
+      alert(`Достигнут лимит расширений за товар (${EXPANSION_GOODS_COSTS.length})`);
+      return false;
+    }
+    cost = { goods: EXPANSION_GOODS_COSTS[goodsCount] };
+  } else {
+    const shardCount = getShardPurchasedCount();
+    if (shardCount >= EXPANSION_SHARD_COSTS.length) {
+      alert(`Достигнут лимит расширений за осколки (${EXPANSION_SHARD_COSTS.length})`);
+      return false;
+    }
+    cost = { shard: EXPANSION_SHARD_COSTS[shardCount] };
+  }
   
   const left = parseInt(figure.style.left) / 30;
   const top = parseInt(figure.style.top) / 30;
@@ -730,11 +854,137 @@ function clearXUnderFigure(figure) {
       top: top,
       width: width,
       height: height,
-      cells: clearedCells
+      cells: clearedCells,
+      expansionType: expansionType,
+      cost: cost
     });
+    
+    if (expansionType === 'goods') {
+      expansionSpent.goods += cost.goods;
+    } else {
+      expansionSpent.shard += cost.shard;
+    }
   }
   
   calculateBonuses();
+  return true;
+}
+
+// Продать (отменить) последнюю купленную расширенную зону этого типа —
+// возвращает клетки "X" на место и полностью возвращает потраченные на неё ресурсы
+function sellLastExpansion(expansionType) {
+  let idx = -1;
+  for (let i = clearedCellsHistory.length - 1; i >= 0; i--) {
+    if (clearedCellsHistory[i].expansionType === expansionType) {
+      idx = i;
+      break;
+    }
+  }
+  
+  if (idx === -1) {
+    const messages = {
+      shard: 'Нет покупок расширений за осколки для продажи.',
+      goods: 'Нет покупок расширений за товар для продажи.'
+    };
+    alert(messages[expansionType] || 'Нет покупок для продажи.');
+    return;
+  }
+  
+  const entry = clearedCellsHistory[idx];
+  
+  entry.cells.forEach(cellInfo => {
+    const cell = grid.children[cellInfo.index];
+    if (cell && cell.textContent === '') {
+      cell.textContent = 'X';
+      initialCellStates[cellInfo.index] = 'X';
+    }
+  });
+  
+  if (entry.cost) {
+    if (entry.expansionType === 'goods') {
+      expansionSpent.goods -= entry.cost.goods || 0;
+    } else {
+      expansionSpent.shard -= entry.cost.shard || 0;
+    }
+  }
+  
+  clearedCellsHistory.splice(idx, 1);
+  whiteCellsCount = countWhiteCells();
+  calculateBonuses();
+}
+
+// ============================================
+// "ВИРТУАЛЬНЫЕ" РАСШИРЕНИЯ — уже куплены в игре, но не показаны на плане
+// ============================================
+// Учитывает уже совершённую в реальной игре покупку расширения этого типа:
+// списывает стоимость нужной ступени с баланса и продвигает прогрессию,
+// но НИЧЕГО не меняет на самом поле (клетки не открываются).
+function addVirtualExpansion(type) {
+  let combinedCount, limit, cost;
+  
+  if (type === 'goods') {
+    combinedCount = getGoodsPurchasedCount();
+    limit = EXPANSION_GOODS_COSTS.length;
+    if (combinedCount >= limit) {
+      alert(`Достигнут лимит расширений за товар (${limit})`);
+      return;
+    }
+    cost = { goods: EXPANSION_GOODS_COSTS[combinedCount] };
+  } else {
+    combinedCount = getShardPurchasedCount();
+    limit = EXPANSION_SHARD_COSTS.length;
+    if (combinedCount >= limit) {
+      alert(`Достигнут лимит расширений за осколки (${limit})`);
+      return;
+    }
+    cost = { shard: EXPANSION_SHARD_COSTS[combinedCount] };
+  }
+  
+  virtualExpansions[type] = (virtualExpansions[type] || 0) + 1;
+  
+  if (type === 'goods') {
+    expansionSpent.goods += cost.goods;
+  } else {
+    expansionSpent.shard += cost.shard;
+  }
+  
+  updateVirtualCountDisplay(type);
+  calculateBonuses();
+}
+
+// Отменяет последнее виртуальное расширение этого типа (клик по счётчику) —
+// возвращает списанную за него стоимость
+function removeVirtualExpansion(type) {
+  if (!virtualExpansions[type]) return;
+  
+  let tierIndex, cost;
+  if (type === 'goods') {
+    tierIndex = getGoodsPurchasedCount() - 1;
+    cost = { goods: EXPANSION_GOODS_COSTS[tierIndex] };
+  } else {
+    tierIndex = getShardPurchasedCount() - 1;
+    cost = { shard: EXPANSION_SHARD_COSTS[tierIndex] };
+  }
+  
+  virtualExpansions[type] -= 1;
+  
+  if (type === 'goods') {
+    expansionSpent.goods -= cost.goods || 0;
+  } else {
+    expansionSpent.shard -= cost.shard || 0;
+  }
+  
+  updateVirtualCountDisplay(type);
+  calculateBonuses();
+}
+
+function updateVirtualCountDisplay(type) {
+  const el = document.getElementById(`virtual-count-${type}`);
+  if (el) el.textContent = String(virtualExpansions[type] || 0);
+}
+
+function refreshAllVirtualCountDisplays() {
+  Object.keys(virtualExpansions).forEach(updateVirtualCountDisplay);
 }
 
 function clearAllXCells() {
@@ -771,12 +1021,15 @@ function restoreExpansionZones() {
     });
   });
   
-  document.querySelectorAll('.figure[data-name="Расш"]').forEach(fig => {
+  document.querySelectorAll('.figure[data-expansion-type]').forEach(fig => {
     if (fig.dataset.blinkInterval) clearInterval(fig.dataset.blinkInterval);
     fig.remove();
   });
   
+  // Полностью отменяем все покупки расширений — возвращаем всё потраченное на них
   clearedCellsHistory = [];
+  expansionSpent = { shard: 0, goods: 0 };
+  whiteCellsCount = countWhiteCells();
   calculateBonuses();
   return restoredCount;
 }
@@ -837,11 +1090,16 @@ function calculateBonuses() {
     coin_cost: 0,
     hammer_cost: 0,
     chrono_cost: 0,
+    shard_cost: 0,
+    goods_cost: 0,
     kd_capacity: Number(townHallBonuses.kd_capacity) || 200000
   };
   
   stats.coin_cost += Number(townHallBonuses.coin_initial) || 0;
   stats.hammer_cost += Number(townHallBonuses.hammer_initial) || 0;
+  stats.chrono_cost += Number(townHallBonuses.chrono_initial) || 0;
+  stats.shard_cost += Number(townHallBonuses.shard_initial) || 0;
+  stats.goods_cost += Number(townHallBonuses.goods_initial) || 0;
   stats.od += Number(townHallBonuses.od) || 0;
   
   document.querySelectorAll('.figure').forEach(figure => {
@@ -881,7 +1139,25 @@ function calculateBonuses() {
     stats.coin_cost -= Number(building.bonuses.coin_cost) || 0;
     stats.hammer_cost -= Number(building.bonuses.hammer_cost) || 0;
     stats.chrono_cost -= Number(building.bonuses.chrono_cost) || 0;
+    stats.shard_cost -= Number(building.bonuses.shard_cost) || 0;
+    stats.goods_cost -= Number(building.bonuses.goods_cost) || 0;
   });
+  
+  // Учитываем потери от проданных зданий (продажа даёт только 25% стоимости обратно)
+  stats.coin_cost -= soldPenalty.coin;
+  stats.hammer_cost -= soldPenalty.hammer;
+  stats.chrono_cost -= soldPenalty.chrono;
+  
+  // Учитываем потраченное на покупку расширений
+  stats.shard_cost -= expansionSpent.shard;
+  stats.goods_cost -= expansionSpent.goods;
+  
+  // Учитываем итог имитации производства/сбора (см. producedTotals выше) —
+  // жилые/молотки добавляют монеты/молотки, "товар" добавляет товар и
+  // одновременно списывает фиксированную стоимость запуска.
+  stats.coin_cost   += producedTotals.coin;
+  stats.hammer_cost += producedTotals.hammer;
+  stats.goods_cost  += producedTotals.goods;
   
   const globalStats = calculateGlobalStatsWithValues(
     stats.housingPopulation,
@@ -935,6 +1211,7 @@ function calculateBonuses() {
     }
   }
   
+  lastCalculatedStats = stats;
   displayStats(stats, globalStats);
 }
 
@@ -954,8 +1231,21 @@ function displayStats(stats, globalStats) {
     coin_cost: document.getElementById('stat-coin-cost'),
     hammer_cost: document.getElementById('stat-hammer-cost'),
     chrono_cost: document.getElementById('stat-chrono-cost'),
+    shard_cost: document.getElementById('stat-shard-cost'),
+    goods_cost: document.getElementById('stat-goods-cost'),
     kd_capacity: document.getElementById('stat-kd-capacity')
   };
+  
+  const hudCoins = document.getElementById('hud-coins');
+  if (hudCoins) hudCoins.textContent = Math.round(stats.coin_cost).toLocaleString('ru-RU');
+  const hudHammers = document.getElementById('hud-hammers');
+  if (hudHammers) hudHammers.textContent = Math.round(stats.hammer_cost).toLocaleString('ru-RU');
+  const hudChrono = document.getElementById('hud-chrono');
+  if (hudChrono) hudChrono.textContent = Math.round(stats.chrono_cost).toLocaleString('ru-RU');
+  const hudShards = document.getElementById('hud-shards');
+  if (hudShards) hudShards.textContent = Math.round(stats.shard_cost).toLocaleString('ru-RU');
+  const hudGoods = document.getElementById('hud-goods');
+  if (hudGoods) hudGoods.textContent = Math.round(stats.goods_cost).toLocaleString('ru-RU');
   
   for (let [key, element] of Object.entries(statElements)) {
     if (!element) continue;
@@ -1027,7 +1317,9 @@ function showBuildingInfo(figure) {
     
     let displayValue = '';
     if (typeof finalValue === 'number') {
-      displayValue = finalValue % 1 !== 0 ? finalValue.toFixed(1) : finalValue.toLocaleString('ru-RU');
+      // Математическое округление результата (0,5 и выше — вверх), а не
+      // обрезание/один знак после запятой, как было раньше.
+      displayValue = Math.round(finalValue).toLocaleString('ru-RU');
     } else {
       displayValue = finalValue;
     }
@@ -1071,8 +1363,7 @@ function applyExpansions(expansionsText) {
   if (!expansionsText || !expansionsText.trim()) return;
 
   const lines = expansionsText.trim().split('\n');
-  console.log(`[applyExpansions] блоков: ${lines.length}, первый: ${lines[0]}`);
-
+ 
   lines.forEach(line => {
     const parts = line.split('\t');
     if (parts.length < 2) return;
@@ -1086,8 +1377,7 @@ function applyExpansions(expansionsText) {
     const colKvag = 27 - srcY - 4 + 1; // 0-based колонка левого верхнего угла
     const rowKvag = srcX;               // 0-based строка
 
-    console.log(`[applyExpansions] srcX=${srcX} srcY=${srcY} → col=${colKvag} row=${rowKvag}`);
-
+    
     for (let dr = 0; dr < 4; dr++) {
       for (let dc = 0; dc < 4; dc++) {
         const r = rowKvag + dr; // 0-based
@@ -1122,14 +1412,30 @@ const qiClassToFigureClass = {
   'impediment':    'road'
 };
 
-function placeFiguresFromInput() {
-  const input = document.getElementById('city-data-input');
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text) {
-    alert('Вставьте данные из Обзора города.');
-    return;
-  }
+// Застройка, с которой редактор был открыт: TSV-текст, если он пришёл из
+// игры (кнопка "карта города"), либо null для автономного пустого
+// редактора (кнопка-молоток). Хранится тут же, в памяти вкладки - кнопка
+// "Старт" по ней восстанавливает исходное состояние без выхода из
+// редактора, даже после "Очистить поле". Из chrome.storage.local сами
+// данные удаляются сразу после первого чтения (см. DOMContentLoaded) -
+// это НЕ трогает; переиспользование в рамках уже открытой вкладки ничем
+// не грозит, а вот случайной подхват тех же данных в новой вкладке
+// (открытой заново кнопкой-молотком) исключён.
+let initialCityDataText = null;
+
+// rawText — TSV-данные, присланные из qi_content.js (кнопка "карта города"
+// в меню на странице игры) через chrome.storage.local, см. DOMContentLoaded
+// ниже. Ручного окна вставки на странице редактора больше нет.
+function placeCityDataFromText(rawText) {
+  rawText = (rawText || '').trim();
+  if (!rawText) return;
+
+  // Данные из qi_content.js могут содержать вторую секцию с открытой территорией,
+  // отделённую маркером ###OPENCELLS###
+  const OPEN_CELLS_MARKER = '###OPENCELLS###';
+  const markerIndex = rawText.indexOf(OPEN_CELLS_MARKER);
+  const text = markerIndex === -1 ? rawText : rawText.slice(0, markerIndex).trim();
+  const openCellsText = markerIndex === -1 ? '' : rawText.slice(markerIndex + OPEN_CELLS_MARKER.length).trim();
 
   // Удаляем все здания включая Ратушу (при импорте она придёт в данных)
   document.querySelectorAll('.figure').forEach(fig => {
@@ -1195,6 +1501,11 @@ function placeFiguresFromInput() {
     placed++;
   });
 
+  // Применяем состояние территории (открыта/куплена vs недоступна), если оно пришло
+  if (openCellsText) {
+    applyOpenCellsFromGame(openCellsText);
+  }
+
   calculateBonuses();
 
   const bldModal = document.getElementById('bldCountModal');
@@ -1202,6 +1513,99 @@ function placeFiguresFromInput() {
 
   if (skipped > 0) {
     console.info(`Старт: размещено ${placed}, пропущено (за пределами поля) ${skipped}`);
+  }
+}
+
+// Кнопка "Старт" - возвращает поле к той застройке, с которой редактор
+// был открыт (см. initialCityDataText выше), не выходя из вкладки. Если
+// редактор открыт автономно (кнопка-молоток, данных из игры не было) -
+// откатывает к пустому полю с одной ратушей, т.е. к тому же виду, что
+// был сразу после открытия.
+function restartInitialCityData() {
+  if (initialCityDataText) {
+    placeCityDataFromText(initialCityDataText);
+    return;
+  }
+
+  document.querySelectorAll('.figure').forEach(fig => {
+    if (fig.dataset.blinkInterval) clearInterval(fig.dataset.blinkInterval);
+    fig.remove();
+  });
+  createTownHall();
+  calculateBonuses();
+
+  const bldModal = document.getElementById('bldCountModal');
+  if (bldModal && bldModal.style.display !== 'none') updateBldCount();
+}
+
+// Полностью пересобирает состояние клеток территории по данным из живой игры:
+// сперва всё поле (кроме служебных серых зон) помечается как заблокированное ('X'),
+// затем открываются клетки, для которых игра прислала координаты (см. qi_content.js,
+// #map-grid span.map-bg — это как база по умолчанию, так и уже купленные расширения).
+function applyOpenCellsFromGame(openCellsText) {
+  for (let i = 0; i < totalCells; i++) {
+    const row = Math.floor(i / 28);
+    const col = i % 28;
+    if (!isInGrayArea(col * 30, row * 30, 1, 1)) {
+      const cell = grid.children[i];
+      cell.textContent = 'X';
+      initialCellStates[i] = 'X';
+    }
+  }
+
+  const openCell = (rowKvag, colKvag) => {
+    if (rowKvag < 0 || rowKvag >= 28 || colKvag < 0 || colKvag >= 28) return false;
+    if (isInGrayArea(colKvag * 30, rowKvag * 30, 1, 1)) return false;
+    const cellIndex = rowKvag * 28 + colKvag;
+    const cell = grid.children[cellIndex];
+    if (!cell) return false;
+    cell.textContent = '';
+    initialCellStates[cellIndex] = '';
+    return true;
+  };
+
+  // Каждый <span class="map-bg" left=...em top=...em> представляет не одну клетку,
+  // а целый купленный блок 4×4 (расширения в игре всегда покупаются такими блоками) —
+  // применяем ту же систему координат, что и у зданий, но с шириной/высотой 4
+  let applied = 0;
+  const BLOCK = 4;
+  openCellsText.split('\n').forEach(line => {
+    const parts = line.split('\t');
+    if (parts.length < 2) return;
+    const left = parseInt(parts[0]);
+    const top = parseInt(parts[1]);
+    if (isNaN(left) || isNaN(top)) return;
+
+    const colKvag = 27 - top - BLOCK + 1;
+    const rowKvag = left;
+
+    for (let dy = 0; dy < BLOCK; dy++) {
+      for (let dx = 0; dx < BLOCK; dx++) {
+        if (openCell(rowKvag + dy, colKvag + dx)) applied++;
+      }
+    }
+  });
+
+  // Под уже размещёнными зданиями территория всегда открыта (в игре нельзя построить
+  // здание на заблокированной земле), но игра не рисует под ним фоновый span — открываем
+  // эти клетки отдельно, иначе они остались бы помечены "X"
+  document.querySelectorAll('.figure').forEach(figure => {
+    const figLeft = parseInt(figure.style.left) / 30;
+    const figTop = parseInt(figure.style.top) / 30;
+    const figWidth = parseInt(figure.style.width) / 30;
+    const figHeight = parseInt(figure.style.height) / 30;
+    if ([figLeft, figTop, figWidth, figHeight].some(isNaN)) return;
+
+    for (let dy = 0; dy < figHeight; dy++) {
+      for (let dx = 0; dx < figWidth; dx++) {
+        if (openCell(figTop + dy, figLeft + dx)) applied++;
+      }
+    }
+  });
+
+  whiteCellsCount = countWhiteCells();
+  if (applied === 0) {
+    console.info('Открытая территория: данные не пришли или не распознаны, оставлена стандартная зона.');
   }
 }
 
@@ -1235,10 +1639,217 @@ function getSaveData() {
     cells: cellsData,
     initialCellStates: initialCellStates,
     townHallBonuses: townHallBonuses,
+    soldPenalty: soldPenalty,
+    expansionSpent: expansionSpent,
+    clearedCellsHistory: clearedCellsHistory,
+    virtualExpansions: virtualExpansions,
+    gameTimeHours: gameTimeHours,
+    producedTotals: producedTotals,
+    productionStatSnapshots: productionStatSnapshots,
     timestamp: Date.now(),
     version: "1.0",
     app: "kvant"
   };
+}
+
+// ============================================
+// ЭКСПОРТ В XLSX (без внешних библиотек — CSP расширения не позволяет
+// подключать сторонние скрипты, поэтому минимальный ZIP/XLSX собирается
+// вручную: метод хранения STORE без сжатия, один лист).
+// ============================================
+const XLSX_CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function xlsxCrc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = XLSX_CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function xlsxStrToBytes(str) {
+  return new TextEncoder().encode(str);
+}
+
+// Склеивает несколько Uint8Array в один
+function xlsxConcatBytes(arrays) {
+  let total = 0;
+  arrays.forEach(a => total += a.length);
+  const result = new Uint8Array(total);
+  let offset = 0;
+  arrays.forEach(a => { result.set(a, offset); offset += a.length; });
+  return result;
+}
+
+function xlsxUint16(value) {
+  const b = new Uint8Array(2);
+  new DataView(b.buffer).setUint16(0, value, true);
+  return b;
+}
+function xlsxUint32(value) {
+  const b = new Uint8Array(4);
+  new DataView(b.buffer).setUint32(0, value >>> 0, true);
+  return b;
+}
+
+// Минимальный ZIP-писатель (метод STORE, без сжатия) — files: [{name, data:Uint8Array}]
+function xlsxBuildZip(files) {
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  const DOS_TIME = 0, DOS_DATE = 0x21; // фиксированная дата 1980-01-01, для валидности файла неважно
+
+  files.forEach(file => {
+    const nameBytes = xlsxStrToBytes(file.name);
+    const data = file.data;
+    const crc = xlsxCrc32(data);
+
+    const localHeader = xlsxConcatBytes([
+      xlsxUint32(0x04034b50), xlsxUint16(20), xlsxUint16(0), xlsxUint16(0),
+      xlsxUint16(DOS_TIME), xlsxUint16(DOS_DATE),
+      xlsxUint32(crc), xlsxUint32(data.length), xlsxUint32(data.length),
+      xlsxUint16(nameBytes.length), xlsxUint16(0)
+    ]);
+    const localPart = xlsxConcatBytes([localHeader, nameBytes, data]);
+    localParts.push(localPart);
+
+    const centralHeader = xlsxConcatBytes([
+      xlsxUint32(0x02014b50), xlsxUint16(20), xlsxUint16(20), xlsxUint16(0), xlsxUint16(0),
+      xlsxUint16(DOS_TIME), xlsxUint16(DOS_DATE),
+      xlsxUint32(crc), xlsxUint32(data.length), xlsxUint32(data.length),
+      xlsxUint16(nameBytes.length), xlsxUint16(0), xlsxUint16(0), xlsxUint16(0), xlsxUint16(0),
+      xlsxUint32(0), xlsxUint32(offset)
+    ]);
+    centralParts.push(xlsxConcatBytes([centralHeader, nameBytes]));
+
+    offset += localPart.length;
+  });
+
+  const centralDirStart = offset;
+  const centralDir = xlsxConcatBytes(centralParts);
+
+  const end = xlsxConcatBytes([
+    xlsxUint32(0x06054b50), xlsxUint16(0), xlsxUint16(0),
+    xlsxUint16(files.length), xlsxUint16(files.length),
+    xlsxUint32(centralDir.length), xlsxUint32(centralDirStart), xlsxUint16(0)
+  ]);
+
+  return xlsxConcatBytes([...localParts, centralDir, end]);
+}
+
+function xlsxEscapeXml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function xlsxColLetter(n) {
+  let s = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+function xlsxBuildSheetXml(rows) {
+  let rowsXml = '';
+  rows.forEach((row, rIdx) => {
+    const r = rIdx + 1;
+    let cellsXml = '';
+    row.forEach((val, cIdx) => {
+      const ref = xlsxColLetter(cIdx + 1) + r;
+      if (typeof val === 'number' && isFinite(val)) {
+        cellsXml += `<c r="${ref}"><v>${val}</v></c>`;
+      } else {
+        cellsXml += `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xlsxEscapeXml(val)}</t></is></c>`;
+      }
+    });
+    rowsXml += `<row r="${r}">${cellsXml}</row>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>${rowsXml}</sheetData>
+</worksheet>`;
+}
+
+// rows — массив массивов; ячейка либо число, либо строка (первая строка обычно — заголовки)
+function buildXlsxFile(sheetName, rows) {
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="${xlsxEscapeXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`;
+
+  const sheet1 = xlsxBuildSheetXml(rows);
+
+  const files = [
+    { name: '[Content_Types].xml', data: xlsxStrToBytes(contentTypes) },
+    { name: '_rels/.rels', data: xlsxStrToBytes(rootRels) },
+    { name: 'xl/workbook.xml', data: xlsxStrToBytes(workbook) },
+    { name: 'xl/_rels/workbook.xml.rels', data: xlsxStrToBytes(workbookRels) },
+    { name: 'xl/worksheets/sheet1.xml', data: xlsxStrToBytes(sheet1) }
+  ];
+
+  return xlsxBuildZip(files);
+}
+
+// Экспорт таблицы "Статистика производства" (кнопка "+ стат") в .xlsx
+function exportProductionStatsToXlsx() {
+  if (productionStatSnapshots.length === 0) {
+    alert('Таблица пуста — сначала добавьте записи кнопкой "+ стат".');
+    return;
+  }
+
+  const rows = [
+    ['Время', 'Монеты', 'Молотки', 'Товар', 'Осколки']
+  ];
+  productionStatSnapshots.forEach(s => {
+    rows.push([formatGameTime(s.timeHours), s.coin, s.hammer, s.goods, s.shard]);
+  });
+
+  const bytes = buildXlsxFile('Статистика', rows);
+  const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'production-stats.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function saveToFile() {
@@ -1291,8 +1902,33 @@ function loadFromFile(event) {
       
       townHallBonuses = data.townHallBonuses || {
         od: 0, coin_acceleration: 0, hammer_acceleration: 0,
-        coin_initial: 0, hammer_initial: 0, kd_capacity: 200000
+        coin_initial: 450000, hammer_initial: 75000, chrono_initial: 0, shard_initial: 500, goods_initial: 100, kd_capacity: 200000
       };
+      
+      soldPenalty = data.soldPenalty || { coin: 0, hammer: 0, chrono: 0 };
+      // Совместимость со старыми файлами, где ещё было расширение "за ресурсы"
+      // (coin/hammer) - при загрузке такого файла эти поля просто игнорируются.
+      expansionSpent = {
+        shard: (data.expansionSpent && data.expansionSpent.shard) || 0,
+        goods: (data.expansionSpent && data.expansionSpent.goods) || 0
+      };
+      clearedCellsHistory = Array.isArray(data.clearedCellsHistory) ? data.clearedCellsHistory : [];
+      virtualExpansions = {
+        shard: (data.virtualExpansions && data.virtualExpansions.shard) || 0,
+        goods: (data.virtualExpansions && data.virtualExpansions.goods) || 0
+      };
+      
+      // Имитация производства/сбора - в старых файлах этих полей нет, тогда
+      // просто начинаем с нуля (таймер 0, ничего не собрано, таблица пуста).
+      gameTimeHours = Number(data.gameTimeHours) || 0;
+      producedTotals = {
+        coin:   (data.producedTotals && data.producedTotals.coin)   || 0,
+        hammer: (data.producedTotals && data.producedTotals.hammer) || 0,
+        goods:  (data.producedTotals && data.producedTotals.goods)  || 0
+      };
+      productionStatSnapshots = Array.isArray(data.productionStatSnapshots) ? data.productionStatSnapshots : [];
+      updateGameTimeDisplay();
+      renderProductionStatsTable();
       
       const odInput = document.getElementById('townHall-od');
       if (odInput) odInput.value = townHallBonuses.od;
@@ -1304,6 +1940,12 @@ function loadFromFile(event) {
       if (coinInitInput) coinInitInput.value = townHallBonuses.coin_initial;
       const hammerInitInput = document.getElementById('townHall-hammer-initial');
       if (hammerInitInput) hammerInitInput.value = townHallBonuses.hammer_initial;
+      const chronoInitInput = document.getElementById('townHall-chrono-initial');
+      if (chronoInitInput) chronoInitInput.value = townHallBonuses.chrono_initial ?? 0;
+      const shardInitInput = document.getElementById('townHall-shard-initial');
+      if (shardInitInput) shardInitInput.value = townHallBonuses.shard_initial ?? 0;
+      const goodsInitInput = document.getElementById('townHall-goods-initial');
+      if (goodsInitInput) goodsInitInput.value = townHallBonuses.goods_initial ?? 0;
       
       const savedTownHall = data.figures?.find(fig => fig.name === "Ратуша");
       if (savedTownHall) {
@@ -1333,7 +1975,7 @@ function loadFromFile(event) {
         addDragHandlers(figure);
       });
       calculateBonuses();
-      clearedCellsHistory = [];
+      refreshAllVirtualCountDisplays();
       
       const bldModal = document.getElementById('bldCountModal');
       if (bldModal && bldModal.style.display !== 'none') {
@@ -1460,6 +2102,9 @@ function applyProfileToInputs(profile) {
   set('townHall-hammer-acceleration',profile.hammer_acceleration ?? 0);
   set('townHall-coin-initial',       profile.coin_initial        ?? 0);
   set('townHall-hammer-initial',     profile.hammer_initial      ?? 0);
+  set('townHall-chrono-initial',     profile.chrono_initial      ?? 0);
+  set('townHall-shard-initial',      profile.shard_initial       ?? 0);
+  set('townHall-goods-initial',      profile.goods_initial       ?? 0);
   set('townHall-kd-capacity',        profile.kd_capacity         ?? 200000);
 }
 
@@ -1471,6 +2116,9 @@ function readBonusesFromInputs() {
     hammer_acceleration: get('townHall-hammer-acceleration', 0),
     coin_initial:        get('townHall-coin-initial', 0),
     hammer_initial:      get('townHall-hammer-initial', 0),
+    chrono_initial:      get('townHall-chrono-initial', 0),
+    shard_initial:       get('townHall-shard-initial', 0),
+    goods_initial:       get('townHall-goods-initial', 0),
     kd_capacity:         get('townHall-kd-capacity', 200000)
   };
 }
@@ -1593,7 +2241,7 @@ function updateBldCount() {
   
   document.querySelectorAll('.figure').forEach(fig => {
     const name = fig.dataset.name;
-    if (name === 'Расш') {
+    if (fig.dataset.expansionType) {
       totalExpansionsPlaced++;
     } else if (name !== 'Ратуша' && name !== 'Препятствие') {
       map[name] = (map[name] || 0) + 1;
@@ -1622,6 +2270,9 @@ function updateBldCount() {
   let placedExpansions = extraCells > 0 ? Math.round(extraCells / EXPANSION_SIZE) : 0;
   const totalOpen = 12 + placedExpansions;
   
+  const goodsPurchased = clearedCellsHistory.filter(h => h.expansionType === 'goods').length;
+  const shardPurchased = clearedCellsHistory.filter(h => h.expansionType === 'shard').length;
+  
   const content = document.getElementById('bldCountContent');
   if (!content) return;
   
@@ -1632,6 +2283,8 @@ function updateBldCount() {
         <div>📦 Поставлено: <span>${placedExpansions}</span></div>
         <div>🏠 Базовых: <span>12</span></div>
         <div>🔓 Всего открыто: <span>${totalOpen}</span></div>
+        <div>📦 За товар: <span>${goodsPurchased}/${EXPANSION_GOODS_COSTS.length}</span></div>
+        <div>💎 За осколки: <span>${shardPurchased}/${EXPANSION_SHARD_COSTS.length}</span></div>
         <div style="font-size:12px; color:#666; margin-top:5px;">📊 Открыто клеток: ${openCellsCount} (база: ${BASE_AREA})</div>
       </div>
       <button id="restoreZonesBtn" ${placedExpansions > 0 ? '' : 'disabled'}>
@@ -1685,6 +2338,11 @@ function toggleDeleteMode() {
   const deleteButton = document.getElementById('deleteButton');
   if (!deleteButton) return;
   
+  // Отключаем остальные режимы выделения, если они были активны
+  if (sellMode) toggleSellMode();
+  if (productionMode) toggleProductionMode();
+  if (collectionMode) toggleCollectionMode();
+  
   deleteMode = !deleteMode;
   
   if (deleteMode) {
@@ -1714,6 +2372,254 @@ function handleDeleteClick(event) {
     figure.remove();
     calculateBonuses();
   }
+}
+
+function toggleSellMode() {
+  const sellButton = document.getElementById('sellButton');
+  if (!sellButton) return;
+  
+  // Отключаем остальные режимы выделения, если они были активны
+  if (deleteMode) toggleDeleteMode();
+  if (productionMode) toggleProductionMode();
+  if (collectionMode) toggleCollectionMode();
+  
+  sellMode = !sellMode;
+  
+  if (sellMode) {
+    sellButton.textContent = 'Отмена продажи';
+    sellButton.style.backgroundColor = '#28a745';
+    sellButton.style.color = 'white';
+    grid.classList.add('sell-mode');
+    grid.style.cursor = 'crosshair';
+    grid.addEventListener('click', handleSellClick, true);
+  } else {
+    sellButton.textContent = 'Продать здание';
+    sellButton.style.backgroundColor = '';
+    sellButton.style.color = 'black';
+    grid.classList.remove('sell-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleSellClick, true);
+  }
+}
+
+function handleSellClick(event) {
+  const figure = event.target.closest('.figure');
+  if (figure && figure.dataset.name !== 'Ратуша') {
+    event.stopPropagation();
+    
+    const building = buildingData.find(b => b.name === figure.dataset.name);
+    if (building && building.bonuses) {
+      // При обычном удалении стоимость здания возвращается в баланс полностью
+      // (пересчёт просто больше не учитывает это здание). Чтобы продажа давала
+      // только 25% от стоимости, накапливаем недостающие 75% как постоянную потерю.
+      soldPenalty.coin   += (Number(building.bonuses.coin_cost)   || 0) * 0.75;
+      soldPenalty.hammer += (Number(building.bonuses.hammer_cost) || 0) * 0.75;
+      soldPenalty.chrono += (Number(building.bonuses.chrono_cost) || 0) * 0.75;
+    }
+    
+    if (figure.dataset.blinkInterval) clearInterval(figure.dataset.blinkInterval);
+    figure.remove();
+    calculateBonuses();
+  }
+}
+
+// --------------------------------------------
+// Режим "Пр-во" — отметить здание как запущенное в производство
+// --------------------------------------------
+function toggleProductionMode() {
+  const btn = document.getElementById('productionButton');
+  if (!btn) return;
+  
+  if (deleteMode) toggleDeleteMode();
+  if (sellMode) toggleSellMode();
+  if (collectionMode) toggleCollectionMode();
+  
+  productionMode = !productionMode;
+  
+  if (productionMode) {
+    btn.textContent = 'Отмена пр-ва';
+    btn.style.backgroundColor = '#2266cc';
+    btn.style.color = 'white';
+    grid.classList.add('production-mode');
+    grid.style.cursor = 'crosshair';
+    grid.addEventListener('click', handleProductionClick, true);
+  } else {
+    btn.textContent = 'Пр-во';
+    btn.style.backgroundColor = '';
+    btn.style.color = 'black';
+    grid.classList.remove('production-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleProductionClick, true);
+  }
+}
+
+function handleProductionClick(event) {
+  const figure = event.target.closest('.figure');
+  if (!figure || figure.dataset.name === 'Ратуша') return;
+  event.stopPropagation();
+  
+  const building = buildingData.find(b => b.name === figure.dataset.name);
+  if (!building || !PRODUCTION_ELIGIBLE_CATEGORIES.includes(building.category)) return; // прочие категории простоя не имеют
+  
+  if (figure.classList.contains('in-production')) return; // уже отмечено
+  
+  figure.classList.add('in-production');
+  figure.dataset.productionStart = String(gameTimeHours);
+  
+  if (building.category === 'Товар') {
+    // "Товар" запускается за фиксированную плату - списываем сразу при
+    // старте производства, а не при сборе (который для товара мгновенный).
+    producedTotals.coin   -= GOODS_RUN_COST.coin;
+    producedTotals.hammer -= GOODS_RUN_COST.hammer;
+    calculateBonuses();
+  }
+}
+
+// --------------------------------------------
+// Режим "Сбор" — снять готовую продукцию с отмеченного здания
+// --------------------------------------------
+function toggleCollectionMode() {
+  const btn = document.getElementById('collectionButton');
+  if (!btn) return;
+  
+  if (deleteMode) toggleDeleteMode();
+  if (sellMode) toggleSellMode();
+  if (productionMode) toggleProductionMode();
+  
+  collectionMode = !collectionMode;
+  
+  if (collectionMode) {
+    btn.textContent = 'Отмена сбора';
+    btn.style.backgroundColor = '#cc8822';
+    btn.style.color = 'white';
+    grid.classList.add('collection-mode');
+    grid.style.cursor = 'crosshair';
+    grid.addEventListener('click', handleCollectionClick, true);
+  } else {
+    btn.textContent = 'Сбор';
+    btn.style.backgroundColor = '';
+    btn.style.color = 'black';
+    grid.classList.remove('collection-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleCollectionClick, true);
+  }
+}
+
+function handleCollectionClick(event) {
+  const figure = event.target.closest('.figure');
+  if (!figure || !figure.classList.contains('in-production')) return;
+  event.stopPropagation();
+  
+  const building = buildingData.find(b => b.name === figure.dataset.name);
+  if (!building) return;
+  
+  if (building.category === 'Товар') {
+    // Плата уже списана при старте производства (см. handleProductionClick) -
+    // тут только начисляем сам товар, сбор мгновенный, ждать не нужно.
+    producedTotals.goods += GOODS_YIELD_PER_RUN;
+    figure.classList.remove('in-production');
+    delete figure.dataset.productionStart;
+    calculateBonuses();
+    return;
+  }
+  
+  // "Жилые" / "Молотки" - только через PRODUCTION_CYCLE_HOURS виртуальных часов
+  const startTime = Number(figure.dataset.productionStart) || 0;
+  const elapsed = gameTimeHours - startTime;
+  if (elapsed < PRODUCTION_CYCLE_HOURS) {
+    const remaining = Math.round(PRODUCTION_CYCLE_HOURS - elapsed);
+    alert(`Ещё не готово — осталось ${remaining} ч. игрового времени (кнопка "+10 часов").`);
+    return;
+  }
+  
+  if (building.category === 'Жилые') {
+    producedTotals.coin += Math.round(Number(building.bonuses.coin_production) || 0);
+  } else if (building.category === 'Молотки') {
+    producedTotals.hammer += Math.round(Number(building.bonuses.hammer_production) || 0);
+  } else {
+    return; // на всякий случай, сюда не должны попадать другие категории
+  }
+  
+  figure.classList.remove('in-production');
+  delete figure.dataset.productionStart;
+  calculateBonuses();
+}
+
+// --------------------------------------------
+// Виртуальный игровой таймер
+// --------------------------------------------
+function formatGameTime(hours) {
+  const totalHours = Math.max(0, Math.round(hours));
+  const days = Math.floor(totalHours / 24);
+  const hrs = totalHours % 24;
+  return `${days}д ${hrs}ч`;
+}
+
+function updateGameTimeDisplay() {
+  const el = document.getElementById('gameTimeDisplay');
+  if (el) el.textContent = formatGameTime(gameTimeHours);
+}
+
+function addGameHours(hours) {
+  gameTimeHours += hours;
+  updateGameTimeDisplay();
+}
+
+// --------------------------------------------
+// Таблица "Статистика производства" (кнопка "+ стат")
+// --------------------------------------------
+function addProductionStatSnapshot() {
+  const stats = lastCalculatedStats || {};
+  productionStatSnapshots.push({
+    timeHours: gameTimeHours,
+    coin:   Math.round(stats.coin_cost   || 0),
+    hammer: Math.round(stats.hammer_cost || 0),
+    goods:  Math.round(stats.goods_cost  || 0),
+    shard:  Math.round(stats.shard_cost  || 0)
+  });
+  renderProductionStatsTable();
+}
+
+function renderProductionStatsTable() {
+  const tbody = document.getElementById('production-stats-tbody');
+  if (!tbody) return;
+  
+  if (productionStatSnapshots.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:15px;">Пока нет записей — нажмите "+ стат"</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = productionStatSnapshots.map(s => `
+    <tr>
+      <td>${formatGameTime(s.timeHours)}</td>
+      <td>${s.coin.toLocaleString('ru-RU')}</td>
+      <td>${s.hammer.toLocaleString('ru-RU')}</td>
+      <td>${s.goods.toLocaleString('ru-RU')}</td>
+      <td>${s.shard.toLocaleString('ru-RU')}</td>
+    </tr>
+  `).join('');
+}
+
+function clearProductionStats() {
+  if (productionStatSnapshots.length > 0 && !confirm('Очистить всю таблицу статистики производства?')) return;
+  productionStatSnapshots = [];
+  renderProductionStatsTable();
+}
+
+function openProductionStatsModal() {
+  renderProductionStatsTable();
+  const modal = document.getElementById('productionStatsModal');
+  if (!modal) return;
+  modal.style.display = 'block';
+  modal.style.left = `${(window.innerWidth - modal.offsetWidth) / 2}px`;
+  modal.style.top = `${(window.innerHeight - modal.offsetHeight) / 2}px`;
+  if (parseInt(modal.style.top) < 20) modal.style.top = '20px';
+  makeDraggable(modal);
+}
+
+function closeProductionStatsModal() {
+  const modal = document.getElementById('productionStatsModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function resetFigures() {
@@ -1750,7 +2656,53 @@ function resetFigures() {
     }
     grid.classList.remove('delete-mode');
     grid.style.cursor = '';
+    grid.removeEventListener('click', handleDeleteClick, true);
   }
+  
+  // Сбрасываем режим продажи, если он был активен
+  if (sellMode) {
+    sellMode = false;
+    const sellButton = document.getElementById('sellButton');
+    if (sellButton) {
+      sellButton.textContent = 'Продать здание';
+      sellButton.style.backgroundColor = '';
+      sellButton.style.color = 'black';
+    }
+    grid.classList.remove('sell-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleSellClick, true);
+  }
+  
+  // Сбрасываем режим "Пр-во", если он был активен
+  if (productionMode) {
+    productionMode = false;
+    const productionButton = document.getElementById('productionButton');
+    if (productionButton) {
+      productionButton.textContent = 'Пр-во';
+      productionButton.style.backgroundColor = '';
+      productionButton.style.color = 'black';
+    }
+    grid.classList.remove('production-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleProductionClick, true);
+  }
+  
+  // Сбрасываем режим "Сбор", если он был активен
+  if (collectionMode) {
+    collectionMode = false;
+    const collectionButton = document.getElementById('collectionButton');
+    if (collectionButton) {
+      collectionButton.textContent = 'Сбор';
+      collectionButton.style.backgroundColor = '';
+      collectionButton.style.color = 'black';
+    }
+    grid.classList.remove('collection-mode');
+    grid.style.cursor = '';
+    grid.removeEventListener('click', handleCollectionClick, true);
+  }
+  
+  // Сбрасываем накопленные потери от продажи зданий
+  soldPenalty = { coin: 0, hammer: 0, chrono: 0 };
   
   // Восстанавливаем клетки в исходное состояние
   for (let i = 0; i < totalCells; i++) {
@@ -1796,8 +2748,11 @@ function resetFigures() {
     od: 0,
     coin_acceleration: 0,
     hammer_acceleration: 0,
-    coin_initial: 0,
-    hammer_initial: 0,
+    coin_initial: 450000,
+    hammer_initial: 75000,
+    chrono_initial: 0,
+    shard_initial: 500,
+    goods_initial: 100,
     kd_capacity: 200000
   };
   
@@ -1809,9 +2764,15 @@ function resetFigures() {
   const hammerAccInput = document.getElementById('townHall-hammer-acceleration');
   if (hammerAccInput) hammerAccInput.value = 0;
   const coinInitInput = document.getElementById('townHall-coin-initial');
-  if (coinInitInput) coinInitInput.value = 0;
+  if (coinInitInput) coinInitInput.value = 450000;
   const hammerInitInput = document.getElementById('townHall-hammer-initial');
-  if (hammerInitInput) hammerInitInput.value = 0;
+  if (hammerInitInput) hammerInitInput.value = 75000;
+  const chronoInitInput = document.getElementById('townHall-chrono-initial');
+  if (chronoInitInput) chronoInitInput.value = 0;
+  const shardInitInput = document.getElementById('townHall-shard-initial');
+  if (shardInitInput) shardInitInput.value = 500;
+  const goodsInitInput = document.getElementById('townHall-goods-initial');
+  if (goodsInitInput) goodsInitInput.value = 100;
   const kdInput = document.getElementById('townHall-kd-capacity');
   if (kdInput) kdInput.value = 200000;
   
@@ -1823,6 +2784,9 @@ function resetFigures() {
   
   // Очищаем историю расширений
   clearedCellsHistory = [];
+  expansionSpent = { shard: 0, goods: 0 };
+  virtualExpansions = { resource: 0, shard: 0, goods: 0 };
+  refreshAllVirtualCountDisplays();
   
   // Если окно количества зданий открыто - обновляем его
   const bldModal = document.getElementById('bldCountModal');
@@ -1891,15 +2855,38 @@ document.addEventListener('DOMContentLoaded', () => {
         hammer_acceleration: profile.hammer_acceleration ?? 0,
         coin_initial:        profile.coin_initial        ?? 0,
         hammer_initial:      profile.hammer_initial      ?? 0,
+        chrono_initial:      profile.chrono_initial      ?? 0,
+        shard_initial:       profile.shard_initial       ?? 0,
+        goods_initial:       profile.goods_initial       ?? 0,
         kd_capacity:         profile.kd_capacity         ?? 200000
       };
     }
   } catch(e) {}
 
   calculateBonuses();
-  
+
+  // Данные из "Обзора QI города" (кнопка с картинкой citymap.png в меню на
+  // странице игры) кладутся сюда через chrome.storage.local, т.к. это
+  // отдельная вкладка со своим origin - localStorage игровой страницы ей
+  // не виден. Если ключ найден - сразу расставляем присланную застройку
+  // (и убираем стартовую ратушу, placeCityDataFromText сама её заменит) и
+  // тут же удаляем ключ, чтобы обычное открытие редактора (кнопка-молоток,
+  // без игры) впредь не подхватило чужие/старые данные.
+  const PENDING_DATA_KEY = 'qipPendingCityData';
+  try {
+    chrome.storage.local.get([PENDING_DATA_KEY], (result) => {
+      if (chrome.runtime.lastError) return;
+      const pending = result && result[PENDING_DATA_KEY];
+      chrome.storage.local.remove([PENDING_DATA_KEY]);
+      if (pending) {
+        initialCityDataText = pending;
+        placeCityDataFromText(pending);
+      }
+    });
+  } catch (e) { /* открыт не как расширение (например, локальный файл) - работаем как пустой редактор */ }
+
   const startBtn = document.getElementById('btnStart');
-  if (startBtn) startBtn.addEventListener('click', placeFiguresFromInput);
+  if (startBtn) startBtn.addEventListener('click', restartInitialCityData);
 
   const resetFiguresBtn = document.getElementById('resetFiguresBtn');
   if (resetFiguresBtn) resetFiguresBtn.addEventListener('click', resetFigures);
@@ -1909,6 +2896,38 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const deleteBtn = document.getElementById('deleteButton');
   if (deleteBtn) deleteBtn.addEventListener('click', toggleDeleteMode);
+  
+  const sellBtn = document.getElementById('sellButton');
+  if (sellBtn) sellBtn.addEventListener('click', toggleSellMode);
+  
+  const productionBtn = document.getElementById('productionButton');
+  if (productionBtn) productionBtn.addEventListener('click', toggleProductionMode);
+  
+  const collectionBtn = document.getElementById('collectionButton');
+  if (collectionBtn) collectionBtn.addEventListener('click', toggleCollectionMode);
+  
+  const add10hBtn = document.getElementById('add10hButton');
+  if (add10hBtn) add10hBtn.addEventListener('click', () => addGameHours(10));
+  
+  const addStatBtn = document.getElementById('addStatButton');
+  if (addStatBtn) addStatBtn.addEventListener('click', addProductionStatSnapshot);
+  
+  const productionStatsBtn = document.getElementById('productionStatsBtn');
+  if (productionStatsBtn) productionStatsBtn.addEventListener('click', openProductionStatsModal);
+  
+  const closeProductionStatsBtn = document.getElementById('closeProductionStatsBtn');
+  if (closeProductionStatsBtn) closeProductionStatsBtn.addEventListener('click', closeProductionStatsModal);
+  
+  const closeProductionStatsBtn2 = document.getElementById('closeProductionStatsBtn2');
+  if (closeProductionStatsBtn2) closeProductionStatsBtn2.addEventListener('click', closeProductionStatsModal);
+  
+  const clearProductionStatsBtn = document.getElementById('clearProductionStatsBtn');
+  if (clearProductionStatsBtn) clearProductionStatsBtn.addEventListener('click', clearProductionStats);
+  
+  const exportProductionStatsBtn = document.getElementById('exportProductionStatsBtn');
+  if (exportProductionStatsBtn) exportProductionStatsBtn.addEventListener('click', exportProductionStatsToXlsx);
+  
+  updateGameTimeDisplay();
   
   const saveBtn = document.getElementById('saveButton');
   if (saveBtn) saveBtn.addEventListener('click', saveToFile);
@@ -2029,7 +3048,11 @@ function rotateFigure90CW(left, top, widthPx, heightPx, N, cellSize) {
   };
 }
 
-function rotateView() {
+// Один физический шаг поворота на 90° по часовой (клетки-дорожки, фигуры,
+// серые зоны) - раньше вызывался напрямую по кнопке и так гонял по кругу
+// все 4 положения подряд. Теперь это внутренний шаг, а сама кнопка вызывает
+// rotateView() ниже, которая работает как переключатель туда-обратно.
+function rotateViewStep() {
   const N = 28;
   const CELL = 30;
 
@@ -2098,6 +3121,25 @@ function rotateView() {
   if (typeof calculateBonuses === 'function') calculateBonuses();
 }
 
+// Переключатель "туда-обратно" вместо прежнего хождения по кругу через все
+// 4 положения. Первое нажатие - обычный шаг поворота (как раньше). Второе
+// нажатие возвращает вид ровно в исходное положение: технически это ещё 3
+// таких же шага подряд (4 шага по 90° = полный круг = возврат к началу),
+// что математически идентично честному повороту назад, но переиспользует
+// уже проверенный шаг rotateViewStep() без отдельной "обратной" формулы.
+let isViewRotatedOnce = false;
+
+function rotateView() {
+  rotateViewStep();
+  if (!isViewRotatedOnce) {
+    isViewRotatedOnce = true;
+  } else {
+    rotateViewStep();
+    rotateViewStep();
+    isViewRotatedOnce = false;
+  }
+}
+
 // Обработчик кликов по сетке для расстановки зданий
 // Обработчик кликов по сетке для расстановки зданий
 grid.addEventListener('click', (e) => {
@@ -2108,12 +3150,15 @@ grid.addEventListener('click', (e) => {
   
   if (!selectedBuilding) return;
   
-  const cell = e.target.closest('.cell');
-  if (!cell) return;
-  
+  // Раньше клик обязан был попасть именно на .cell — но если поверх клетки лежит
+  // фигура (например, "Препятствие"), клик попадает на неё, а не на .cell, и
+  // установка молча не срабатывала. Координаты считаем напрямую по позиции клика
+  // относительно поля, без привязки к тому, что именно оказалось под курсором.
   const rect = grid.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return;
+  
   const col = Math.floor(x / 30);
   const row = Math.floor(y / 30);
   

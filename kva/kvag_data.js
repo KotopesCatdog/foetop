@@ -936,8 +936,18 @@ const buildingData = [
   },
   {
     "category": "Расширения",
-    "name": "Расш",
-    "display_name": "Расш",
+    "name": "За осколки",
+    "display_name": "Оск.",
+    "size": "4x4",
+    "color": "white",
+    "bonuses": {},
+    "symbol": "",
+    "symbol_color": ""
+  },
+  {
+    "category": "Расширения",
+    "name": "За товар",
+    "display_name": "Тов.",
     "size": "4x4",
     "color": "white",
     "bonuses": {},

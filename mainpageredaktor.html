@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор FOEHELP — сетка кнопок</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+  }
+
+  /* ===== ЭКРАН ВВОДА КОДА ===== */
+  #inputScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 30px;
+    gap: 20px;
+  }
+  #inputScreen h1 {
+    font-size: 28px;
+    color: #58a6ff;
+    margin: 0;
+    text-align: center;
+  }
+  #inputScreen p {
+    color: #8b949e;
+    margin: 0;
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+  #htmlInput {
+    width: 100%;
+    max-width: 1100px;
+    height: 50vh;
+    min-height: 300px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    color: #c9d1d9;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    padding: 15px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.5;
+  }
+  #htmlInput:focus { border-color: #58a6ff; }
+
+  .btn-main {
+    padding: 12px 32px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .5px;
+  }
+  .btn-primary {
+    background: #238636;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-secondary {
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+  }
+  .btn-secondary:hover { background: #30363d; }
+  .btn-danger {
+    background: #da3633;
+    color: #fff;
+  }
+  .btn-danger:hover { background: #f85149; }
+
+  /* ===== ЭКРАН РЕДАКТОРА ===== */
+  #editorScreen {
+    display: none;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  #editorScreen.active { display: block; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    position: sticky;
+    top: 10px;
+    z-index: 100;
+  }
+  .toolbar button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #21262d;
+    color: #c9d1d9;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .toolbar button:hover { background: #30363d; border-color: #58a6ff; }
+  .toolbar button.primary { background: #238636; border-color: #238636; color: #fff; }
+  .toolbar button.primary:hover { background: #2ea043; }
+  .toolbar button.danger { background: #da3633; border-color: #da3633; color: #fff; }
+  .toolbar button.danger:hover { background: #f85149; }
+  .toolbar .spacer { flex: 1; }
+
+  .hint {
+    padding: 10px 15px;
+    background: #1c2128;
+    border-left: 3px solid #58a6ff;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #8b949e;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .hint b { color: #58a6ff; }
+
+  /* Сетка кнопок (повторяет оригинальный дизайн) */
+  .btn-grid-editor {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .cell {
+    position: relative;
+    min-height: 60px;
+    border-radius: 12px;
+    border: 2px dashed #30363d;
+    background: #161b22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+  }
+  .cell.drop-target {
+    border-color: #58a6ff;
+    background: #1c2b3a;
+    box-shadow: 0 0 12px rgba(88,166,255,.3);
+  }
+  .cell.dragging-source { opacity: .4; }
+
+  /* Кнопка внутри ячейки */
+  .menu-btn-preview {
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #e2f1f1;
+    background: linear-gradient(135deg, rgba(0,128,128,.7) 0%, rgba(0,70,80,.8) 100%);
+    border: 1px solid rgba(0,255,255,.4);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    transition: all .2s;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+  .menu-btn-preview:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px rgba(0,255,255,.4);
+  }
+  .menu-btn-preview:active { cursor: grabbing; }
+
+  .menu-btn-preview.placeholder {
+    background: rgba(40,50,70,.4);
+    border-color: rgba(100,140,180,.2);
+    color: #6688aa;
+    cursor: default;
+    font-style: italic;
+  }
+
+  /* Кнопки управления в ячейке */
+  .cell-controls {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity .2s;
+    z-index: 5;
+  }
+  .cell:hover .cell-controls { opacity: 1; }
+  .cell-controls button {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+  }
+  .cell-controls button:hover { background: #30363d; }
+  .cell-controls button.del { background: #da3633; color: #fff; border-color: #da3633; }
+  .cell-controls button.del:hover { background: #f85149; }
+  .cell-controls button.edit { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+  .cell-controls button.edit:hover { background: #388bfd; }
+
+  /* ===== МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  }
+  .modal h2 {
+    margin: 0 0 18px;
+    font-size: 18px;
+    color: #58a6ff;
+  }
+  .modal label {
+    display: block;
+    font-size: 13px;
+    color: #8b949e;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #c9d1d9;
+    font-size: 14px;
+    outline: none;
+  }
+  .modal input[type="text"]:focus { border-color: #58a6ff; }
+  .modal .row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .modal .row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    color: #c9d1d9;
+    cursor: pointer;
+  }
+  .modal .row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #238636;
+    cursor: pointer;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+  }
+
+  /* Тосты */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #238636;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    transition: transform .3s;
+    z-index: 2000;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { background: #da3633; }
+
+  .row-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    padding: 8px 12px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #8b949e;
+  }
+  .row-info .row-label { flex: 1; }
+  .row-info button {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #21262d;
+    color: #c9d1d9;
+    cursor: pointer;
+  }
+  .row-info button:hover { background: #30363d; }
+  .row-info button.del { background: #da3633; border-color: #da3633; color: #fff; }
+  .row-info button.del:hover { background: #f85149; }
+</style>
+</head>
+<body>
+
+<!-- ============ ЭКРАН ВВОДА КОДА ============ -->
+<div id="inputScreen">
+  <h1>🛠 Конструктор FOEHELP</h1>
+  <p>Вставьте HTML-код страницы ниже. Конструктор найдёт первый блок <b>&lt;div class="btn-grid"&gt;</b> и позволит редактировать только его. Остальная часть страницы сохраняется без изменений.</p>
+  <textarea id="htmlInput" placeholder="Вставьте сюда HTML-код страницы..."></textarea>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+    <button class="btn-main btn-primary" onclick="loadHtml()">Загрузить в редактор</button>
+    <button class="btn-main btn-secondary" onclick="loadExample()">Загрузить пример</button>
+  </div>
+</div>
+
+<!-- ============ ЭКРАН РЕДАКТОРА ============ -->
+<div id="editorScreen">
+  <div class="toolbar">
+    <button class="primary" onclick="addRow()">➕ Добавить ряд</button>
+    <button onclick="removeLastRow()">➖ Удалить последний ряд</button>
+    <button onclick="resetToOriginal()">↺ Сбросить</button>
+    <span class="spacer"></span>
+    <button class="primary" onclick="saveFile()">💾 Сохранить HTML</button>
+    <button onclick="backToInput()">← Назад к коду</button>
+  </div>
+
+  <div class="hint">
+    <b>Перетаскивание:</b> схватите кнопку и перетащите в другую ячейку, чтобы поменять местами или переместить.<br>
+    <b>Редактирование:</b> нажмите ✎ на кнопке, чтобы изменить текст, ссылку и поведение (target).<br>
+    <b>Удаление:</b> нажмите ✕, чтобы удалить кнопку (ячейка станет пустой).<br>
+    <b>Пустые ячейки</b> — это <i>placeholders</i>, они сохраняются как заглушки.
+  </div>
+
+  <div id="gridContainer"></div>
+
+  <div id="rowControls"></div>
+</div>
+
+<!-- ============ МОДАЛЬНОЕ ОКНО ============ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Редактирование кнопки</h2>
+
+    <label for="editText">Текст кнопки</label>
+    <input type="text" id="editText" placeholder="Например: База Зданий FoE">
+
+    <label for="editHref">Ссылка (href)</label>
+    <input type="text" id="editHref" placeholder="/foedb/">
+
+    <div class="row">
+      <label><input type="checkbox" id="editBlank"> Открывать в новой вкладке (target="_blank")</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="editWrap"> Переносить длинный текст (wrap-text)</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="editPlaceholder"> Это заглушка (placeholder, без ссылки)</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-main btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-main btn-primary" onclick="applyModal()">Применить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+let fullHtml = '';              // полный HTML страницы
+let beforeGrid = '';            // всё до <div class="btn-grid">
+let afterGrid = '';             // всё после закрывающего </div> этой сетки
+let gridData = [];              // двумерный массив: [ [cell, cell, cell], ... ]
+let originalGridData = [];      // для сброса
+let editingCell = null;         // { row, col } для модального окна
+
+const COLS = 3;
+const DEFAULT_ROWS = 6;
+
+/* ============================================================
+   ЗАГРУЗКА HTML
+   ============================================================ */
+function loadExample() {
+  document.getElementById('htmlInput').value = EXAMPLE_HTML;
+}
+
+function loadHtml() {
+  const raw = document.getElementById('htmlInput').value.trim();
+  if (!raw) {
+    toast('Вставьте HTML-код страницы', true);
+    return;
+  }
+  fullHtml = raw;
+
+  // Находим первый <div class="btn-grid">
+  const gridRegex = /<div\s+class="btn-grid"\s*>/i;
+  const match = gridRegex.exec(raw);
+  if (!match) {
+    toast('Не найден блок <div class="btn-grid">', true);
+    return;
+  }
+  const gridStart = match.index;
+  const gridOpenEnd = match.index + match[0].length;
+
+  // Ищем соответствующий закрывающий </div> с учётом вложенности
+  let depth = 1;
+  let i = gridOpenEnd;
+  let gridEnd = -1;
+  while (i < raw.length) {
+    // проверяем открывающий div
+    const openMatch = /<div\b[^>]*>/gi;
+    openMatch.lastIndex = i;
+    const closeMatch = /<\/div\s*>/gi;
+    closeMatch.lastIndex = i;
+
+    const nextOpen = openMatch.exec(raw);
+    const nextClose = closeMatch.exec(raw);
+
+    if (!nextClose) break;
+
+    if (nextOpen && nextOpen.index < nextClose.index) {
+      depth++;
+      i = nextOpen.index + nextOpen[0].length;
+    } else {
+      depth--;
+      if (depth === 0) {
+        gridEnd = nextClose.index + nextClose[0].length;
+        break;
+      }
+      i = nextClose.index + nextClose[0].length;
+    }
+  }
+
+  if (gridEnd === -1) {
+    toast('Не удалось найти закрывающий тег блока btn-grid', true);
+    return;
+  }
+
+  beforeGrid = raw.slice(0, gridStart);
+  afterGrid = raw.slice(gridEnd);
+  const gridInner = raw.slice(gridOpenEnd, gridEnd - '</div>'.length);
+
+  // Парсим ячейки
+  parseGrid(gridInner);
+
+  // Рендерим
+  document.getElementById('inputScreen').style.display = 'none';
+  document.getElementById('editorScreen').classList.add('active');
+  renderGrid();
+}
+
+/* ============================================================
+   ПАРСИНГ СЕТКИ
+   ============================================================ */
+function parseGrid(inner) {
+  // Извлекаем все top-level элементы: <a ...>...</a> и <span class="menu-btn placeholder">...</span>
+  const cells = [];
+  const regex = /<(a|span)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+  let m;
+  while ((m = regex.exec(inner)) !== null) {
+    const tag = m[1].toLowerCase();
+    const attrs = m[2];
+    const content = m[3].trim();
+
+    const isPlaceholder = /class="[^"]*\bplaceholder\b[^"]*"/i.test(attrs) || tag === 'span';
+    const hrefMatch = attrs.match(/href="([^"]*)"/i);
+    const targetMatch = attrs.match(/target="([^"]*)"/i);
+    const wrapMatch = /class="[^"]*\bwrap-text\b[^"]*"/i.test(attrs);
+
+    cells.push({
+      placeholder: isPlaceholder,
+      text: isPlaceholder ? (content || '—') : content.replace(/<[^>]*>/g, '').trim(),
+      href: hrefMatch ? hrefMatch[1] : '',
+      blank: targetMatch ? targetMatch[1] === '_blank' : false,
+      wrap: wrapMatch,
+      rawContent: content
+    });
+  }
+
+  // Разбиваем на ряды по 3
+  gridData = [];
+  for (let r = 0; r < Math.ceil(cells.length / COLS); r++) {
+    const row = [];
+    for (let c = 0; c < COLS; c++) {
+      const idx = r * COLS + c;
+      row.push(cells[idx] || { placeholder: true, text: '—', href: '', blank: false, wrap: false });
+    }
+    gridData.push(row);
+  }
+
+  // Если рядов меньше DEFAULT_ROWS — добиваем пустыми
+  while (gridData.length < DEFAULT_ROWS) {
+    gridData.push(emptyRow());
+  }
+
+  originalGridData = JSON.parse(JSON.stringify(gridData));
+}
+
+function emptyRow() {
+  return Array.from({ length: COLS }, () => ({
+    placeholder: true, text: '—', href: '', blank: false, wrap: false
+  }));
+}
+
+function emptyCell() {
+  return { placeholder: true, text: '—', href: '', blank: false, wrap: false };
+}
+
+/* ============================================================
+   РЕНДЕР
+   ============================================================ */
+function renderGrid() {
+  const container = document.getElementById('gridContainer');
+  container.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'btn-grid-editor';
+
+  gridData.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      grid.appendChild(createCellEl(cell, r, c));
+    });
+  });
+
+  container.appendChild(grid);
+  renderRowControls();
+}
+
+function createCellEl(cell, r, c) {
+  const cellEl = document.createElement('div');
+  cellEl.className = 'cell';
+  cellEl.dataset.row = r;
+  cellEl.dataset.col = c;
+
+  // Drag & drop
+  cellEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    cellEl.classList.add('drop-target');
+  });
+  cellEl.addEventListener('dragleave', () => cellEl.classList.remove('drop-target'));
+  cellEl.addEventListener('drop', e => {
+    e.preventDefault();
+    cellEl.classList.remove('drop-target');
+    const fromR = parseInt(e.dataTransfer.getData('text/row'), 10);
+    const fromC = parseInt(e.dataTransfer.getData('text/col'), 10);
+    if (isNaN(fromR) || isNaN(fromC)) return;
+    if (fromR === r && fromC === c) return;
+    // Обмен местами (свап)
+    const tmp = gridData[r][c];
+    gridData[r][c] = gridData[fromR][fromC];
+    gridData[fromR][fromC] = tmp;
+    renderGrid();
+    toast('Перемещено');
+  });
+
+  // Кнопка-превью
+  const btn = document.createElement('div');
+  btn.className = 'menu-btn-preview' + (cell.placeholder ? ' placeholder' : '');
+  btn.textContent = cell.placeholder ? (cell.text || '—') : cell.text;
+  btn.draggable = true;
+  btn.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/row', r);
+    e.dataTransfer.setData('text/col', c);
+    cellEl.classList.add('dragging-source');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  btn.addEventListener('dragend', () => {
+    cellEl.classList.remove('dragging-source');
+  });
+
+  // Контролы
+  const controls = document.createElement('div');
+  controls.className = 'cell-controls';
+
+  if (!cell.placeholder) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'edit';
+    editBtn.textContent = '✎';
+    editBtn.title = 'Редактировать';
+    editBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openModal(r, c);
+    });
+    controls.appendChild(editBtn);
+  } else {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'edit';
+    addBtn.textContent = '＋';
+    addBtn.title = 'Добавить кнопку';
+    addBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openModal(r, c, true);
+    });
+    controls.appendChild(addBtn);
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'del';
+  delBtn.textContent = '✕';
+  delBtn.title = 'Удалить (сделать пустой)';
+  delBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    gridData[r][c] = emptyCell();
+    renderGrid();
+    toast('Ячейка очищена');
+  });
+  controls.appendChild(delBtn);
+
+  cellEl.appendChild(btn);
+  cellEl.appendChild(controls);
+  return cellEl;
+}
+
+/* ============================================================
+   УПРАВЛЕНИЕ РЯДАМИ
+   ============================================================ */
+function renderRowControls() {
+  const container = document.getElementById('rowControls');
+  container.innerHTML = '<h3 style="color:#8b949e;font-size:14px;margin:20px 0 10px;">Ряды</h3>';
+
+  gridData.forEach((row, r) => {
+    const info = document.createElement('div');
+    info.className = 'row-info';
+    const nonEmpty = row.filter(c => !c.placeholder).length;
+    info.innerHTML = `<span class="row-label">Ряд ${r + 1} — заполнено: ${nonEmpty}/3</span>`;
+
+    const upBtn = document.createElement('button');
+    upBtn.textContent = '↑';
+    upBtn.title = 'Вверх';
+    upBtn.disabled = r === 0;
+    upBtn.addEventListener('click', () => moveRow(r, -1));
+    info.appendChild(upBtn);
+
+    const downBtn = document.createElement('button');
+    downBtn.textContent = '↓';
+    downBtn.title = 'Вниз';
+    downBtn.disabled = r === gridData.length - 1;
+    downBtn.addEventListener('click', () => moveRow(r, 1));
+    info.appendChild(downBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del';
+    delBtn.textContent = 'Удалить ряд';
+    delBtn.addEventListener('click', () => {
+      if (gridData.length <= 1) {
+        toast('Нельзя удалить последний ряд', true);
+        return;
+      }
+      gridData.splice(r, 1);
+      renderGrid();
+      toast('Ряд удалён');
+    });
+    info.appendChild(delBtn);
+
+    container.appendChild(info);
+  });
+}
+
+function moveRow(index, dir) {
+  const newIndex = index + dir;
+  if (newIndex < 0 || newIndex >= gridData.length) return;
+  const tmp = gridData[index];
+  gridData[index] = gridData[newIndex];
+  gridData[newIndex] = tmp;
+  renderGrid();
+}
+
+function addRow() {
+  gridData.push(emptyRow());
+  renderGrid();
+  toast('Ряд добавлен');
+}
+
+function removeLastRow() {
+  if (gridData.length <= 1) {
+    toast('Нельзя удалить последний ряд', true);
+    return;
+  }
+  gridData.pop();
+  renderGrid();
+  toast('Последний ряд удалён');
+}
+
+function resetToOriginal() {
+  if (!confirm('Сбросить все изменения?')) return;
+  gridData = JSON.parse(JSON.stringify(originalGridData));
+  renderGrid();
+  toast('Сброшено к исходному состоянию');
+}
+
+/* ============================================================
+   МОДАЛЬНОЕ ОКНО
+   ============================================================ */
+function openModal(r, c, isNew = false) {
+  editingCell = { row: r, col: c };
+  const cell = gridData[r][c];
+
+  document.getElementById('modalTitle').textContent = isNew ? 'Добавить кнопку' : 'Редактирование кнопки';
+  document.getElementById('editText').value = cell.placeholder ? '' : cell.text;
+  document.getElementById('editHref').value = cell.href || '';
+  document.getElementById('editBlank').checked = !!cell.blank;
+  document.getElementById('editWrap').checked = !!cell.wrap;
+  document.getElementById('editPlaceholder').checked = !!cell.placeholder;
+
+  document.getElementById('modalOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('editText').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  editingCell = null;
+}
+
+function applyModal() {
+  if (!editingCell) return;
+  const { row, col } = editingCell;
+  const isPlaceholder = document.getElementById('editPlaceholder').checked;
+
+  if (isPlaceholder) {
+    gridData[row][col] = emptyCell();
+  } else {
+    const text = document.getElementById('editText').value.trim() || 'Кнопка';
+    const href = document.getElementById('editHref').value.trim();
+    gridData[row][col] = {
+      placeholder: false,
+      text,
+      href,
+      blank: document.getElementById('editBlank').checked,
+      wrap: document.getElementById('editWrap').checked
+    };
+  }
+
+  closeModal();
+  renderGrid();
+  toast('Сохранено');
+}
+
+/* ============================================================
+   ГЕНЕРАЦИЯ HTML
+   ============================================================ */
+function generateGridHtml() {
+  let html = '';
+  gridData.forEach(row => {
+    row.forEach(cell => {
+      if (cell.placeholder) {
+        html += `            <span class="menu-btn placeholder">—</span>\n`;
+      } else {
+        const classes = ['menu-btn'];
+        if (cell.wrap) classes.push('wrap-text');
+        const target = cell.blank ? ' target="_blank"' : ' target="_self"';
+        const href = cell.href || '#';
+        html += `            <a href="${escapeAttr(href)}"${target} class="${classes.join(' ')}">${escapeHtml(cell.text)}</a>\n`;
+      }
+    });
+  });
+  return html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function saveFile() {
+  const gridInner = generateGridHtml();
+  const newGrid = `<div class="btn-grid">\n${gridInner}        </div>`;
+  const finalHtml = beforeGrid + newGrid + afterGrid;
+
+  const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'index.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Файл сохранён');
+}
+
+/* ============================================================
+   НАВИГАЦИЯ
+   ============================================================ */
+function backToInput() {
+  document.getElementById('editorScreen').classList.remove('active');
+  document.getElementById('inputScreen').style.display = 'flex';
+}
+
+/* ============================================================
+   ТОСТ
+   ============================================================ */
+let toastTimer = null;
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   ПРИМЕР HTML (для кнопки "Загрузить пример")
+   ============================================================ */
+const EXAMPLE_HTML = `<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><title>FOEhelp</title></head>
+<body>
+<div class="menu-container">
+  <div class="title">FOEHELP</div>
+  <div class="btn-grid">
+            <a href="/foedb/" target="_blank" class="menu-btn wrap-text">База Зданий FoE</a>
+            <a href="/events/" target="_self" class="menu-btn wrap-text">Ивенты</a>
+            <a href="/kva/" target="_self" class="menu-btn">Кванты</a>
+            <a href="https://disk.yandex.ru/d/sZ6KHDOcL_007g" target="_blank" class="menu-btn">JSON</a>
+            <a href="/calk/fullvs.html" target="_self" class="menu-btn">Полная стоимость ВС</a>
+            <a href="/param/qitop.html" target="_blank" class="menu-btn">QI Leaderboards</a>
+            <a href="/links/" target="_self" class="menu-btn">Полезные ссылки</a>
+            <a href="/calk/vstitan.html" target="_self" class="menu-btn">ВС Титана</a>
+            <span class="menu-btn placeholder">—</span>
+            <a href="/maphelp/" target="_blank" class="menu-btn">Карты континентов</a>
+            <span class="menu-btn placeholder">—</span>
+            <span class="menu-btn placeholder">—</span>
+            <a href="/param/maptime.html" target="_blank" class="menu-btn"></a>
+            <span class="menu-btn placeholder">—</span>
+            <span class="menu-btn placeholder">—</span>
+            <a href="/param/nauka.html" target="_self" class="menu-btn">Стоимость науки</a>
+            <a href="/param/foestat.html" target="_blank" class="menu-btn">FOE RU статистика миров</a>
+            <a href="/game/" target="_self" class="menu-btn">Games</a>
+  </div>
+  <div class="extension-block">...</div>
+</div>
+</body>
+</html>`;
+
+/* Закрытие модалки по Esc и клику на оверлей */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'modalOverlay') closeModal();
+});
+</script>
+</body>
+</html>

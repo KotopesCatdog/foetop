@@ -1,0 +1,20 @@
+ <div class="footer-text">
+ © 2026 KotoPes <br> 
+ <a href="privacy.html" target="_blank" data-i18n="common_footer_privacy">
+ Privacy Policy
+ </a>
+ <br>
+ $POWERED_BY$
+ <br>
+    <span style="color: #888; font-size: 0.9rem;">Зеркала сайта:</span>
+    <a href="https://foehelp.ru/" target="_blank" 
+       style="color: #4ecdc4; font-weight: bold; text-decoration: none; margin: 0 5px;">
+        foehelp.ru
+    </a>
+    <span style="color: #888;">/</span>
+    <a href="https://foehelp.top/" target="_blank" 
+       style="color: #4ecdc4; font-weight: bold; text-decoration: none; margin: 0 5px;">
+        foehelp.top
+    </a>
+</div>
+     </div>
