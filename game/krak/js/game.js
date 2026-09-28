@@ -2257,7 +2257,7 @@ function showHelpModal() {
 
 <hr>
             <p>🎨 <strong>Создавайте свои уровни тут:</strong><br>
-            <a href="https://foehelp.ru/game/lg.html" target="_blank" style="color: #4ecca3;">Редактор уровней</a></p>
+            <a href="/game/lg.html" target="_blank" style="color: #4ecca3;">Редактор уровней</a></p>
             <p>📨 <strong>Присылайте уровни:</strong><br>
             <a href="https://t.me/foehelp" target="_blank" style="color: #ffaa44;">Телеграм</a></p>
 

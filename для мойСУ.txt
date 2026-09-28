@@ -7,7 +7,7 @@
  $POWERED_BY$
  <br>
     <span style="color: #888; font-size: 0.9rem;">Зеркала сайта:</span>
-    <a href="https://foehelp.ru/" target="_blank" 
+    <a href="/" target="_blank" 
        style="color: #4ecdc4; font-weight: bold; text-decoration: none; margin: 0 5px;">
         foehelp.ru
     </a>
