@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Чат с администрацией FOEhelp</title>
+<style>
+  :root { color-scheme: light dark; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f4f5f7; color: #3a4150;
+  }
+  p { max-width: 24em; margin: 0 16px; text-align: center; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1b2230; color: #c9d0dc; }
+  }
+</style>
+</head>
+<body>
+<p>Чат с администрацией FOEhelp. Нажмите на значок чата в углу окна и напишите сообщение.</p>
+
+<!-- Begin Talk-Me {literal} -->
+<script>
+    (function(){(function c(d,w,m,i) {
+        window.supportAPIMethod = m;
+        var s = d.createElement('script');
+        s.id = 'supportScript'; 
+        s.async = true;
+        var id = '815e5ab2f5fb686491f8f6e436288521';
+        s.src = (!i ? 'https://lcab.talk-me.ru/support/support.js' : 'https://static.site-chat.me/support/support.int.js') + '?h=' + id;
+        s.onerror = i ? undefined : function(){c(d,w,m,true)};
+        w[m] = w[m] ? w[m] : function(){(w[m].q = w[m].q ? w[m].q : []).push(arguments);};
+        (d.head ? d.head : d.body).appendChild(s);
+    })(document,window,'TalkMe')})();
+</script>
+<!-- {/literal} End Talk-Me -->
+</body>
+</html>
